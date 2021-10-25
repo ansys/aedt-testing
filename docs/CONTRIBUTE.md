@@ -11,5 +11,5 @@ pre-commit install
 
 ## Validate types
 ```bash
-mypy --config-file=./mypy.ini aedttest.py
+mypy --config-file=./mypy.ini unittests\test_aedttest.py
 ```
