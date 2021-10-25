@@ -1,0 +1,38 @@
+{
+    "just_winding": {
+        "cores": 2,
+        "RAM": 10,
+        "path": "input\\just_winding.aedt",
+        "Maxwell2DDesign1": {
+            "Setup1": {
+                "mesh": {
+                    "total": 45
+                }
+            }
+        }
+    },
+    "just_winding2": {
+        "cores": 2,
+        "RAM": 10,
+        "path": "input\\just_winding2.aedt",
+        "Maxwell2DDesign1": {
+            "Setup1": {
+                "mesh": {
+                    "total": 45
+                }
+            }
+        }
+    },
+    "just_winding3": {
+        "cores": 2,
+        "RAM": 10,
+        "path": "input\\just_winding3.aedt",
+        "Maxwell2DDesign1": {
+            "Setup1": {
+                "mesh": {
+                    "total": 45
+                }
+            }
+        }
+    }
+}
