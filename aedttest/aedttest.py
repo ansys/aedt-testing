@@ -38,6 +38,29 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
         active_ram = 0
 
         for project_name, project_config in tests_config.items():
+            next_active_cores = active_cores + int(project_config["cores"])
+            next_active_ram = active_ram + int(project_config["RAM"])
+            while (
+                (max_cores and next_active_cores > max_cores)
+                or (max_ram and next_active_ram > max_ram)
+                or (max_tasks and len(active_threads) + 1 > max_tasks)
+            ):
+
+                print(
+                    "Wait for resources. "
+                    f"Active cores: {active_cores}, RAM: {active_ram} GB, tasks: {len(active_threads)}\n"
+                    f"Limits are cores: {max_cores}, RAM: {max_ram} GB, tasks: {max_tasks}\n"
+                )
+                sleep(2)
+                for i, th in enumerate(active_threads):
+                    if not th.thread.is_alive():
+                        active_cores -= th.cores
+                        active_ram -= th.ram
+                        next_active_cores -= th.cores
+                        next_active_ram -= th.ram
+                        active_threads.pop(i)
+                        break  # break since pop thread item
+
             print(f"Add project {project_name}")
             project_path = resolve_project_path(project_name, project_config)
 
@@ -51,23 +74,6 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
 
             active_cores += int(project_config["cores"])
             active_ram += int(project_config["RAM"])
-            while (
-                (max_cores and active_cores > max_cores)
-                or (max_ram and active_ram > max_ram)
-                or (max_tasks and len(active_threads) > max_tasks)
-            ):
-
-                print(
-                    "Wait for resources. "
-                    f"Active cores: {active_cores}, RAM: {active_ram}GB, tasks: {len(active_threads)}"
-                )
-                sleep(1)
-                for i, th in enumerate(active_threads):
-                    if not th.thread.is_alive():
-                        active_cores -= th.cores
-                        active_ram -= th.ram
-                        active_threads.pop(i)
-                        break  # break since pop thread item
 
         [th.thread.join() for th in active_threads]
 
@@ -152,6 +158,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-cores", "-c", help="total number of cores limit", type=int)
     parser.add_argument("--max-tasks", "-t", help="total number of parallel tasks limit", type=int)
     args = parser.parse_args()
+    print(args)
 
     if not (args.max_ram or args.max_cores or args.max_tasks):
         print("No limits are specified for current job. This may lead to failure if you lack of license or resources")
