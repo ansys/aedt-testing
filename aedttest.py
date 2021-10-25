@@ -1,16 +1,17 @@
 import argparse
 import re
+
 __authors__ = "Maksim Beliaev, Bo Yang"
 
 
-def run(version):
+def run(version: str) -> None:
     """
     Main function to start test sweet
     Returns:
     """
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # Add long and short argument
     parser.add_argument("--aedt-version", "-av", help="Electronics Desktop version to test, e.g. 2022.1", required=True)

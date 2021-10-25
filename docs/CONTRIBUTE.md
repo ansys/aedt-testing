@@ -8,3 +8,8 @@ Install pre-commit
 ```bash
 pre-commit install
 ```
+
+## Validate types
+```bash
+mypy --config-file=./mypy.ini aedttest.py
+```
