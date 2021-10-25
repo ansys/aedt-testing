@@ -34,32 +34,12 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
     script_args = ""
     with TemporaryDirectory() as temp_dir:
         active_threads = []
-        active_cores = 0
-        active_ram = 0
 
         for project_name, project_config in tests_config.items():
-            next_active_cores = active_cores + int(project_config["cores"])
-            next_active_ram = active_ram + int(project_config["RAM"])
-            while (
-                (max_cores and next_active_cores > max_cores)
-                or (max_ram and next_active_ram > max_ram)
-                or (max_tasks and len(active_threads) + 1 > max_tasks)
-            ):
+            job_cores = int(project_config["cores"])
+            job_ram = int(project_config["RAM"])
 
-                print(
-                    "Wait for resources. "
-                    f"Active cores: {active_cores}, RAM: {active_ram} GB, tasks: {len(active_threads)}\n"
-                    f"Limits are cores: {max_cores}, RAM: {max_ram} GB, tasks: {max_tasks}\n"
-                )
-                sleep(2)
-                for i, th in enumerate(active_threads):
-                    if not th.thread.is_alive():
-                        active_cores -= th.cores
-                        active_ram -= th.ram
-                        next_active_cores -= th.cores
-                        next_active_ram -= th.ram
-                        active_threads.pop(i)
-                        break  # break since pop thread item
+            lock_execution(project_name, active_threads, job_cores, job_ram, max_cores, max_ram, max_tasks)
 
             print(f"Add project {project_name}")
             project_path = resolve_project_path(project_name, project_config)
@@ -70,12 +50,35 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
             thread_args = (version, script, script_args, tmp_proj)
             thread = threading.Thread(target=execute_aedt, daemon=True, args=thread_args)
             thread.start()
-            active_threads.append(thread_tuple(thread, int(project_config["cores"]), int(project_config["RAM"])))
-
-            active_cores += int(project_config["cores"])
-            active_ram += int(project_config["RAM"])
+            active_threads.append(thread_tuple(thread, job_cores, job_ram))
 
         [th.thread.join() for th in active_threads]
+
+
+def lock_execution(project_name, active_threads, job_cores, job_ram, max_cores, max_ram, max_tasks):
+    active_cores = sum((th.cores for th in active_threads))
+    active_ram = sum((th.ram for th in active_threads))
+    next_active_cores = active_cores + job_cores
+    next_active_ram = active_ram + job_ram
+    while (
+        (max_cores and next_active_cores > max_cores)
+        or (max_ram and next_active_ram > max_ram)
+        or (max_tasks and len(active_threads) >= max_tasks)
+    ):
+
+        print(
+            f"{project_name} is waiting for resources.\n"
+            f"Active cores: {active_cores}, RAM: {active_ram} GB, tasks: {len(active_threads)}\n"
+            f"Limits are cores: {max_cores}, RAM: {max_ram} GB, tasks: {max_tasks}\n"
+            f"Next job requires cores: {job_cores}, RAM: {job_ram} GB, tasks: 1\n"
+        )
+        sleep(5)
+        for i, th in enumerate(active_threads):
+            if not th.thread.is_alive():
+                next_active_cores -= th.cores
+                next_active_ram -= th.ram
+                active_threads.pop(i)
+                break  # break since pop thread item
 
 
 def resolve_project_path(project_name, project_config):
@@ -158,7 +161,6 @@ if __name__ == "__main__":
     parser.add_argument("--max-cores", "-c", help="total number of cores limit", type=int)
     parser.add_argument("--max-tasks", "-t", help="total number of parallel tasks limit", type=int)
     args = parser.parse_args()
-    print(args)
 
     if not (args.max_ram or args.max_cores or args.max_tasks):
         print("No limits are specified for current job. This may lead to failure if you lack of license or resources")
