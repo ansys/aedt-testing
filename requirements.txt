@@ -1,2 +1,2 @@
-pyaedt==0.3.27
+pyaedt==0.4.0
 Django==3.2.8
