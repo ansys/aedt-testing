@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import json
 import os
 import platform
@@ -10,15 +11,31 @@ from collections import namedtuple
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from django import setup as django_setup
+from django.conf import settings
+from django.template.loader import get_template
+
 __authors__ = "Maksim Beliaev, Bo Yang"
 
 from time import sleep
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 MODULE_DIR = Path(__file__).resolve().parent
+CWD_DIR = Path.cwd()
 
+# configure Django templates
+settings.configure(
+    TEMPLATES=[
+        {
+            "BACKEND": "django.template.backends.django.DjangoTemplates",
+            "DIRS": [MODULE_DIR],  # if you want the templates from a file
+        },
+    ]
+)
+django_setup()
+HTML_TEMPLATE = get_template("static/main.html")
 
-thread_tuple = namedtuple("thread", ["thread", "cores", "ram"])
+thread_tuple = namedtuple("thread", ["thread", "project_name", "cores", "ram"])
 
 
 def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file: str) -> None:
@@ -32,6 +49,25 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
 
     script = str(MODULE_DIR / "dummy.py")
     script_args = ""
+
+    report_data = []
+    if (Path.cwd() / "results").exists():
+        shutil.rmtree(Path.cwd() / "results")
+
+    shutil.copytree(MODULE_DIR / "static", Path.cwd() / "results")
+    for project_name, project_config in tests_config.items():
+        report_data.append(
+            {
+                "name": project_name,
+                "cores": project_config["cores"],
+                "ram": project_config["RAM"],
+                "status": "queued",
+                "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            }
+        )
+
+    render_html(report_data)
+
     with TemporaryDirectory() as temp_dir:
         active_threads = []
 
@@ -39,7 +75,7 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
             job_cores = int(project_config["cores"])
             job_ram = int(project_config["RAM"])
 
-            lock_execution(project_name, active_threads, job_cores, job_ram, max_cores, max_ram, max_tasks)
+            lock_execution(project_name, active_threads, job_cores, job_ram, max_cores, max_ram, max_tasks, report_data)
 
             print(f"Add project {project_name}")
             project_path = resolve_project_path(project_name, project_config)
@@ -50,12 +86,34 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
             thread_args = (version, script, script_args, tmp_proj)
             thread = threading.Thread(target=execute_aedt, daemon=True, args=thread_args)
             thread.start()
-            active_threads.append(thread_tuple(thread, job_cores, job_ram))
 
-        [th.thread.join() for th in active_threads]
+            render_html(report_data, project_name, "running")
+
+            active_threads.append(thread_tuple(thread, project_name, job_cores, job_ram))
+
+        while active_threads:
+            sleep(2)
+            for i, th in enumerate(active_threads):
+                if not th.thread.is_alive():
+                    render_html(report_data, th.project_name, "success")
+                    active_threads.pop(i)
+                    break
 
 
-def lock_execution(project_name, active_threads, job_cores, job_ram, max_cores, max_ram, max_tasks):
+def render_html(report_data, project_name=None, status=None):
+    if project_name:
+        for proj in report_data:
+            if proj["name"] == project_name:
+                proj["status"] = status
+                proj["time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                break
+
+    data = HTML_TEMPLATE.render(context={"projects": report_data})
+    with open(Path.cwd() / "results" / "main.html", "w") as file:
+        file.write(data)
+
+
+def lock_execution(project_name, active_threads, job_cores, job_ram, max_cores, max_ram, max_tasks, report_data):
     active_cores = sum((th.cores for th in active_threads))
     active_ram = sum((th.ram for th in active_threads))
     next_active_cores = active_cores + job_cores
@@ -77,6 +135,8 @@ def lock_execution(project_name, active_threads, job_cores, job_ram, max_cores, 
             if not th.thread.is_alive():
                 next_active_cores -= th.cores
                 next_active_ram -= th.ram
+                render_html(report_data, th.project_name, "success")
+
                 active_threads.pop(i)
                 break  # break since pop thread item
 

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+     <meta http-equiv="refresh" content="5" />
+    <title>Ansys Electronics Desktop Testing Framework</title>
+    <!-- ================= Favicon ================== -->
+    <!-- Styles -->
+    <link href="css/lib/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="content-wrap">
+        <div class="main">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-lg-8 p-r-0 title-margin-right">
+                        <div class="page-header">
+                            <div class="page-title">
+                                <h1>Ansys Electronics Desktop Testing Framework</h1>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /# column -->
+                    <div class="col-lg-4 p-l-0 title-margin-left">
+                        <div class="page-header">
+                            <div class="page-title">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                                    <li class="breadcrumb-item active">Home</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /# column -->
+                </div>
+                <!-- /# row -->
+                <section id="main-content">
+
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card">
+                                <div class="card-title pr">
+                                    <h4>All Expense</h4>
+
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table student-data-table m-t-20">
+                                            <thead>
+                                                <tr>
+                                                    <th>Project name</th>
+                                                    <th>Cores/RAM</th>
+                                                    <th>Date</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for project in projects %}
+                                                <tr>
+                                                    <td>
+                                                        {{ project.name }}
+                                                    </td>
+                                                    <td>
+                                                        {{ project.cores }}:{{ project.ram }}GB
+                                                    </td>
+                                                    <td>
+                                                        {{ project.time }}
+                                                    </td>
+                                                    <td>
+                                                        {% if project.status == "queued" %}
+                                                            <span class="badge badge-warning">Queued</span>
+                                                        {% elif project.status == "running" %}
+                                                            <span class="badge badge-warning">Running</span>
+                                                        {% elif project.status == "fail" %}
+                                                            <span class="badge badge-danger">Failure</span>
+                                                        {% else %}
+                                                            <span class="badge badge-primary">Success</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- /# column -->
+                    </div>
+
+
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="footer">
+                                <p>2021 &#xa9 Ansys Inc - <a href="https://www.ansys.com/">ansys.com</a></p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- jquery vendor -->
+    <script src="js/lib/jquery.min.js"></script>
+    <script src="js/lib/jquery.nanoscroller.min.js"></script>
+    <!-- nano scroller -->
+
+
+    <script src="js/lib/bootstrap.min.js"></script>
+    <script src="js/scripts.js"></script>
+    <!-- bootstrap -->
+
+</body>
+
+</html>
