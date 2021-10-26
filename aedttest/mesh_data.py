@@ -3,33 +3,11 @@ import os
 
 from pyaedt.desktop import Desktop
 
+project_dict = {"error_exception": []}
 
-class Error(Exception):
+
+class AedtTestException(Exception):
     """Base class for exceptions in this module."""
-
-
-class DesignError(Error):
-    """Exception raised for errors when project has no design.
-
-    Attributes:
-        expression -- input expression in which the error occurred
-        message -- explanation of the error
-    """
-
-    def __init__(self, message="Project has no design"):
-        self.message = message
-
-
-class SetupError(Error):
-    """Exception raised for errors when project has no design.
-
-    Attributes:
-        expression -- input expression in which the error occurred
-        message -- explanation of the error
-    """
-
-    def __init__(self, message="Design has no setup"):
-        self.message = message
 
 
 def get_mesh_data(odesign, var: str, setup: str, mesh_stats_file: str):
@@ -52,53 +30,58 @@ def main():
 
     oDesktop = d._main.oDesktop
     oProject = oDesktop.GetActiveProject()
-    project_dict = {"name": oProject.GetName(), "dir": oProject.GetPath(), "error_exception": [], "designs": []}
 
-    # get the designs and check empty project
+    project_name = oProject.GetName()
+    project_dir = oProject.GetPath()
+
     try:
-        design_names = oProject.GetTopDesignList()
-        if len(design_names) == 0:
-            raise DesignError()
-    except DesignError as e:
-        project_dict["error_exception"].append(e.message)
-    else:
-        pass
+        design_dict = extract_data(oProject, project_dir, project_name)
+    except AedtTestException as e:
+        project_dict["error_exception"].append(str(e))
 
+    out_json = r"{}.json".format(project_dict["name"])
+    with open(os.path.join(project_dict["dir"], out_json), "w") as outfile:
+        json.dump(design_dict, outfile, indent=4)
+
+
+def extract_data(oProject, project_dir, project_name):
     design_dict = {}
+    # get the designs and check empty project
+    design_names = oProject.GetTopDesignList()
+    if not design_names:
+        raise AedtTestException("Project has no design")
     # get the setups and check empty designs
     for design in design_names:
         design_dict[design] = {}
-        design_dict[design]["error_exception"] = []
+
         try:
             oDesign = oProject.SetActiveDesign(design)
             oModule = oDesign.GetModule("AnalysisSetup")
             setups = oModule.GetSetups()
 
-            if len(setups) == 0:
-                raise SetupError()
-            else:
-                for setup in setups:
-                    design_dict[design][setup] = {}
-                    design_dict[design][setup]["error_exception"] = []
-                    design_dict[design][setup]["mesh_data"] = 0
+            get_all_setup_mesh(design, design_dict, oDesign, project_dir, project_name, setups)
 
-                    mesh_stats_file = r"{}_{}_{}.mstat".format(project_dict["name"], design, setup)
+        except AedtTestException as e:
+            project_dict["error_exception"].append(str(e))
+    return design_dict
 
-                    mesh_data = get_mesh_data(
-                        odesign=oDesign,
-                        var="",
-                        setup=setup,
-                        mesh_stats_file=os.path.join(project_dict["dir"], mesh_stats_file),
-                    )
-                    design_dict[design][setup]["mesh_data"] = mesh_data
 
-        except SetupError as e:
-            design_dict[design]["error_exception"].append(e.message)
+def get_all_setup_mesh(design, design_dict, oDesign, project_dir, project_name, setups):
+    if not setups:
+        raise AedtTestException("Design has no setup")
+    for setup in setups:
+        design_dict[design][setup] = {}
+        design_dict[design][setup]["mesh_data"] = 0
 
-    out_json = r"{}.json".format(project_dict["name"])
+        mesh_stats_file = r"{}_{}_{}.mstat".format(project_name, design, setup)
 
-    with open(os.path.join(project_dict["dir"], out_json), "w") as outfile:
-        json.dump(design_dict, outfile, indent=4)
+        mesh_data = get_mesh_data(
+            odesign=oDesign,
+            var="",
+            setup=setup,
+            mesh_stats_file=os.path.join(project_dir, mesh_stats_file),
+        )
+        design_dict[design][setup]["mesh_data"] = mesh_data
 
 
 if __name__ == "__main__":
