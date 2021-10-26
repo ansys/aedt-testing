@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+     <meta http-equiv="refresh" content="5" />
     <title>Ansys Electronics Desktop Testing Framework</title>
     <!-- ================= Favicon ================== -->
     <!-- Styles -->
@@ -60,76 +61,30 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                            {% for project in projects %}
                                                 <tr>
                                                     <td>
-                                                        proj_name
+                                                        {{ project.name }}
                                                     </td>
                                                     <td>
-                                                        2:10GB
+                                                        {{ project.cores }}:{{ project.ram }}GB
                                                     </td>
                                                     <td>
-                                                        10/05/2017
+                                                        {{ project.time }}
                                                     </td>
                                                     <td>
-                                                        <span class="badge badge-primary">Success</span>
+                                                        {% if project.status == "queued" %}
+                                                            <span class="badge badge-warning">Queued</span>
+                                                        {% elif project.status == "running" %}
+                                                            <span class="badge badge-warning">Running</span>
+                                                        {% elif project.status == "fail" %}
+                                                            <span class="badge badge-danger">Failure</span>
+                                                        {% else %}
+                                                            <span class="badge badge-primary">Success</span>
+                                                        {% endif %}
                                                     </td>
                                                 </tr>
-                                                <tr>
-                                                    <td>
-                                                        proj_name
-                                                    </td>
-                                                    <td>
-                                                        2:10GB
-                                                    </td>
-                                                    <td>
-                                                        10/05/2017
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge badge-warning">Queued</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        proj_name
-                                                    </td>
-                                                    <td>
-                                                        2:10GB
-                                                    </td>
-                                                    <td>
-                                                        10/05/2017
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge badge-warning">Running</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        proj_name
-                                                    </td>
-                                                    <td>
-                                                        2:10GB
-                                                    </td>
-                                                    <td>
-                                                        10/05/2017
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge badge-danger">Failure</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        proj_name
-                                                    </td>
-                                                    <td>
-                                                        2:10GB
-                                                    </td>
-                                                    <td>
-                                                        10/05/2017
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge badge-primary">Success</span>
-                                                    </td>
-                                                </tr>
+                                            {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
@@ -143,7 +98,7 @@
                     <div class="row">
                         <div class="col-lg-12">
                             <div class="footer">
-                                <p>2021 © Ansys Inc - <a href="https://www.ansys.com/">ansys.com</a></p>
+                                <p>2021 &#xa9 Ansys Inc - <a href="https://www.ansys.com/">ansys.com</a></p>
                             </div>
                         </div>
                     </div>
