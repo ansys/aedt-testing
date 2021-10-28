@@ -143,6 +143,9 @@ def parse_hosts_pbs(pbs_node_file):
     with open(pbs_node_file) as file:
         for line in file:
             host = line.strip()
+            if not host:
+                continue
+
             host_cores.setdefault(host, 0)
             host_cores[host] += 1
 

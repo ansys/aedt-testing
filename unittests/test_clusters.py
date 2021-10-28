@@ -1,3 +1,6 @@
+import os
+from tempfile import NamedTemporaryFile
+
 from aedttest.clusters import job_hosts
 
 
@@ -81,3 +84,40 @@ def test_parse_hosts_ccs():
     assert hosts[0].cores == 15
     assert hosts[1].hostname == "host2"
     assert hosts[1].cores == 10
+
+
+def test_parse_hosts_pbs():
+    with NamedTemporaryFile(mode="w+", suffix=".py", delete=False) as file:
+        file.write("comp001.hpc\r\n" * 3)
+        file.write("comp002.hpc\n" * 4)
+        file.close()
+        try:
+            hosts = job_hosts.parse_hosts_pbs(file.name)
+        finally:
+            os.unlink(file.name)
+
+    assert len(hosts) == 2
+    assert hosts[0].hostname == "comp001.hpc"
+    assert hosts[0].cores == 3
+    assert hosts[1].hostname == "comp002.hpc"
+    assert hosts[1].cores == 4
+
+
+def test_parse_hosts_sge():
+    with NamedTemporaryFile(mode="w+", suffix=".py", delete=False) as file:
+        file.write("node104.a.itservices.ac.uk 32 R815.q@node104.a.itservices.ac.uk UNDEFINED\n")
+        file.write("node110.a.itservices.ac.uk 15 R815.q@node104.a.itservices.ac.uk UNDEFINED\n")
+        file.write("node115.a.itservices.ac.uk 64 R815.q@node104.a.itservices.ac.uk UNDEFINED\n")
+        file.close()
+        try:
+            hosts = job_hosts.parse_hosts_sge(file.name)
+        finally:
+            os.unlink(file.name)
+
+    assert len(hosts) == 3
+    assert hosts[0].hostname == "node104.a.itservices.ac.uk"
+    assert hosts[0].cores == 32
+    assert hosts[1].hostname == "node110.a.itservices.ac.uk"
+    assert hosts[1].cores == 15
+    assert hosts[2].hostname == "node115.a.itservices.ac.uk"
+    assert hosts[2].cores == 64
