@@ -44,11 +44,15 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
     Returns: None
     """
 
+    execute_aedt(version, script=str(MODULE_DIR / "get_cluster_hosts.py"))
+    with open("host_info.json") as file:
+        all_machines = json.load(file)
+
     with open(config_file) as file:
         tests_config = json.load(file)
 
     script = str(MODULE_DIR / "dummy.py")
-    script_args = ""
+    script_args = None
 
     report_data = initialize_results(tests_config)
 
@@ -67,7 +71,7 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
             shutil.copy2(project_path, temp_dir)
             tmp_proj = os.path.join(temp_dir, project_path.name)
 
-            thread_args = (version, script, script_args, tmp_proj, job_cores)
+            thread_args = (version, script, script_args, tmp_proj, all_machines)
             thread = threading.Thread(target=execute_aedt, daemon=True, args=thread_args)
             thread.start()
 
@@ -158,7 +162,9 @@ def resolve_project_path(project_name, project_config):
     return project_path.resolve()
 
 
-def execute_aedt(version: str, script: str, script_args: str, project_path: str, machines: tuple = None) -> None:
+def execute_aedt(
+    version: str, script: str = None, script_args: str = None, project_path: str = None, machines: dict = None
+) -> None:
     """
     Execute single instance of Electronics Desktop
 
@@ -179,18 +185,24 @@ def execute_aedt(version: str, script: str, script_args: str, project_path: str,
 
     if machines is not None:
         command.append("-machinelist")
-        host_list = "list=" + ",".join([f"{machine[0]}:1:{machine[1]}:90%" for machine in machines])
+        host_list = "list=" + ",".join([f"{machine}:1:{cores}:90%" for machine, cores in machines.items()])
         command.append(host_list)
 
-    command += [
-        "-ng",
-        "-features=SF6694_NON_GRAPHICAL_COMMAND_EXECUTION",
-        "-RunScriptAndExit",
-        script,
-        "-ScriptArgs",
-        f'"{script_args}"',
-        project_path,
-    ]
+    if script is not None:
+        command += [
+            "-ng",
+            "-features=SF6694_NON_GRAPHICAL_COMMAND_EXECUTION",
+            "-RunScriptAndExit",
+            script,
+        ]
+        if script_args is not None:
+            command += [
+                "-ScriptArgs",
+                f'"{script_args}"',
+            ]
+
+    if project_path is not None:
+        command.append(project_path)
 
     print(f"Execute {subprocess.list2cmdline(command)}")
     subprocess.call(command)
