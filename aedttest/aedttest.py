@@ -150,7 +150,8 @@ def lock_execution(project_name, active_threads, job_cores, job_ram, max_cores, 
 
 def resolve_project_path(project_name, project_config):
     if "path" in project_config:
-        project_path = Path(project_config["path"])
+        project_path = project_config["path"].replace("\\", "/")
+        project_path = Path(project_path)
         if not project_path.is_absolute():
             project_path = CWD_DIR / project_path
     else:
