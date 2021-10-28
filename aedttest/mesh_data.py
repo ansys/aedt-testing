@@ -24,7 +24,19 @@ def get_single_setup_mesh_data(oDesign, var, setup, mesh_stats_file):
     return mesh_data
 
 
-def get_all_setup_mesh_data(oDesign, design, design_dict, project_dir, project_name):
+def get_single_setup_simu_data(oDesign, var, setup, profile):
+    oDesign.Analyze(setup)
+    oDesign.ExportProfile(setup, var, profile)
+    with open(profile) as fid:
+        lines = fid.readlines()
+
+    time_lines = [x for x in lines if "Elapsed time" in x]
+
+    simulation_time = time_lines[-1].split()[2]
+    return simulation_time
+
+
+def get_all_setup_data(oDesign, design, design_dict, project_dir, project_name):
     oModule = oDesign.GetModule("AnalysisSetup")
     setups = oModule.GetSetups()
 
@@ -33,6 +45,7 @@ def get_all_setup_mesh_data(oDesign, design, design_dict, project_dir, project_n
     for setup in setups:
         design_dict[design][setup] = {}
         mesh_stats_file = r"{}_{}_{}.mstat".format(project_name, design, setup)
+        profile = r"{}_{}_{}.prof".format(project_name, design, setup)
         mesh_data = get_single_setup_mesh_data(
             oDesign=oDesign,
             var="",
@@ -40,7 +53,15 @@ def get_all_setup_mesh_data(oDesign, design, design_dict, project_dir, project_n
             mesh_stats_file=os.path.join(project_dir, mesh_stats_file),
         )
 
+        simulation_time = get_single_setup_simu_data(
+            oDesign=oDesign,
+            var="",
+            setup=setup,
+            profile=os.path.join(project_dir, profile),
+        )
+
         design_dict[design][setup]["mesh_data"] = mesh_data
+        design_dict[design][setup]["simulation_time"] = simulation_time
 
 
 def extract_data(oProject, project_dir, project_name, design_names):
@@ -50,7 +71,7 @@ def extract_data(oProject, project_dir, project_name, design_names):
         design_dict[design] = {}
         try:
             oDesign = oProject.SetActiveDesign(design)
-            get_all_setup_mesh_data(oDesign, design, design_dict, project_dir, project_name)
+            get_all_setup_data(oDesign, design, design_dict, project_dir, project_name)
         except AedtTestException as e:
             project_dict["error_exception"].append(str(e))
     return design_dict
