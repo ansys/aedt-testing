@@ -50,23 +50,7 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
     script = str(MODULE_DIR / "dummy.py")
     script_args = ""
 
-    report_data = []
-    if (Path.cwd() / "results").exists():
-        shutil.rmtree(Path.cwd() / "results")
-
-    shutil.copytree(MODULE_DIR / "static", Path.cwd() / "results")
-    for project_name, project_config in tests_config.items():
-        report_data.append(
-            {
-                "name": project_name,
-                "cores": project_config["cores"],
-                "ram": project_config["RAM"],
-                "status": "queued",
-                "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            }
-        )
-
-    render_html(report_data)
+    report_data = initialize_results(tests_config)
 
     with TemporaryDirectory() as temp_dir:
         active_threads = []
@@ -83,7 +67,7 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
             shutil.copy2(project_path, temp_dir)
             tmp_proj = os.path.join(temp_dir, project_path.name)
 
-            thread_args = (version, script, script_args, tmp_proj)
+            thread_args = (version, script, script_args, tmp_proj, job_cores)
             thread = threading.Thread(target=execute_aedt, daemon=True, args=thread_args)
             thread.start()
 
@@ -98,6 +82,25 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
                     render_html(report_data, th.project_name, "success")
                     active_threads.pop(i)
                     break
+
+
+def initialize_results(tests_config):
+    report_data = []
+    if (CWD_DIR / "results").exists():
+        shutil.rmtree(CWD_DIR / "results")
+    shutil.copytree(MODULE_DIR / "static", CWD_DIR / "results")
+    for project_name, project_config in tests_config.items():
+        report_data.append(
+            {
+                "name": project_name,
+                "cores": project_config["cores"],
+                "ram": project_config["RAM"],
+                "status": "queued",
+                "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            }
+        )
+    render_html(report_data)
+    return report_data
 
 
 def render_html(report_data, project_name=None, status=None):
@@ -145,7 +148,7 @@ def resolve_project_path(project_name, project_config):
     if "path" in project_config:
         project_path = Path(project_config["path"])
         if not project_path.is_absolute():
-            project_path = ROOT_DIR / project_path
+            project_path = CWD_DIR / project_path
     else:
         project_path = ROOT_DIR / project_name + ".aedt"
 
@@ -155,7 +158,7 @@ def resolve_project_path(project_name, project_config):
     return project_path.resolve()
 
 
-def execute_aedt(version: str, script: str, script_args: str, project_path: str) -> None:
+def execute_aedt(version: str, script: str, script_args: str, project_path: str, machines: tuple = None) -> None:
     """
     Execute single instance of Electronics Desktop
 
@@ -172,6 +175,14 @@ def execute_aedt(version: str, script: str, script_args: str, project_path: str)
 
     command = [
         aedt_path,
+    ]
+
+    if machines is not None:
+        command.append("-machinelist")
+        host_list = "list=" + ",".join([f"{machine[0]}:1:{machine[1]}:90%" for machine in machines])
+        command.append(host_list)
+
+    command += [
         "-ng",
         "-features=SF6694_NON_GRAPHICAL_COMMAND_EXECUTION",
         "-RunScriptAndExit",
@@ -180,6 +191,7 @@ def execute_aedt(version: str, script: str, script_args: str, project_path: str)
         f'"{script_args}"',
         project_path,
     ]
+
     print(f"Execute {subprocess.list2cmdline(command)}")
     subprocess.call(command)
 
