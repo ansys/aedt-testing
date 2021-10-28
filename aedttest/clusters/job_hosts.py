@@ -217,7 +217,7 @@ def _parse_single_host(unparsed_str):
     Returns:
         (list) expanded list of hosts
     """
-    host, node_numbers_str = re.findall(r"([a-zA-Z0-9_.-]*)\[([0-9,-]*)\]", unparsed_str)[0]
+    host, node_numbers_str = re.findall(r"([a-zA-Z0-9_.-]*)\[([0-9,-]*)]", unparsed_str)[0]
     node_num_list = node_numbers_str.split(",")
 
     parsed_hosts = []
