@@ -5,7 +5,7 @@ from collections import namedtuple
 from socket import gethostname
 
 
-hostinfo = namedtuple("hostinfo", ("hostname", "num_cores"))
+hostinfo = namedtuple("hostinfo", ("hostname", "cores"))
 
 
 def get_job_machines(custom_input=None):
@@ -54,7 +54,7 @@ def get_job_machines(custom_input=None):
 def parse_custom_input(custom_input: str):
     """
     Args:
-        custom_input: (str)
+        custom_input: (str) Format: "host1:15,host2:10"
 
     Returns:
         (tuple) all machines parsed from string
@@ -64,7 +64,7 @@ def parse_custom_input(custom_input: str):
     all_hosts = []
     for machine in machines:
         name, cores = machine.split(":")
-        all_hosts.append(hostinfo(hostname=name, num_cores=int(cores)))
+        all_hosts.append(hostinfo(hostname=name, cores=int(cores)))
 
     return tuple(all_hosts)
 
@@ -83,7 +83,7 @@ def parse_hosts_sge(host_file_name):
             if not row:
                 break
 
-            all_hosts.append(hostinfo(hostname=row[0], num_cores=int(row[1])))
+            all_hosts.append(hostinfo(hostname=row[0], cores=int(row[1])))
 
     return tuple(all_hosts)
 
@@ -101,7 +101,7 @@ def parse_hosts_lsf(host_list_str):
     host_list = host_list_str.split()
 
     # get pairs of data, eg hostname1 core_num1
-    all_hosts = [hostinfo(hostname=host_list[i], num_cores=int(host_list[i + 1])) for i in range(0, len(host_list), 2)]
+    all_hosts = [hostinfo(hostname=host_list[i], cores=int(host_list[i + 1])) for i in range(0, len(host_list), 2)]
 
     return tuple(all_hosts)
 
@@ -117,7 +117,7 @@ def parse_hosts_ccs(host_list_str):
         (tuple) all machines parsed from string
     """
     host_list = host_list_str.split()
-    all_hosts = [hostinfo(hostname=host_list[i], num_cores=int(host_list[i + 1])) for i in range(1, len(host_list), 2)]
+    all_hosts = [hostinfo(hostname=host_list[i], cores=int(host_list[i + 1])) for i in range(1, len(host_list), 2)]
 
     return tuple(all_hosts)
 
@@ -143,10 +143,13 @@ def parse_hosts_pbs(pbs_node_file):
     with open(pbs_node_file) as file:
         for line in file:
             host = line.strip()
+            if not host:
+                continue
+
             host_cores.setdefault(host, 0)
             host_cores[host] += 1
 
-    all_hosts = [hostinfo(hostname=name, num_cores=int(cpu)) for name, cpu in host_cores.items()]
+    all_hosts = [hostinfo(hostname=name, cores=int(cpu)) for name, cpu in host_cores.items()]
     return tuple(all_hosts)
 
 
@@ -201,7 +204,7 @@ def parse_hosts_slurm(host_list_str):
         else:
             host_cores = {node: 1 for node in all_parsed_nodes}
 
-    all_hosts = [hostinfo(hostname=name, num_cores=int(cpu)) for name, cpu in host_cores.items()]
+    all_hosts = [hostinfo(hostname=name, cores=int(cpu)) for name, cpu in host_cores.items()]
     return tuple(all_hosts)
 
 
@@ -214,7 +217,7 @@ def _parse_single_host(unparsed_str):
     Returns:
         (list) expanded list of hosts
     """
-    host, node_numbers_str = re.findall(r"([a-zA-Z0-9_.-]*)\[([0-9,-]*)\]", unparsed_str)[0]
+    host, node_numbers_str = re.findall(r"([a-zA-Z0-9_.-]*)\[([0-9,-]*)]", unparsed_str)[0]
     node_num_list = node_numbers_str.split(",")
 
     parsed_hosts = []
