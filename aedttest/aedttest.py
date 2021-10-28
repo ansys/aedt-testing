@@ -11,6 +11,7 @@ from collections import namedtuple
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from clusters.job_hosts import get_job_machines
 from django import setup as django_setup
 from django.conf import settings
 from django.template.loader import get_template
@@ -44,9 +45,8 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
     Returns: None
     """
 
-    execute_aedt(version, script=str(MODULE_DIR / "get_cluster_hosts.py"))
-    with open("host_info.json") as file:
-        all_machines = json.load(file)
+    job_machines = get_job_machines()
+    print(job_machines)
 
     with open(config_file) as file:
         tests_config = json.load(file)
@@ -71,7 +71,7 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
             shutil.copy2(project_path, temp_dir)
             tmp_proj = os.path.join(temp_dir, project_path.name)
 
-            thread_args = (version, script, script_args, tmp_proj, all_machines)
+            thread_args = (version, script, script_args, tmp_proj, job_machines)
             thread = threading.Thread(target=execute_aedt, daemon=True, args=thread_args)
             thread.start()
 
