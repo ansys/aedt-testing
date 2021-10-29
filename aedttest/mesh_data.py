@@ -24,15 +24,13 @@ def get_single_setup_mesh_data(oDesign, var, setup, mesh_stats_file):
     return mesh_data
 
 
-def get_single_setup_simu_data(oDesign, var, setup, profile):
+def get_single_setup_simu_data(oDesign, var, setup, profile_file):
     oDesign.Analyze(setup)
-    oDesign.ExportProfile(setup, var, profile)
-    with open(profile) as fid:
-        lines = fid.readlines()
+    oDesign.ExportProfile(setup, var, profile_file)
+    with open(profile_file) as fid:
+        lines = [line for line in fid.readlines() if line.strip()]
 
-    time_lines = [x for x in lines if "Elapsed time" in x]
-
-    simulation_time = time_lines[-1].split()[2]
+    simulation_time = lines[-1].split()[2]
     return simulation_time
 
 
@@ -45,7 +43,7 @@ def get_all_setup_data(oDesign, design, design_dict, project_dir, project_name):
     for setup in setups:
         design_dict[design][setup] = {}
         mesh_stats_file = r"{}_{}_{}.mstat".format(project_name, design, setup)
-        profile = r"{}_{}_{}.prof".format(project_name, design, setup)
+        profile_file = r"{}_{}_{}.prof".format(project_name, design, setup)
         mesh_data = get_single_setup_mesh_data(
             oDesign=oDesign,
             var="",
@@ -57,7 +55,7 @@ def get_all_setup_data(oDesign, design, design_dict, project_dir, project_name):
             oDesign=oDesign,
             var="",
             setup=setup,
-            profile=os.path.join(project_dir, profile),
+            profile_file=os.path.join(project_dir, profile_file),
         )
 
         design_dict[design][setup]["mesh_data"] = mesh_data
