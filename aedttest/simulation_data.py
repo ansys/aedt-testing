@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 from pyaedt.desktop import Desktop
 
@@ -24,7 +25,25 @@ def get_single_setup_mesh_data(oDesign, var, setup, mesh_stats_file):
     return mesh_data
 
 
-def get_all_setup_mesh_data(oDesign, design, design_dict, project_dir, project_name):
+def get_single_setup_simu_data(oDesign, var, setup, profile_file):
+    oDesign.Analyze(setup)
+    oDesign.ExportProfile(setup, var, profile_file)
+
+    elapsed_time = ""
+    with open(profile_file) as file:
+        for line in file:
+            if "Elapsed time" in line:
+                elapsed_time = line
+
+    if not elapsed_time:
+        raise AedtTestException("no elapsed time in file")
+
+    simulation_time = re.findall(r"[0-9]*:[0-9][0-9]:[0-9][0-9]", elapsed_time)[2]
+
+    return simulation_time
+
+
+def get_all_setup_data(oDesign, design, design_dict, project_dir, project_name):
     oModule = oDesign.GetModule("AnalysisSetup")
     setups = oModule.GetSetups()
 
@@ -33,6 +52,7 @@ def get_all_setup_mesh_data(oDesign, design, design_dict, project_dir, project_n
     for setup in setups:
         design_dict[design][setup] = {}
         mesh_stats_file = r"{}_{}_{}.mstat".format(project_name, design, setup)
+        profile_file = r"{}_{}_{}.prof".format(project_name, design, setup)
         mesh_data = get_single_setup_mesh_data(
             oDesign=oDesign,
             var="",
@@ -40,7 +60,15 @@ def get_all_setup_mesh_data(oDesign, design, design_dict, project_dir, project_n
             mesh_stats_file=os.path.join(project_dir, mesh_stats_file),
         )
 
+        simulation_time = get_single_setup_simu_data(
+            oDesign=oDesign,
+            var="",
+            setup=setup,
+            profile_file=os.path.join(project_dir, profile_file),
+        )
+
         design_dict[design][setup]["mesh_data"] = mesh_data
+        design_dict[design][setup]["simulation_time"] = simulation_time
 
 
 def extract_data(oProject, project_dir, project_name, design_names):
@@ -50,7 +78,7 @@ def extract_data(oProject, project_dir, project_name, design_names):
         design_dict[design] = {}
         try:
             oDesign = oProject.SetActiveDesign(design)
-            get_all_setup_mesh_data(oDesign, design, design_dict, project_dir, project_name)
+            get_all_setup_data(oDesign, design, design_dict, project_dir, project_name)
         except AedtTestException as e:
             project_dict["error_exception"].append(str(e))
     return design_dict
