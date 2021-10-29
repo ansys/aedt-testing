@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 from pyaedt.desktop import Desktop
 
@@ -27,10 +28,14 @@ def get_single_setup_mesh_data(oDesign, var, setup, mesh_stats_file):
 def get_single_setup_simu_data(oDesign, var, setup, profile_file):
     oDesign.Analyze(setup)
     oDesign.ExportProfile(setup, var, profile_file)
-    with open(profile_file) as fid:
-        lines = [line for line in fid.readlines() if line.strip()]
 
-    simulation_time = lines[-1].split()[2]
+    elapsed_time = ""
+    with open(profile_file) as file:
+        for line in file:
+            if "Elapsed time" in line:
+                elapsed_time = line
+
+    simulation_time = re.findall(r"[0-9]*:[0-9][0-9]:[0-9][0-9]", elapsed_time.split("Elapsed time")[1])
     return simulation_time
 
 
