@@ -36,7 +36,6 @@ def get_single_setup_simu_data(oDesign, var, setup, profile_file):
                 elapsed_time = line
 
     if not elapsed_time:
-        simulation_time = None
         raise AedtTestException("no elapsed time in file")
     else:
         simulation_time = re.findall(r"[0-9]*:[0-9][0-9]:[0-9][0-9]", elapsed_time.split("Elapsed time")[1])
