@@ -7,7 +7,9 @@
                 "Variations",
                 "Frequencies"
             ],
-            "parametric_tasks": 1
+            "parametric_tasks": 1,
+            "multilevel_distribution_tasks": 0,
+            "single_node": true
         },
         "path": "input\\just_winding.aedt",
         "Maxwell2DDesign1": {
