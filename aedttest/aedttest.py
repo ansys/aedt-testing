@@ -60,9 +60,13 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
         active_threads = []
 
         for project_name, project_config in tests_config.items():
-            job_cores = int(project_config["cores"])
-            job_ram = int(project_config["RAM"])
+            distribution_config = project_config["distribution"]
+            job_cores = int(distribution_config["cores"])
+            job_ram = int(distribution_config["RAM"])
 
+            # todo add allocation for tasks and cores per available machine
+            # todo add check that cores per project does not exceed total cores on machines
+            # todo flag single_node should place job on single node
             lock_execution(project_name, active_threads, job_cores, job_ram, max_cores, max_ram, max_tasks, report_data)
 
             print(f"Add project {project_name}")
@@ -71,7 +75,7 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
             shutil.copy2(project_path, temp_dir)
             tmp_proj = os.path.join(temp_dir, project_path.name)
 
-            thread_args = (version, script, script_args, tmp_proj, job_machines)
+            thread_args = (version, script, script_args, tmp_proj, job_machines, distribution_config)
             thread = threading.Thread(target=execute_aedt, daemon=True, args=thread_args)
             thread.start()
 
@@ -164,7 +168,12 @@ def resolve_project_path(project_name, project_config):
 
 
 def execute_aedt(
-    version: str, script: str = None, script_args: str = None, project_path: str = None, machines: dict = None
+    version: str,
+    script: str = None,
+    script_args: str = None,
+    project_path: str = None,
+    machines: dict = None,
+    distribution_config: dict = None,
 ) -> None:
     """
     Execute single instance of Electronics Desktop
@@ -174,6 +183,8 @@ def execute_aedt(
         script: path to the script
         script_args: arguments to the script
         project_path: path to the project
+        machines: (dict) machine specification for current job
+        distribution_config: (dict) distribution configuration for the job
 
     Returns: None
     """
@@ -186,8 +197,17 @@ def execute_aedt(
 
     if machines is not None:
         command.append("-machinelist")
-        host_list = "list=" + ",".join([f"{machine}:1:{cores}:90%" for machine, cores in machines.items()])
+        host_list = "list=" + ",".join([f"{machine}:{machine['tasks']}:{machine['cores']}:90%" for machine in machines])
         command.append(host_list)
+
+    if distribution_config.get("distribution_types", None):
+        command.append("-distributed")
+        dist_type_str = ",".join([dist_type for dist_type in distribution_config["distribution_types"]])
+        command.append(f"includetypes={dist_type_str}")
+
+        if distribution_config.get("multilevel_distribution_tasks", 0) > 0:
+            command.append("maxlevels=2")
+            command.append(f"numlevel1={distribution_config['multilevel_distribution_tasks']}")
 
     if script is not None:
         command += [

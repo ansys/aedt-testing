@@ -1,7 +1,16 @@
 {
     "just_winding": {
-        "cores": 2,
-        "RAM": 10,
+        "distribution": {
+            "cores": 2,
+            "RAM": 10,
+            "distribution_types": [
+                "Variations",
+                "Frequencies"
+            ],
+            "parametric_tasks": 1,
+            "multilevel_distribution_tasks": 0,
+            "single_node": true
+        },
         "path": "input\\just_winding.aedt",
         "Maxwell2DDesign1": {
             "Setup1": {
@@ -12,8 +21,13 @@
         }
     },
     "just_winding2": {
-        "cores": 2,
-        "RAM": 10,
+        "distribution": {
+            "cores": 2,
+            "RAM": 10,
+            "distribution_types": [
+                "default"
+            ]
+        },
         "path": "input\\just_winding2.aedt",
         "Maxwell2DDesign1": {
             "Setup1": {
@@ -24,8 +38,14 @@
         }
     },
     "just_winding3": {
-        "cores": 2,
-        "RAM": 10,
+        "distribution": {
+            "cores": 2,
+            "RAM": 10,
+            "distribution_types": [
+                "Variations",
+                "Frequencies"
+            ]
+        },
         "path": "input\\just_winding3.aedt",
         "Maxwell2DDesign1": {
             "Setup1": {
