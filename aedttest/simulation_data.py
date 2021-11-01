@@ -52,7 +52,7 @@ def read_report(txt_file):
         traces = re.split(r"\s{2,}", traces)
         report_dict["x_label"] = traces.pop(0)
         report_dict["x_data"] = []
-        try:
+        try:  # todo no variation
             float(re(r"\s{2,}", lines[0])[0])
         except AedtTestException("no variations"):
 
@@ -67,7 +67,7 @@ def read_report(txt_file):
                 report_dict[variation][trace] = []
 
             for line in lines:
-                numbers = [float(x) for x in line.strip().split()]
+                numbers = [float(x) for x in line.strip().split()]  # todo nan
                 report_dict["x_data"].append(numbers[0])
 
                 for variation, trace, value in zip(variations, traces, numbers[1:]):
