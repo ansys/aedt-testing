@@ -43,6 +43,61 @@ def get_single_setup_simu_data(oDesign, var, setup, profile_file):
     return simulation_time
 
 
+def read_report(txt_file):
+    report_dict = {}
+
+    with open(txt_file) as file:
+        lines = file.readlines()[5:]
+        traces = lines.pop(0).strip()
+        traces = re.split(r"\s{2,}", traces)
+        report_dict["x_label"] = traces.pop(0)
+        report_dict["x_data"] = []
+        try:
+            float(re(r"\s{2,}", lines[0])[0])
+        except AedtTestException("no variations"):
+
+            variations = lines.pop(0).strip()
+            variations = re.split(r"\s{2,}", variations)
+
+            for variation in variations:
+                if variation not in report_dict:
+                    report_dict[variation] = {}
+
+            for variation, trace in zip(variations, traces):
+                report_dict[variation][trace] = []
+
+            for line in lines:
+                numbers = [float(x) for x in line.strip().split()]
+                report_dict["x_data"].append(numbers[0])
+
+                for variation, trace, value in zip(variations, traces, numbers[1:]):
+                    report_dict[variation][trace].append(value)
+
+        return report_dict
+
+
+def get_report_data(oDesign, project_dir, design_dict):
+
+    oModule = oDesign.GetModule("ReportSetup")
+    report_names = oModule.GetAllReportNames()
+    report_dict = {"report": {}}
+    if not report_names:
+        raise AedtTestException("no report defined")
+
+    for report in report_names:
+        report_dict["report"][report] = {}
+
+        txt_file = os.path.join(project_dir, "{}.txt".format(report))
+        oModule.ExportToFile(report, txt_file, False)
+
+        single_report = read_report(txt_file=txt_file)
+        report_dict["report"][report].update(single_report)
+
+    design_dict.update(report_dict)
+
+    return design_dict
+
+
 def get_all_setup_data(oDesign, design, design_dict, project_dir, project_name):
     oModule = oDesign.GetModule("AnalysisSetup")
     setups = oModule.GetSetups()
@@ -59,6 +114,7 @@ def get_all_setup_data(oDesign, design, design_dict, project_dir, project_name):
             setup=setup,
             mesh_stats_file=os.path.join(project_dir, mesh_stats_file),
         )
+        design_dict[design][setup]["mesh_data"] = mesh_data
 
         simulation_time = get_single_setup_simu_data(
             oDesign=oDesign,
@@ -67,7 +123,6 @@ def get_all_setup_data(oDesign, design, design_dict, project_dir, project_name):
             profile_file=os.path.join(project_dir, profile_file),
         )
 
-        design_dict[design][setup]["mesh_data"] = mesh_data
         design_dict[design][setup]["simulation_time"] = simulation_time
 
 
@@ -79,6 +134,8 @@ def extract_data(oProject, project_dir, project_name, design_names):
         try:
             oDesign = oProject.SetActiveDesign(design)
             get_all_setup_data(oDesign, design, design_dict, project_dir, project_name)
+            get_report_data(oDesign, project_dir, design_dict)
+
         except AedtTestException as e:
             project_dict["error_exception"].append(str(e))
     return design_dict
