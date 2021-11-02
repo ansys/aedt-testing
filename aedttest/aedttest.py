@@ -163,9 +163,9 @@ def allocate_task(distribution_config):
     allocated_machines = {}
     if not distribution_config.get("single_node", False):
         tasks = distribution_config.get("parametric_tasks", 1)
-        # cores_per_task = int(distribution_config["cores"] / tasks)
+        cores_per_task = int(distribution_config["cores"] / tasks)
+        to_fill = distribution_config["cores"]
         if tasks == 1:
-            to_fill = distribution_config["cores"]
             for machine, cores in machines_dict.items():
                 if to_fill > 0:
                     allocate = cores if to_fill - cores > 0 else to_fill
@@ -174,11 +174,28 @@ def allocate_task(distribution_config):
                         "tasks": tasks,
                     }
                     to_fill -= allocate
+        else:
+            # if tasks are specified, we cannot allocate less cores than in cores_per_task
+            for machine, cores in machines_dict.items():
+                if cores < cores_per_task:
+                    continue
 
-            if to_fill > 0:
-                # not enough resources
-                print("Not enough resources to split job")
-                return False
+                tasks_can_fit = min((cores // cores_per_task, tasks))
+                tasks -= tasks_can_fit
+
+                allocated_machines[machine] = {
+                    "cores": cores_per_task * tasks_can_fit,
+                    "tasks": tasks_can_fit,
+                }
+                to_fill -= cores_per_task * tasks_can_fit
+
+                if to_fill <= 0:
+                    break
+
+        if to_fill > 0:
+            # not enough resources
+            print("Not enough resources to split job")
+            return False
 
     return allocated_machines
 
