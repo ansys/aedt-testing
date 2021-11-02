@@ -11,6 +11,7 @@ import threading
 from collections import namedtuple
 from contextlib import contextmanager
 from pathlib import Path
+from time import sleep
 
 from clusters.job_hosts import get_job_machines
 from django import setup as django_setup
@@ -19,7 +20,6 @@ from django.template.loader import get_template
 
 __authors__ = "Maksim Beliaev, Bo Yang"
 
-from time import sleep
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 MODULE_DIR = Path(__file__).resolve().parent
