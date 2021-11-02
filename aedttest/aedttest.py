@@ -13,11 +13,10 @@ from contextlib import contextmanager
 from pathlib import Path
 from time import sleep
 
+from clusters.job_hosts import get_job_machines
 from django import setup as django_setup
 from django.conf import settings as django_settings
 from django.template.loader import get_template
-
-from .clusters.job_hosts import get_job_machines
 
 __authors__ = "Maksim Beliaev, Bo Yang"
 
