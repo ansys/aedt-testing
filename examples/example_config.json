@@ -37,7 +37,7 @@
     },
     "just_winding3": {
         "distribution": {
-            "cores": 1,
+            "cores": 3,
             "distribution_types": [
                 "Variations",
                 "Frequencies"
