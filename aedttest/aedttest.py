@@ -131,33 +131,56 @@ def allocator(tests_config):
         tests_config.keys(), key=lambda x: tests_config[x]["distribution"]["cores"], reverse=True
     )
     while sorted_by_cores_desc:
+        allocated_machines = None
         for proj in sorted_by_cores_desc:
+            # first try to fit all jobs within a single node for stability, since projects are sorted
+            # by cores, this ensures that we have optimized resource utilization
             allocated_machines = allocate_task_within_node(tests_config[proj]["distribution"])
             if allocated_machines:
-                for machine in allocated_machines:
-                    machines_dict[machine] -= allocated_machines[machine]["cores"]
-
-                sorted_by_cores_desc.remove(proj)
-                yield proj, allocated_machines
                 break
         else:
-            print("Waiting for resources. Cores left per machine:")
-            for machine, cores in machines_dict.items():
-                print(f"{machine} has {cores} cores free")
+            for proj in sorted_by_cores_desc:
+                # since no more machines to fit the whole project, let's split it across machines
+                allocated_machines = allocate_task(tests_config[proj]["distribution"])
+                if allocated_machines:
+                    break
+            else:
+                print("Waiting for resources. Cores left per machine:")
+                for machine, cores in machines_dict.items():
+                    print(f"{machine} has {cores} cores free")
 
-            sleep(5)
+                sleep(5)
+
+        if allocated_machines:
+            for machine in allocated_machines:
+                machines_dict[machine] -= allocated_machines[machine]["cores"]
+
+            sorted_by_cores_desc.remove(proj)
+            yield proj, allocated_machines
 
 
 def allocate_task(distribution_config):
-    if distribution_config.get("single_node", False):
-        for machine, cores in machines_dict.items():
-            if cores - distribution_config["cores"] >= 0:
-                return {
-                    machine: {
-                        "cores": distribution_config["cores"],
-                        "tasks": distribution_config.get("parametric_tasks", 1),
+    allocated_machines = {}
+    if not distribution_config.get("single_node", False):
+        tasks = distribution_config.get("parametric_tasks", 1)
+        # cores_per_task = int(distribution_config["cores"] / tasks)
+        if tasks == 1:
+            to_fill = distribution_config["cores"]
+            for machine, cores in machines_dict.items():
+                if to_fill > 0:
+                    allocate = cores if to_fill - cores > 0 else to_fill
+                    allocated_machines[machine] = {
+                        "cores": allocate,
+                        "tasks": tasks,
                     }
-                }
+                    to_fill -= allocate
+
+            if to_fill > 0:
+                # not enough resources
+                print("Not enough resources to split job")
+                return False
+
+    return allocated_machines
 
 
 def allocate_task_within_node(distribution_config):
@@ -240,6 +263,7 @@ def task_runner(
     #     allocated_machines,
     #     distribution_config=project_config["distribution"],
     # )
+    sleep(10)
 
     # return cores back
     for machine in allocated_machines:
