@@ -6,10 +6,11 @@ import platform
 import re
 import shutil
 import subprocess
+import tempfile
 import threading
 from collections import namedtuple
+from contextlib import contextmanager
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 from clusters.job_hosts import get_job_machines
 from django import setup as django_setup
@@ -39,7 +40,9 @@ HTML_TEMPLATE = get_template("static/main.html")
 thread_tuple = namedtuple("thread", ["thread", "project_name", "cores", "ram"])
 
 
-def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file: str) -> None:
+def run(
+    version: str, max_cores: int, max_ram: int, max_tasks: int, config_file: str, out_dir: str, save_projects: bool
+) -> None:
     """
     Main function to start test sweet
     Returns: None
@@ -54,9 +57,12 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
     script = str(MODULE_DIR / "dummy.py")
     script_args = None
 
-    report_data = initialize_results(tests_config)
+    out_dir = Path(out_dir) if out_dir else CWD_DIR
+    proj_dir = Path(out_dir) if save_projects else None
 
-    with TemporaryDirectory() as temp_dir:
+    report_data = initialize_results(tests_config, out_dir=out_dir)
+
+    with mkdtemp_persistent(persistent=save_projects, dir=proj_dir) as temp_dir:
         active_threads = []
 
         for project_name, project_config in tests_config.items():
@@ -67,7 +73,9 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
             # todo add allocation for tasks and cores per available machine
             # todo add check that cores per project does not exceed total cores on machines
             # todo flag single_node should place job on single node
-            lock_execution(project_name, active_threads, job_cores, job_ram, max_cores, max_ram, max_tasks, report_data)
+            lock_execution(
+                project_name, active_threads, job_cores, job_ram, max_cores, max_ram, max_tasks, report_data, out_dir
+            )
 
             print(f"Add project {project_name}")
             project_path = resolve_project_path(project_name, project_config)
@@ -79,7 +87,7 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
             thread = threading.Thread(target=execute_aedt, daemon=True, args=thread_args)
             thread.start()
 
-            render_html(report_data, project_name, "running")
+            render_html(report_data, project_name, "running", results_path=out_dir)
 
             active_threads.append(thread_tuple(thread, project_name, job_cores, job_ram))
 
@@ -87,31 +95,33 @@ def run(version: str, max_cores: int, max_ram: int, max_tasks: int, config_file:
             sleep(2)
             for i, th in enumerate(active_threads):
                 if not th.thread.is_alive():
-                    render_html(report_data, th.project_name, "success")
+                    render_html(report_data, th.project_name, "success", results_path=out_dir)
                     active_threads.pop(i)
                     break
 
 
-def initialize_results(tests_config):
+def initialize_results(tests_config, out_dir):
     report_data = []
-    if (CWD_DIR / "results").exists():
-        shutil.rmtree(CWD_DIR / "results")
-    shutil.copytree(MODULE_DIR / "static", CWD_DIR / "results")
+    results_path = out_dir / "results"
+    if results_path.exists():
+        shutil.rmtree(results_path)
+    shutil.copytree(MODULE_DIR / "static", results_path)
+
     for project_name, project_config in tests_config.items():
         report_data.append(
             {
                 "name": project_name,
-                "cores": project_config["cores"],
-                "ram": project_config["RAM"],
+                "cores": project_config["distribution"]["cores"],
+                "ram": project_config["distribution"]["RAM"],
                 "status": "queued",
                 "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
         )
-    render_html(report_data)
+    render_html(report_data, results_path=results_path)
     return report_data
 
 
-def render_html(report_data, project_name=None, status=None):
+def render_html(report_data, project_name=None, status=None, results_path=None):
     if project_name:
         for proj in report_data:
             if proj["name"] == project_name:
@@ -120,11 +130,13 @@ def render_html(report_data, project_name=None, status=None):
                 break
 
     data = HTML_TEMPLATE.render(context={"projects": report_data})
-    with open(Path.cwd() / "results" / "main.html", "w") as file:
+    with open(results_path / "main.html", "w") as file:
         file.write(data)
 
 
-def lock_execution(project_name, active_threads, job_cores, job_ram, max_cores, max_ram, max_tasks, report_data):
+def lock_execution(
+    project_name, active_threads, job_cores, job_ram, max_cores, max_ram, max_tasks, report_data, results_path
+):
     active_cores = sum((th.cores for th in active_threads))
     active_ram = sum((th.ram for th in active_threads))
     next_active_cores = active_cores + job_cores
@@ -141,15 +153,18 @@ def lock_execution(project_name, active_threads, job_cores, job_ram, max_cores, 
             f"Limits are cores: {max_cores}, RAM: {max_ram} GB, tasks: {max_tasks}\n"
             f"Next job requires cores: {job_cores}, RAM: {job_ram} GB, tasks: 1\n"
         )
-        sleep(5)
+
         for i, th in enumerate(active_threads):
             if not th.thread.is_alive():
                 next_active_cores -= th.cores
                 next_active_ram -= th.ram
-                render_html(report_data, th.project_name, "success")
+                render_html(report_data, th.project_name, "success", results_path=results_path)
 
                 active_threads.pop(i)
                 break  # break since pop thread item
+        else:
+            # sleep only if no thread was finished
+            sleep(5)
 
 
 def resolve_project_path(project_name, project_config):
@@ -165,6 +180,18 @@ def resolve_project_path(project_name, project_config):
         raise FileExistsError(f"Project {project_path} doesn't exist")
 
     return project_path.resolve()
+
+
+def mkdtemp_persistent(*args, persistent=True, **kwargs):
+    if persistent:
+
+        @contextmanager
+        def normal_mkdtemp():
+            yield tempfile.mkdtemp(*args, **kwargs)
+
+        return normal_mkdtemp()
+    else:
+        return tempfile.TemporaryDirectory(*args, **kwargs)
 
 
 def execute_aedt(
@@ -257,30 +284,61 @@ def get_aedt_executable_path(version: str) -> str:
     return aedt_path
 
 
-if __name__ == "__main__":
+def parse_arguments():
     parser = argparse.ArgumentParser()
-    # Add long and short argument
-    parser.add_argument("--aedt-version", "-av", help="Electronics Desktop version to test, e.g. 221", required=True)
-    parser.add_argument("--config-file", "-cf", help="config file path", required=True)
-    parser.add_argument("--max-ram", "-r", help="total RAM limit [GB]", type=int)
-    parser.add_argument("--max-cores", "-c", help="total number of cores limit", type=int)
-    parser.add_argument("--max-tasks", "-t", help="total number of parallel tasks limit", type=int)
-    args = parser.parse_args()
+    parser.add_argument("--aedt-version", "-av", required=True, help="Electronics Desktop version to test, e.g. 221")
+    parser.add_argument("--config-file", "-cf", required=True, help="Project config file path")
+    parser.add_argument(
+        "--out-dir", "-o", help="Output directory for reports and project files (if --save-sim-data set)"
+    )
+    parser.add_argument(
+        "--save-sim-data", "-s", action="store_true", help="Save simulation data under output dir (--out-dir flag)"
+    )
+    parser.add_argument(
+        "--max-ram",
+        "-r",
+        type=int,
+        help="total RAM limit [GB]",
+    )
+    parser.add_argument(
+        "--max-cores",
+        "-c",
+        type=int,
+        help="total number of cores limit",
+    )
+    parser.add_argument(
+        "--max-tasks",
+        "-t",
+        type=int,
+        help="total number of parallel tasks limit",
+    )
+    cli_args = parser.parse_args()
 
-    if not (args.max_ram or args.max_cores or args.max_tasks):
+    if not (cli_args.max_ram or cli_args.max_cores or cli_args.max_tasks):
         print("No limits are specified for current job. This may lead to failure if you lack of license or resources")
 
     aedt_version_pattern = re.compile(r"\d\d\d$")
-    if not aedt_version_pattern.match(args.aedt_version):
+    if not aedt_version_pattern.match(cli_args.aedt_version):
         raise ValueError("Electronics Desktop version value is invalid. Valid format example: 221")
 
-    if not os.path.isfile(args.config_file):
-        raise ValueError(f"Configuration file does not exist: {args.config_file}")
+    if not os.path.isfile(cli_args.config_file):
+        raise ValueError(f"Configuration file does not exist: {cli_args.config_file}")
+
+    if cli_args.save_sim_data and not cli_args.out_dir:
+        raise ValueError("Saving of simulation data was requested but output directory is not provided")
+
+    return cli_args
+
+
+if __name__ == "__main__":
+    args_cli = parse_arguments()
 
     run(
-        version=args.aedt_version,
-        max_cores=args.max_cores,
-        max_ram=args.max_ram,
-        max_tasks=args.max_tasks,
-        config_file=args.config_file,
+        version=args_cli.aedt_version,
+        max_cores=args_cli.max_cores,
+        max_ram=args_cli.max_ram,
+        max_tasks=args_cli.max_tasks,
+        config_file=args_cli.config_file,
+        out_dir=args_cli.out_dir,
+        save_projects=args_cli.save_sim_data,
     )
