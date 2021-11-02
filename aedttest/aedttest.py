@@ -8,7 +8,6 @@ import shutil
 import subprocess
 import tempfile
 import threading
-from collections import namedtuple
 from contextlib import contextmanager
 from pathlib import Path
 from time import sleep
@@ -39,8 +38,6 @@ django_settings.configure(
 )
 django_setup()
 HTML_TEMPLATE = get_template("static/main.html")
-
-thread_tuple = namedtuple("thread", ["thread", "project_name", "cores"])
 
 
 class ElectronicsDesktopTester:
