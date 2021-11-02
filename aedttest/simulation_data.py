@@ -57,15 +57,15 @@ def parse_report(txt_file):
     variations = lines.pop(0).strip()
 
     if not variations:
-        variations = ["normal"]
+        variations = ["nominal"]
     else:
         variations = re.split(r"\s{2,}", variations)
 
     for line in lines:
-        numbers_in_line = [float(x) for x in line.strip().split()]  # todo nan
-        report_dict["x_data"].append(numbers_in_line[0])
+        xy_values = [float(x) for x in line.strip().split()]  # todo nan
+        report_dict["x_data"].append(xy_values[0])
 
-        for variation, trace, value in zip(variations, traces, numbers_in_line[1:]):
+        for variation, trace, value in zip(variations, traces, xy_values[1:]):
             if variation not in report_dict:
                 report_dict[variation] = {}
 
