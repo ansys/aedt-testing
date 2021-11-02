@@ -11,22 +11,22 @@ import threading
 from collections import namedtuple
 from contextlib import contextmanager
 from pathlib import Path
+from time import sleep
 
 from clusters.job_hosts import get_job_machines
 from django import setup as django_setup
-from django.conf import settings
+from django.conf import settings as django_settings
 from django.template.loader import get_template
 
 __authors__ = "Maksim Beliaev, Bo Yang"
 
-from time import sleep
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 MODULE_DIR = Path(__file__).resolve().parent
 CWD_DIR = Path.cwd()
 
 # configure Django templates
-settings.configure(
+django_settings.configure(
     TEMPLATES=[
         {
             "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -37,12 +37,10 @@ settings.configure(
 django_setup()
 HTML_TEMPLATE = get_template("static/main.html")
 
-thread_tuple = namedtuple("thread", ["thread", "project_name", "cores", "ram"])
+thread_tuple = namedtuple("thread", ["thread", "project_name", "cores"])
 
 
-def run(
-    version: str, max_cores: int, max_ram: int, max_tasks: int, config_file: str, out_dir: str, save_projects: bool
-) -> None:
+def run(version: str, max_cores: int, max_tasks: int, config_file: str, out_dir: str, save_projects: bool) -> None:
     """
     Main function to start test sweet
     Returns: None
@@ -68,14 +66,11 @@ def run(
         for project_name, project_config in tests_config.items():
             distribution_config = project_config["distribution"]
             job_cores = int(distribution_config["cores"])
-            job_ram = int(distribution_config["RAM"])
 
             # todo add allocation for tasks and cores per available machine
             # todo add check that cores per project does not exceed total cores on machines
             # todo flag single_node should place job on single node
-            lock_execution(
-                project_name, active_threads, job_cores, job_ram, max_cores, max_ram, max_tasks, report_data, out_dir
-            )
+            lock_execution(project_name, active_threads, job_cores, max_cores, max_tasks, report_data, out_dir)
 
             print(f"Add project {project_name}")
             project_path = resolve_project_path(project_name, project_config)
@@ -89,7 +84,7 @@ def run(
 
             render_html(report_data, project_name, "running", results_path=out_dir)
 
-            active_threads.append(thread_tuple(thread, project_name, job_cores, job_ram))
+            active_threads.append(thread_tuple(thread, project_name, job_cores))
 
         while active_threads:
             sleep(2)
@@ -112,7 +107,6 @@ def initialize_results(tests_config, out_dir):
             {
                 "name": project_name,
                 "cores": project_config["distribution"]["cores"],
-                "ram": project_config["distribution"]["RAM"],
                 "status": "queued",
                 "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
@@ -134,30 +128,21 @@ def render_html(report_data, project_name=None, status=None, results_path=None):
         file.write(data)
 
 
-def lock_execution(
-    project_name, active_threads, job_cores, job_ram, max_cores, max_ram, max_tasks, report_data, results_path
-):
+def lock_execution(project_name, active_threads, job_cores, max_cores, max_tasks, report_data, results_path):
     active_cores = sum((th.cores for th in active_threads))
-    active_ram = sum((th.ram for th in active_threads))
     next_active_cores = active_cores + job_cores
-    next_active_ram = active_ram + job_ram
-    while (
-        (max_cores and next_active_cores > max_cores)
-        or (max_ram and next_active_ram > max_ram)
-        or (max_tasks and len(active_threads) >= max_tasks)
-    ):
+    while (max_cores and next_active_cores > max_cores) or (max_tasks and len(active_threads) >= max_tasks):
 
         print(
             f"{project_name} is waiting for resources.\n"
-            f"Active cores: {active_cores}, RAM: {active_ram} GB, tasks: {len(active_threads)}\n"
-            f"Limits are cores: {max_cores}, RAM: {max_ram} GB, tasks: {max_tasks}\n"
-            f"Next job requires cores: {job_cores}, RAM: {job_ram} GB, tasks: 1\n"
+            f"Active cores: {active_cores}, tasks: {len(active_threads)}\n"
+            f"Limits are cores: {max_cores}, tasks: {max_tasks}\n"
+            f"Next job requires cores: {job_cores}, tasks: 1\n"
         )
 
         for i, th in enumerate(active_threads):
             if not th.thread.is_alive():
                 next_active_cores -= th.cores
-                next_active_ram -= th.ram
                 render_html(report_data, th.project_name, "success", results_path=results_path)
 
                 active_threads.pop(i)
@@ -295,12 +280,6 @@ def parse_arguments():
         "--save-sim-data", "-s", action="store_true", help="Save simulation data under output dir (--out-dir flag)"
     )
     parser.add_argument(
-        "--max-ram",
-        "-r",
-        type=int,
-        help="total RAM limit [GB]",
-    )
-    parser.add_argument(
         "--max-cores",
         "-c",
         type=int,
@@ -314,7 +293,7 @@ def parse_arguments():
     )
     cli_args = parser.parse_args()
 
-    if not (cli_args.max_ram or cli_args.max_cores or cli_args.max_tasks):
+    if not (cli_args.max_cores or cli_args.max_tasks):
         print("No limits are specified for current job. This may lead to failure if you lack of license or resources")
 
     aedt_version_pattern = re.compile(r"\d\d\d$")
@@ -336,7 +315,6 @@ if __name__ == "__main__":
     run(
         version=args_cli.aedt_version,
         max_cores=args_cli.max_cores,
-        max_ram=args_cli.max_ram,
         max_tasks=args_cli.max_tasks,
         config_file=args_cli.config_file,
         out_dir=args_cli.out_dir,

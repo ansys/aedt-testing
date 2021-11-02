@@ -2,7 +2,6 @@
     "just_winding": {
         "distribution": {
             "cores": 2,
-            "RAM": 10,
             "distribution_types": [
                 "Variations",
                 "Frequencies"
@@ -22,8 +21,7 @@
     },
     "just_winding2": {
         "distribution": {
-            "cores": 2,
-            "RAM": 10,
+            "cores": 4,
             "distribution_types": [
                 "default"
             ]
@@ -39,8 +37,7 @@
     },
     "just_winding3": {
         "distribution": {
-            "cores": 2,
-            "RAM": 10,
+            "cores": 1,
             "distribution_types": [
                 "Variations",
                 "Frequencies"
