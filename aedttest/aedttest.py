@@ -8,10 +8,12 @@ import shutil
 import subprocess
 import tempfile
 import threading
-from collections import namedtuple
 from contextlib import contextmanager
 from pathlib import Path
 from time import sleep
+from typing import Dict
+from typing import Iterable
+from typing import Optional
 
 from clusters.job_hosts import get_job_machines
 from django import setup as django_setup
@@ -37,141 +39,175 @@ django_settings.configure(
 django_setup()
 HTML_TEMPLATE = get_template("static/main.html")
 
-thread_tuple = namedtuple("thread", ["thread", "project_name", "cores"])
-machines_dict = {}
 
+class ElectronicsDesktopTester:
+    def __init__(
+        self, version: str, max_cores: int, max_tasks: int, config_file: str, out_dir: str, save_projects: bool
+    ) -> None:
+        self.version = version
+        self.max_cores = max_cores
+        self.max_tasks = max_tasks
+        self.out_dir = Path(out_dir) if out_dir else CWD_DIR
+        self.results_path = self.out_dir / "results"
+        self.proj_dir = self.out_dir if save_projects else None
 
-def run(version: str, max_cores: int, max_tasks: int, config_file: str, out_dir: str, save_projects: bool) -> None:
-    """
-    Main function to start test sweet
-    Returns: None
-    """
+        self.script = str(MODULE_DIR / "dummy.py")  # todo replace with script from Bo
+        self.script_args = None
 
-    job_machines = get_job_machines()
-    for machine in job_machines:
-        machines_dict[machine.hostname] = machine.cores
+        self.report_data = []
 
-    print(job_machines)
+        self.machines_dict = {machine.hostname: machine.cores for machine in get_job_machines()}
 
-    with open(config_file) as file:
-        tests_config = json.load(file)
+        with open(config_file) as file:
+            self.project_tests_config = json.load(file)
 
-    validate_hardware(tests_config)
+    def run(self) -> None:
+        """
+        Main function to start test sweet
+        Returns: None
+        """
+        self.validate_hardware()
+        self.initialize_results()
 
-    script = str(MODULE_DIR / "dummy.py")
-    script_args = None
+        with mkdtemp_persistent(persistent=(self.proj_dir is not None), dir=self.proj_dir) as tmp_dir:
+            for project_name, allocated_machines in self.allocator():
+                project_config = self.project_tests_config[project_name]
 
-    out_dir = Path(out_dir) if out_dir else CWD_DIR
-    proj_dir = Path(out_dir) if save_projects else None
+                print(f"Add project {project_name}")
+                project_path = resolve_project_path(project_name, project_config)
 
-    report_data = initialize_results(tests_config, out_dir=out_dir)
+                shutil.copy2(project_path, tmp_dir)
+                tmp_proj = os.path.join(tmp_dir, project_path.name)
 
-    with mkdtemp_persistent(persistent=save_projects, dir=proj_dir) as tmp_dir:
-        for project_name, allocated_machines in allocator(tests_config):
-            project_config = tests_config[project_name]
+                thread_kwargs = {
+                    "project_path": tmp_proj,
+                    "allocated_machines": allocated_machines,
+                    "project_config": project_config,
+                    "project_name": project_name,
+                }
+                thread = threading.Thread(target=self.task_runner, daemon=True, kwargs=thread_kwargs)
+                thread.start()
 
-            print(f"Add project {project_name}")
-            project_path = resolve_project_path(project_name, project_config)
+    def validate_hardware(self) -> None:
+        """
+        Validate that we have enough hardware resources to run requested configuration
+        Returns:
+            None
+        """
 
-            shutil.copy2(project_path, tmp_dir)
-            tmp_proj = os.path.join(tmp_dir, project_path.name)
+        all_cores = [val for val in self.machines_dict.values()]
+        total_available_cores = sum(all_cores)
+        max_machine_cores = max(all_cores)
+        for proj in self.project_tests_config:
+            proj_cores = self.project_tests_config[proj]["distribution"]["cores"]
+            if proj_cores > total_available_cores or (
+                self.project_tests_config[proj]["distribution"].get("single_node", False)
+                and proj_cores > max_machine_cores
+            ):
+                raise ValueError(f"{proj} requires {proj_cores} cores. Not enough resources to run")
 
-            thread_kwargs = {
-                "version": version,
-                "script": script,
-                "script_args": script_args,
-                "project_path": tmp_proj,
-                "allocated_machines": allocated_machines,
-                "project_config": project_config,
-                "out_dir": out_dir,
-                "project_name": project_name,
-                "report_data": report_data,
-            }
-            thread = threading.Thread(target=task_runner, daemon=True, kwargs=thread_kwargs)
-            thread.start()
+    def initialize_results(self) -> None:
+        if self.results_path.exists():
+            shutil.rmtree(self.results_path)
+        shutil.copytree(MODULE_DIR / "static", self.results_path)
 
+        for project_name, project_config in self.project_tests_config.items():
+            self.report_data.append(
+                {
+                    "name": project_name,
+                    "cores": project_config["distribution"]["cores"],
+                    "status": "queued",
+                    "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }
+            )
+        self.render_html(status="queued")
 
-def initialize_results(tests_config, out_dir):
-    report_data = []
-    results_path = out_dir / "results"
-    if results_path.exists():
-        shutil.rmtree(results_path)
-    shutil.copytree(MODULE_DIR / "static", results_path)
+    def render_html(self, status: str, project_name: Optional[str] = None) -> None:
+        if project_name:
+            for proj in self.report_data:
+                if proj["name"] == project_name:
+                    proj["status"] = status
+                    proj["time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    break
 
-    for project_name, project_config in tests_config.items():
-        report_data.append(
-            {
-                "name": project_name,
-                "cores": project_config["distribution"]["cores"],
-                "status": "queued",
-                "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            }
+        data = HTML_TEMPLATE.render(context={"projects": self.report_data})
+        with open(self.results_path / "main.html", "w") as file:
+            file.write(data)
+
+    def task_runner(self, project_name: str, project_path: str, project_config: dict, allocated_machines: dict) -> None:
+        self.render_html(status="running", project_name=project_name)
+
+        execute_aedt(
+            self.version,
+            self.script,
+            self.script_args,
+            project_path,
+            allocated_machines,
+            distribution_config=project_config["distribution"],
         )
-    render_html(report_data, status="queued", results_path=results_path)
-    return report_data
 
+        # return cores back
+        for machine in allocated_machines:
+            self.machines_dict[machine] += allocated_machines[machine]["cores"]
 
-def render_html(report_data, status, project_name=None, results_path=None):
-    if project_name:
-        for proj in report_data:
-            if proj["name"] == project_name:
-                proj["status"] = status
-                proj["time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                break
+        self.render_html(status="success", project_name=project_name)
 
-    data = HTML_TEMPLATE.render(context={"projects": report_data})
-    with open(results_path / "main.html", "w") as file:
-        file.write(data)
+    def allocator(self) -> Iterable:
+        """
+        Generator that yields resources. Waits until resources are available
 
+        Yields:
+            (str, dict) (project name to run, allocated machines)
+        """
 
-def allocator(tests_config):
-    """
-    Generator that yields resources. Waits until resources are available
-    Args:
-        tests_config:
-
-    Yields:
-        (str, dict) (project name to run, allocated machines)
-    """
-
-    sorted_by_cores_desc = sorted(
-        tests_config.keys(), key=lambda x: tests_config[x]["distribution"]["cores"], reverse=True
-    )
-    while sorted_by_cores_desc:
-        allocated_machines = None
-        for proj in sorted_by_cores_desc:
-            # first try to fit all jobs within a single node for stability, since projects are sorted
-            # by cores, this ensures that we have optimized resource utilization
-            allocated_machines = allocate_task_within_node(tests_config[proj]["distribution"])
-            if allocated_machines:
-                break
-        else:
-            for proj in sorted_by_cores_desc:
-                # since no more machines to fit the whole project, let's split it across machines
-                allocated_machines = allocate_task(tests_config[proj]["distribution"])
+        sorted_by_cores_desc = sorted(
+            self.project_tests_config.keys(),
+            key=lambda x: self.project_tests_config[x]["distribution"]["cores"],
+            reverse=True,
+        )
+        proj_name = ""
+        while sorted_by_cores_desc:
+            allocated_machines = None
+            for proj_name in sorted_by_cores_desc:
+                # first try to fit all jobs within a single node for stability, since projects are sorted
+                # by cores, this ensures that we have optimized resource utilization
+                allocated_machines = allocate_task_within_node(
+                    self.project_tests_config[proj_name]["distribution"], self.machines_dict
+                )
                 if allocated_machines:
                     break
             else:
-                print("Waiting for resources. Cores left per machine:")
-                for machine, cores in machines_dict.items():
-                    print(f"{machine} has {cores} cores free")
+                for proj_name in sorted_by_cores_desc:
+                    # since no more machines to fit the whole project, let's split it across machines
+                    allocated_machines = allocate_task(
+                        self.project_tests_config[proj_name]["distribution"], self.machines_dict
+                    )
+                    if allocated_machines:
+                        break
+                else:
+                    print("Waiting for resources. Cores left per machine:")
+                    for machine, cores in self.machines_dict.items():
+                        print(f"{machine} has {cores} cores free")
 
-                sleep(5)
+                    sleep(5)
 
-        if allocated_machines:
-            for machine in allocated_machines:
-                machines_dict[machine] -= allocated_machines[machine]["cores"]
+            if allocated_machines:
+                for machine in allocated_machines:
+                    self.machines_dict[machine] -= allocated_machines[machine]["cores"]
 
-            sorted_by_cores_desc.remove(proj)
-            yield proj, allocated_machines
+                sorted_by_cores_desc.remove(proj_name)
+                yield proj_name, allocated_machines
 
 
-def allocate_task(distribution_config):
+def allocate_task(
+    distribution_config: Dict[str, int], machines_dict: Dict[str, int]
+) -> Optional[Dict[str, Dict[str, int]]]:
     """
     Allocate task on one or more nodes. Will use MPI and split the job
     If multiple parametric tasks are defined, distribute uniform
     Args:
         distribution_config:
+        machines_dict:
 
     Returns:
     """
@@ -209,16 +245,19 @@ def allocate_task(distribution_config):
     if to_fill > 0:
         # not enough resources
         print("Not enough resources to split job")
-        return False
+        return
 
     return allocated_machines
 
 
-def allocate_task_within_node(distribution_config):
+def allocate_task_within_node(
+    distribution_config: Dict[str, int], machines_dict: Dict[str, int]
+) -> Dict[str, Dict[str, str]]:
     """
     Try to fit a task in a node without splitting
     Args:
         distribution_config:
+        machines_dict:
 
     Returns:
     """
@@ -233,34 +272,14 @@ def allocate_task_within_node(distribution_config):
             }
 
 
-def validate_hardware(tests_config):
-    """
-    Validate that we have enough hardware resources to run requested configuration
-    Args:
-        tests_config: (dict) project run specs
-
-    Returns:
-    """
-
-    all_cores = [val for val in machines_dict.values()]
-    total_available_cores = sum(all_cores)
-    max_machine_cores = max(all_cores)
-    for proj in tests_config:
-        proj_cores = tests_config[proj]["distribution"]["cores"]
-        if proj_cores > total_available_cores or (
-            tests_config[proj]["distribution"].get("single_node", False) and proj_cores > max_machine_cores
-        ):
-            raise ValueError(f"{proj} requires {proj_cores} cores. Not enough resources to run")
-
-
-def resolve_project_path(project_name, project_config):
+def resolve_project_path(project_name: str, project_config: Dict[str, str]) -> Path:
     if "path" in project_config:
         project_path = project_config["path"].replace("\\", "/")
         project_path = Path(project_path)
         if not project_path.is_absolute():
             project_path = CWD_DIR / project_path
     else:
-        project_path = ROOT_DIR / project_name + ".aedt"
+        project_path = ROOT_DIR / (project_name + ".aedt")
 
     if not project_path.exists():
         raise FileExistsError(f"Project {project_path} doesn't exist")
@@ -278,36 +297,6 @@ def mkdtemp_persistent(*args, persistent=True, **kwargs):
         return normal_mkdtemp()
     else:
         return tempfile.TemporaryDirectory(*args, **kwargs)
-
-
-def task_runner(
-    version: str,
-    script: str = None,
-    script_args: str = None,
-    project_path: str = None,
-    allocated_machines: dict = None,
-    project_config: dict = None,
-    out_dir=None,
-    project_name=None,
-    report_data=None,
-):
-    results_path = out_dir / "results"
-    render_html(report_data, status="running", project_name=project_name, results_path=results_path)
-
-    execute_aedt(
-        version,
-        script,
-        script_args,
-        project_path,
-        allocated_machines,
-        distribution_config=project_config["distribution"],
-    )
-
-    # return cores back
-    for machine in allocated_machines:
-        machines_dict[machine] += allocated_machines[machine]["cores"]
-
-    render_html(report_data, status="success", project_name=project_name, results_path=results_path)
 
 
 def execute_aedt(
@@ -444,8 +433,7 @@ def parse_arguments():
 
 if __name__ == "__main__":
     args_cli = parse_arguments()
-
-    run(
+    aedt_tester = ElectronicsDesktopTester(
         version=args_cli.aedt_version,
         max_cores=args_cli.max_cores,
         max_tasks=args_cli.max_tasks,
@@ -453,3 +441,4 @@ if __name__ == "__main__":
         out_dir=args_cli.out_dir,
         save_projects=args_cli.save_sim_data,
     )
+    aedt_tester.run()
