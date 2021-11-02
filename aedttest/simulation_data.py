@@ -48,32 +48,34 @@ def read_report(txt_file):
 
     with open(txt_file) as file:
         lines = file.readlines()[5:]
-        traces = lines.pop(0).strip()
-        traces = re.split(r"\s{2,}", traces)
-        report_dict["x_label"] = traces.pop(0)
-        report_dict["x_data"] = []
-        try:  # todo no variation
-            float(re(r"\s{2,}", lines[0])[0])
-        except AedtTestException("no variations"):
 
-            variations = lines.pop(0).strip()
-            variations = re.split(r"\s{2,}", variations)
+    traces = lines.pop(0).strip()
+    traces = re.split(r"\s{2,}", traces)
+    report_dict["x_label"] = traces.pop(0)
+    report_dict["x_data"] = []
+
+    if not lines[0][0]:
+        pass  # todo no variation
+    else:
+        variations = lines.pop(0).strip()
+        variations = re.split(r"\s{2,}", variations)
+
+        for line in lines:
+            numbers = [float(x) for x in line.strip().split()]  # todo nan
+            report_dict["x_data"].append(numbers[0])
 
             for variation in variations:
                 if variation not in report_dict:
                     report_dict[variation] = {}
 
-            for variation, trace in zip(variations, traces):
-                report_dict[variation][trace] = []
+            for trace, variation in zip(traces, variations):
+                if trace not in report_dict[variation]:
+                    report_dict[variation][trace] = []
 
-            for line in lines:
-                numbers = [float(x) for x in line.strip().split()]  # todo nan
-                report_dict["x_data"].append(numbers[0])
+            for variation, trace, value in zip(variations, traces, numbers[1:]):
+                report_dict[variation][trace].append(value)
 
-                for variation, trace, value in zip(variations, traces, numbers[1:]):
-                    report_dict[variation][trace].append(value)
-
-        return report_dict
+    return report_dict
 
 
 def get_report_data(oDesign, project_dir, design_dict):
