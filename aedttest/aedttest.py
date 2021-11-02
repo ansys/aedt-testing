@@ -132,15 +132,16 @@ def allocator(tests_config):
     )
     while sorted_by_cores_desc:
         for proj in sorted_by_cores_desc:
-            allocated_machines = allocate_task(tests_config[proj]["distribution"])
+            allocated_machines = allocate_task_within_node(tests_config[proj]["distribution"])
             if allocated_machines:
                 for machine in allocated_machines:
                     machines_dict[machine] -= allocated_machines[machine]["cores"]
 
                 sorted_by_cores_desc.remove(proj)
                 yield proj, allocated_machines
+                break
         else:
-            print("Waiting for allocated_machines. Cores left per machine:")
+            print("Waiting for resources. Cores left per machine:")
             for machine, cores in machines_dict.items():
                 print(f"{machine} has {cores} cores free")
 
@@ -157,6 +158,17 @@ def allocate_task(distribution_config):
                         "tasks": distribution_config.get("parametric_tasks", 1),
                     }
                 }
+
+
+def allocate_task_within_node(distribution_config):
+    for machine, cores in machines_dict.items():
+        if cores - distribution_config["cores"] >= 0:
+            return {
+                machine: {
+                    "cores": distribution_config["cores"],
+                    "tasks": distribution_config.get("parametric_tasks", 1),
+                }
+            }
 
 
 def validate_hardware(tests_config):
@@ -220,14 +232,14 @@ def task_runner(
     results_path = out_dir / "results"
     render_html(report_data, status="running", project_name=project_name, results_path=results_path)
 
-    execute_aedt(
-        version,
-        script,
-        script_args,
-        project_path,
-        allocated_machines,
-        distribution_config=project_config["distribution"],
-    )
+    # execute_aedt(
+    #     version,
+    #     script,
+    #     script_args,
+    #     project_path,
+    #     allocated_machines,
+    #     distribution_config=project_config["distribution"],
+    # )
 
     # return cores back
     for machine in allocated_machines:
