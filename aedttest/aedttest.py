@@ -70,8 +70,6 @@ def run(version: str, max_cores: int, max_tasks: int, config_file: str, out_dir:
         for project_name, allocated_machines in allocator(tests_config):
             project_config = tests_config[project_name]
 
-            # todo add allocation for tasks and cores per available machine
-
             print(f"Add project {project_name}")
             project_path = resolve_project_path(project_name, project_config)
 
@@ -127,6 +125,15 @@ def render_html(report_data, status, project_name=None, results_path=None):
 
 
 def allocator(tests_config):
+    """
+    Generator that yields resources. Waits until resources are available
+    Args:
+        tests_config:
+
+    Yields:
+        (str, dict) (project name to run, allocated machines)
+    """
+
     sorted_by_cores_desc = sorted(
         tests_config.keys(), key=lambda x: tests_config[x]["distribution"]["cores"], reverse=True
     )
@@ -160,47 +167,62 @@ def allocator(tests_config):
 
 
 def allocate_task(distribution_config):
+    """
+    Allocate task on one or more nodes. Will use MPI and split the job
+    If multiple parametric tasks are defined, distribute uniform
+    Args:
+        distribution_config:
+
+    Returns:
+    """
+
+    if distribution_config.get("single_node", False):
+        return
+
     allocated_machines = {}
-    if not distribution_config.get("single_node", False):
-        tasks = distribution_config.get("parametric_tasks", 1)
-        cores_per_task = int(distribution_config["cores"] / tasks)
-        to_fill = distribution_config["cores"]
+    tasks = distribution_config.get("parametric_tasks", 1)
+    cores_per_task = int(distribution_config["cores"] / tasks)
+    to_fill = distribution_config["cores"]
+
+    for machine, cores in machines_dict.items():
         if tasks == 1:
-            for machine, cores in machines_dict.items():
-                if to_fill > 0:
-                    allocate = cores if to_fill - cores > 0 else to_fill
-                    allocated_machines[machine] = {
-                        "cores": allocate,
-                        "tasks": tasks,
-                    }
-                    to_fill -= allocate
+            allocate_cores = cores if to_fill - cores > 0 else to_fill
+            allocate_tasks = 1
         else:
             # if tasks are specified, we cannot allocate less cores than in cores_per_task
-            for machine, cores in machines_dict.items():
-                if cores < cores_per_task:
-                    continue
+            if cores < cores_per_task:
+                continue
 
-                tasks_can_fit = min((cores // cores_per_task, tasks))
-                tasks -= tasks_can_fit
+            allocate_tasks = min((cores // cores_per_task, tasks))
+            tasks -= allocate_tasks
+            allocate_cores = cores_per_task * allocate_tasks
 
-                allocated_machines[machine] = {
-                    "cores": cores_per_task * tasks_can_fit,
-                    "tasks": tasks_can_fit,
-                }
-                to_fill -= cores_per_task * tasks_can_fit
+        allocated_machines[machine] = {
+            "cores": allocate_cores,
+            "tasks": allocate_tasks,
+        }
+        to_fill -= allocate_cores
 
-                if to_fill <= 0:
-                    break
+        if to_fill <= 0:
+            break
 
-        if to_fill > 0:
-            # not enough resources
-            print("Not enough resources to split job")
-            return False
+    if to_fill > 0:
+        # not enough resources
+        print("Not enough resources to split job")
+        return False
 
     return allocated_machines
 
 
 def allocate_task_within_node(distribution_config):
+    """
+    Try to fit a task in a node without splitting
+    Args:
+        distribution_config:
+
+    Returns:
+    """
+
     for machine, cores in machines_dict.items():
         if cores - distribution_config["cores"] >= 0:
             return {
@@ -218,8 +240,8 @@ def validate_hardware(tests_config):
         tests_config: (dict) project run specs
 
     Returns:
-
     """
+
     all_cores = [val for val in machines_dict.values()]
     total_available_cores = sum(all_cores)
     max_machine_cores = max(all_cores)
@@ -272,15 +294,14 @@ def task_runner(
     results_path = out_dir / "results"
     render_html(report_data, status="running", project_name=project_name, results_path=results_path)
 
-    # execute_aedt(
-    #     version,
-    #     script,
-    #     script_args,
-    #     project_path,
-    #     allocated_machines,
-    #     distribution_config=project_config["distribution"],
-    # )
-    sleep(10)
+    execute_aedt(
+        version,
+        script,
+        script_args,
+        project_path,
+        allocated_machines,
+        distribution_config=project_config["distribution"],
+    )
 
     # return cores back
     for machine in allocated_machines:
