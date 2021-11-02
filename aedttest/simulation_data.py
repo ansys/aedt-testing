@@ -78,7 +78,7 @@ def read_report(txt_file):
     return report_dict
 
 
-def get_report_data(oDesign, project_dir, design_dict):
+def get_report_data(oDesign, design, project_dir, design_dict):
 
     oModule = oDesign.GetModule("ReportSetup")
     report_names = oModule.GetAllReportNames()
@@ -95,7 +95,7 @@ def get_report_data(oDesign, project_dir, design_dict):
         single_report = read_report(txt_file=txt_file)
         report_dict["report"][report].update(single_report)
 
-    design_dict.update(report_dict)
+    design_dict[design].update(report_dict)
 
     return design_dict
 
@@ -127,6 +127,8 @@ def get_all_setup_data(oDesign, design, design_dict, project_dir, project_name):
 
         design_dict[design][setup]["simulation_time"] = simulation_time
 
+        return design_dict
+
 
 def extract_data(oProject, project_dir, project_name, design_names):
     design_dict = {}
@@ -135,8 +137,8 @@ def extract_data(oProject, project_dir, project_name, design_names):
         design_dict[design] = {}
         try:
             oDesign = oProject.SetActiveDesign(design)
-            get_all_setup_data(oDesign, design, design_dict, project_dir, project_name)
-            get_report_data(oDesign, project_dir, design_dict)
+            design_dict = get_all_setup_data(oDesign, design, design_dict, project_dir, project_name)
+            design_dict = get_report_data(oDesign, design, project_dir, design_dict)
 
         except AedtTestException as e:
             project_dict["error_exception"].append(str(e))
