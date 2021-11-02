@@ -89,7 +89,6 @@ def run(version: str, max_cores: int, max_tasks: int, config_file: str, out_dir:
                 "project_name": project_name,
                 "report_data": report_data,
             }
-            # thread_args = (version, script, script_args, tmp_proj, job_machines, distribution_config)
             thread = threading.Thread(target=task_runner, daemon=True, kwargs=thread_kwargs)
             thread.start()
 
@@ -178,29 +177,6 @@ def validate_hardware(tests_config):
             tests_config[proj]["distribution"].get("single_node", False) and proj_cores > max_machine_cores
         ):
             raise ValueError(f"{proj} requires {proj_cores} cores. Not enough resources to run")
-
-
-def lock_execution(project_name, active_threads, job_cores, max_cores, max_tasks, report_data, results_path):
-    active_cores = sum((th.cores for th in active_threads))
-    next_active_cores = active_cores + job_cores
-    while (max_cores and next_active_cores > max_cores) or (max_tasks and len(active_threads) >= max_tasks):
-
-        print(
-            f"{project_name} is waiting for resources.\n"
-            f"Active cores: {active_cores}, tasks: {len(active_threads)}\n"
-            f"Limits are cores: {max_cores}, tasks: {max_tasks}\n"
-            f"Next job requires cores: {job_cores}, tasks: 1\n"
-        )
-
-        for i, th in enumerate(active_threads):
-            if not th.thread.is_alive():
-                next_active_cores -= th.cores
-
-                active_threads.pop(i)
-                break  # break since pop thread item
-        else:
-            # sleep only if no thread was finished
-            sleep(5)
 
 
 def resolve_project_path(project_name, project_config):
