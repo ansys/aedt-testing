@@ -43,7 +43,7 @@ def get_single_setup_simu_data(oDesign, var, setup, profile_file):
     return simulation_time
 
 
-def read_report(txt_file):
+def parse_report(txt_file):
     report_dict = {}
 
     with open(txt_file) as file:
@@ -54,26 +54,25 @@ def read_report(txt_file):
     report_dict["x_label"] = traces.pop(0)
     report_dict["x_data"] = []
 
-    if not lines[0][0]:
-        pass  # todo no variation
+    variations = lines.pop(0).strip()
+
+    if not variations:
+        variations = ["normal"]
     else:
-        variations = lines.pop(0).strip()
         variations = re.split(r"\s{2,}", variations)
 
-        for line in lines:
-            numbers = [float(x) for x in line.strip().split()]  # todo nan
-            report_dict["x_data"].append(numbers[0])
+    for line in lines:
+        numbers_in_line = [float(x) for x in line.strip().split()]  # todo nan
+        report_dict["x_data"].append(numbers_in_line[0])
 
-            for variation in variations:
-                if variation not in report_dict:
-                    report_dict[variation] = {}
+        for variation, trace, value in zip(variations, traces, numbers_in_line[1:]):
+            if variation not in report_dict:
+                report_dict[variation] = {}
 
-            for trace, variation in zip(traces, variations):
-                if trace not in report_dict[variation]:
-                    report_dict[variation][trace] = []
+            if trace not in report_dict[variation]:
+                report_dict[variation][trace] = []
 
-            for variation, trace, value in zip(variations, traces, numbers[1:]):
-                report_dict[variation][trace].append(value)
+            report_dict[variation][trace].append(value)
 
     return report_dict
 
@@ -92,7 +91,7 @@ def get_report_data(oDesign, design, project_dir, design_dict):
         txt_file = os.path.join(project_dir, "{}.txt".format(report))
         oModule.ExportToFile(report, txt_file, False)
 
-        single_report = read_report(txt_file=txt_file)
+        single_report = parse_report(txt_file=txt_file)
         report_dict["report"][report].update(single_report)
 
     design_dict[design].update(report_dict)
