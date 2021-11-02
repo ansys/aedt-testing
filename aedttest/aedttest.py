@@ -23,7 +23,6 @@ from django.template.loader import get_template
 __authors__ = "Maksim Beliaev, Bo Yang"
 
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
 MODULE_DIR = Path(__file__).resolve().parent
 CWD_DIR = Path.cwd()
 
@@ -279,7 +278,7 @@ def resolve_project_path(project_name: str, project_config: Dict[str, str]) -> P
         if not project_path.is_absolute():
             project_path = CWD_DIR / project_path
     else:
-        project_path = ROOT_DIR / (project_name + ".aedt")
+        project_path = CWD_DIR / (project_name + ".aedt")
 
     if not project_path.exists():
         raise FileExistsError(f"Project {project_path} doesn't exist")
