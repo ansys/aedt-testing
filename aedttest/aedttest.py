@@ -23,7 +23,6 @@ from django.template.loader import get_template
 __authors__ = "Maksim Beliaev, Bo Yang"
 
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
 MODULE_DIR = Path(__file__).resolve().parent
 CWD_DIR = Path.cwd()
 
@@ -51,7 +50,7 @@ class ElectronicsDesktopTester:
         self.results_path = self.out_dir / "results"
         self.proj_dir = self.out_dir if save_projects else None
 
-        self.script = str(MODULE_DIR / "dummy.py")  # todo replace with script from Bo
+        self.script = str(MODULE_DIR / "simulation_data.py")
         self.script_args = None
 
         self.report_data = []
@@ -69,7 +68,9 @@ class ElectronicsDesktopTester:
         self.validate_hardware()
         self.initialize_results()
 
-        with mkdtemp_persistent(persistent=(self.proj_dir is not None), dir=self.proj_dir) as tmp_dir:
+        with mkdtemp_persistent(
+            persistent=(self.proj_dir is not None), dir=self.proj_dir, suffix=self.version
+        ) as tmp_dir:
             for project_name, allocated_machines in self.allocator():
                 project_config = self.project_tests_config[project_name]
 
@@ -279,7 +280,7 @@ def resolve_project_path(project_name: str, project_config: Dict[str, str]) -> P
         if not project_path.is_absolute():
             project_path = CWD_DIR / project_path
     else:
-        project_path = ROOT_DIR / (project_name + ".aedt")
+        project_path = CWD_DIR / (project_name + ".aedt")
 
     if not project_path.exists():
         raise FileExistsError(f"Project {project_path} doesn't exist")
