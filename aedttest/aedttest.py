@@ -68,8 +68,9 @@ class ElectronicsDesktopTester:
         self.validate_hardware()
         self.initialize_results()
 
+        threads_list = []
         with mkdtemp_persistent(
-            persistent=(self.proj_dir is not None), dir=self.proj_dir, suffix=self.version
+            persistent=(self.proj_dir is not None), dir=self.proj_dir, prefix=f"{self.version}_"
         ) as tmp_dir:
             for project_name, allocated_machines in self.allocator():
                 project_config = self.project_tests_config[project_name]
@@ -88,6 +89,9 @@ class ElectronicsDesktopTester:
                 }
                 thread = threading.Thread(target=self.task_runner, daemon=True, kwargs=thread_kwargs)
                 thread.start()
+                threads_list.append(thread)
+
+            [th.join() for th in threads_list]  # wait for all threads to finish before delete folder
 
     def validate_hardware(self) -> None:
         """
