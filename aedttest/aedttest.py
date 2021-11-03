@@ -50,7 +50,7 @@ class ElectronicsDesktopTester:
         self.results_path = self.out_dir / "results"
         self.proj_dir = self.out_dir if save_projects else None
 
-        self.script = str(MODULE_DIR / "dummy.py")  # todo replace with script from Bo
+        self.script = str(MODULE_DIR / "simulation_data.py")
         self.script_args = None
 
         self.report_data = []
@@ -68,7 +68,9 @@ class ElectronicsDesktopTester:
         self.validate_hardware()
         self.initialize_results()
 
-        with mkdtemp_persistent(persistent=(self.proj_dir is not None), dir=self.proj_dir) as tmp_dir:
+        with mkdtemp_persistent(
+            persistent=(self.proj_dir is not None), dir=self.proj_dir, suffix=self.version
+        ) as tmp_dir:
             for project_name, allocated_machines in self.allocator():
                 project_config = self.project_tests_config[project_name]
 
