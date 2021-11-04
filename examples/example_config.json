@@ -21,12 +21,29 @@
     },
     "expression_excitation": {
         "distribution": {
-            "cores": 4,
+            "cores": 1,
             "distribution_types": [
                 "default"
             ]
         },
         "path": "input\\expression_excitation.aedt",
+        "Maxwell2DDesign1": {
+            "Setup1": {
+                "mesh": {
+                    "total": 45
+                }
+            }
+        }
+    },
+    "01_voltage_control": {
+        "distribution": {
+            "cores": 4,
+            "distribution_types": [
+                "default"
+            ]
+        },
+        "path": "input\\01_voltage_control.aedt",
+        "dependencies": ["input\\nested\\ctrl_prog"],
         "Maxwell2DDesign1": {
             "Setup1": {
                 "mesh": {

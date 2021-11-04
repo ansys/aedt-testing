@@ -1,5 +1,11 @@
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+import pytest
+
 from aedttest.aedttest import allocate_task
 from aedttest.aedttest import allocate_task_within_node
+from aedttest.aedttest import copy_path
 from aedttest.clusters.job_hosts import get_job_machines
 
 
@@ -71,3 +77,48 @@ def test_allocate_task_within_node():
 
     allocated_machines = allocate_task_within_node({"cores": 2}, machines_dict)
     assert allocated_machines == {"host1": {"cores": 2, "tasks": 1}}
+
+
+@pytest.mark.parametrize("tmp_dir", (None, Path.cwd()))
+def test_copy_path_file(tmp_dir):
+    with TemporaryDirectory(prefix="src_", dir=tmp_dir) as src_tmp_dir:
+        if tmp_dir is not None:
+            # test relative file
+            folder_name = Path(src_tmp_dir).name
+            file = Path(folder_name) / "tmp_file.txt"
+            file_no = Path(folder_name) / "not_copy.txt"
+        else:
+            file = Path(src_tmp_dir, "tmp_file.txt")
+            file_no = Path(src_tmp_dir, "not_copy.txt")
+
+        file.touch()
+        file_no.touch()
+        with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
+            copy_path(str(file), dst_tmp_dir)
+
+            assert Path(dst_tmp_dir, file.name).is_file()
+            assert Path(dst_tmp_dir, file.name).exists()
+            assert not Path(dst_tmp_dir, file_no.name).exists()
+
+
+@pytest.mark.parametrize("tmp_dir", (None, Path.cwd()))
+def test_copy_path_folder(tmp_dir):
+    with TemporaryDirectory(prefix="src_", dir=tmp_dir) as src_tmp_dir:
+        if tmp_dir is not None:
+            # test relative folder
+            folder_name = Path(src_tmp_dir).name
+            folder = Path(folder_name) / "tmp_folder"
+        else:
+            folder = Path(src_tmp_dir, "tmp_folder")
+
+        folder.mkdir()
+        file = folder / "tmp_file.txt"
+        file2 = folder / "tmp_file2.txt"
+        file.touch()
+        file2.touch()
+        with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
+            copy_path(str(folder), dst_tmp_dir)
+
+            assert Path(dst_tmp_dir, "tmp_folder", file.name).is_file()
+            assert Path(dst_tmp_dir, "tmp_folder", file.name).exists()
+            assert Path(dst_tmp_dir, "tmp_folder", file2.name).exists()
