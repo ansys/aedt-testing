@@ -9,6 +9,8 @@ import subprocess
 import tempfile
 import threading
 from contextlib import contextmanager
+from distutils.dir_util import copy_tree
+from distutils.file_util import copy_file
 from pathlib import Path
 from time import sleep
 from typing import Dict
@@ -80,6 +82,7 @@ class ElectronicsDesktopTester:
                 logger.info(f"Add project {project_name}")
                 project_path = resolve_project_path(project_name, project_config)
 
+                copy_dependencies(project_config, tmp_dir)
                 shutil.copy2(project_path, tmp_dir)
                 tmp_proj = os.path.join(tmp_dir, project_path.name)
 
@@ -296,6 +299,42 @@ def resolve_project_path(project_name: str, project_config: Dict[str, str]) -> P
         raise FileExistsError(f"Project {project_path} doesn't exist")
 
     return project_path.resolve()
+
+
+def copy_dependencies(config_dict: dict, target: str) -> None:
+    deps = config_dict.get("dependencies", None)
+    if not deps:
+        return
+
+    if isinstance(deps, list):
+        for dep in deps:
+            dep = dep.replace("\\", "/")
+            if os.path.isfile(dep):
+                shutil.copy2()
+            else:
+                shutil.copytree(dep, target)
+    elif isinstance(deps, str):
+        deps = deps.replace("\\", "/")
+        shutil.copytree(deps, target)
+
+
+def copy_single_file(file_path, dst):
+    file_path = file_path.replace("\\", "/")
+    file_path = Path(file_path).expanduser().resolve()
+
+    if file_path.is_absolute():
+        if file_path.is_file():
+            copy_file(file_path, dst)
+        else:
+            copy_tree(file_path.parent, dst, verbose=0)
+    else:
+        if len(file_path.parents) > 1:
+            shutil.copytree(file_path.parents[1], dst)
+        else:
+            if file_path.is_file():
+                shutil.copy2(file_path, dst)
+            else:
+                shutil.copytree(file_path, dst)
 
 
 def mkdtemp_persistent(*args, persistent=True, **kwargs):

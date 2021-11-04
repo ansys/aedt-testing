@@ -34,5 +34,22 @@
                 }
             }
         }
+    },
+    "01_voltage_control": {
+        "distribution": {
+            "cores": 4,
+            "distribution_types": [
+                "default"
+            ]
+        },
+        "path": "input\\01_voltage_control.aedt",
+        "dependencies": "input\\01_voltage_control.py",
+        "Maxwell2DDesign1": {
+            "Setup1": {
+                "mesh": {
+                    "total": 45
+                }
+            }
+        }
     }
 }
