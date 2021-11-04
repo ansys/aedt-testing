@@ -25,10 +25,7 @@ def get_single_setup_mesh_data(oDesign, var, setup, mesh_stats_file):
     return mesh_data
 
 
-def get_single_setup_simu_data(oDesign, var, setup, profile_file):
-    oDesign.Analyze(setup)
-    oDesign.ExportProfile(setup, var, profile_file)
-
+def parse_profile_file(profile_file, design, setup):
     elapsed_time = ""
     with open(profile_file) as file:
         for line in file:
@@ -36,11 +33,21 @@ def get_single_setup_simu_data(oDesign, var, setup, profile_file):
                 elapsed_time = line
 
     if not elapsed_time:
-        raise AedtTestException("no elapsed time in file")
+        project_dict["error_exception"].append(("{} {} no elapsed time in file".format(design, setup)))
+        return None
+    else:
+        simulation_time = re.findall(r"[0-9]*:[0-9][0-9]:[0-9][0-9]", elapsed_time)[2]
+        return simulation_time
 
-    simulation_time = re.findall(r"[0-9]*:[0-9][0-9]:[0-9][0-9]", elapsed_time)[2]
 
-    return simulation_time
+def get_single_setup_simu_data(oDesign, var, setup, profile_file):
+
+    try:
+        oDesign.Analyze(setup)
+    except Exception:
+        raise AedtTestException("Failed to analyze {}".format(setup))
+
+    oDesign.ExportProfile(setup, var, profile_file)
 
 
 def parse_report(txt_file):
