@@ -396,7 +396,7 @@ def get_aedt_executable_path(version: str) -> str:
     return aedt_path
 
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--aedt-version", "-av", required=True, help="Electronics Desktop version to test, e.g. 221")
     parser.add_argument("--config-file", "-cf", required=True, help="Project config file path")
