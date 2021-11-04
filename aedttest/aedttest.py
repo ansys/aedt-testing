@@ -19,9 +19,10 @@ from clusters.job_hosts import get_job_machines
 from django import setup as django_setup
 from django.conf import settings as django_settings
 from django.template.loader import get_template
+from logger import logger
+from logger import set_logger
 
 __authors__ = "Maksim Beliaev, Bo Yang"
-
 
 MODULE_DIR = Path(__file__).resolve().parent
 CWD_DIR = Path.cwd()
@@ -43,6 +44,7 @@ class ElectronicsDesktopTester:
     def __init__(
         self, version: str, max_cores: int, max_tasks: int, config_file: str, out_dir: str, save_projects: bool
     ) -> None:
+        logger.info(f"Initialize new Electronics Desktop Test run. Configuration file is {config_file}")
         self.version = version
         self.max_cores = max_cores
         self.max_tasks = max_tasks
@@ -68,13 +70,14 @@ class ElectronicsDesktopTester:
         self.validate_hardware()
         self.initialize_results()
 
+        threads_list = []
         with mkdtemp_persistent(
-            persistent=(self.proj_dir is not None), dir=self.proj_dir, suffix=self.version
+            persistent=(self.proj_dir is not None), dir=self.proj_dir, prefix=f"{self.version}_"
         ) as tmp_dir:
             for project_name, allocated_machines in self.allocator():
                 project_config = self.project_tests_config[project_name]
 
-                print(f"Add project {project_name}")
+                logger.info(f"Add project {project_name}")
                 project_path = resolve_project_path(project_name, project_config)
 
                 shutil.copy2(project_path, tmp_dir)
@@ -88,6 +91,12 @@ class ElectronicsDesktopTester:
                 }
                 thread = threading.Thread(target=self.task_runner, daemon=True, kwargs=thread_kwargs)
                 thread.start()
+                threads_list.append(thread)
+
+            [th.join() for th in threads_list]  # wait for all threads to finish before delete folder
+
+            msg = f"Job is completed.\nYou can view output by opening in web browser: {self.results_path / 'main.html'}"
+            logger.info(msg)
 
     def validate_hardware(self) -> None:
         """
@@ -186,10 +195,11 @@ class ElectronicsDesktopTester:
                     if allocated_machines:
                         break
                 else:
-                    print("Waiting for resources. Cores left per machine:")
+                    msg = "Waiting for resources. Cores left per machine:\n"
                     for machine, cores in self.machines_dict.items():
-                        print(f"{machine} has {cores} cores free")
+                        msg += f"{machine} has {cores} cores free\n"
 
+                    logger.info(msg)
                     sleep(5)
 
             if allocated_machines:
@@ -245,7 +255,7 @@ def allocate_task(
 
     if to_fill > 0:
         # not enough resources
-        print("Not enough resources to split job")
+        logger.debug("Not enough resources to split job")
         return
 
     return allocated_machines
@@ -360,7 +370,7 @@ def execute_aedt(
     if project_path is not None:
         command.append(project_path)
 
-    print(f"Execute {subprocess.list2cmdline(command)}")
+    logger.debug(f"Execute {subprocess.list2cmdline(command)}")
     subprocess.call(command)
 
 
@@ -392,7 +402,7 @@ def get_aedt_executable_path(version: str) -> str:
     return aedt_path
 
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--aedt-version", "-av", required=True, help="Electronics Desktop version to test, e.g. 221")
     parser.add_argument("--config-file", "-cf", required=True, help="Project config file path")
@@ -417,7 +427,9 @@ def parse_arguments():
     cli_args = parser.parse_args()
 
     if not (cli_args.max_cores or cli_args.max_tasks):
-        print("No limits are specified for current job. This may lead to failure if you lack of license or resources")
+        logger.warning(
+            "No limits are specified for current job. This may lead to failure if you lack of license or resources"
+        )
 
     aedt_version_pattern = re.compile(r"\d\d\d$")
     if not aedt_version_pattern.match(cli_args.aedt_version):
@@ -433,6 +445,7 @@ def parse_arguments():
 
 
 if __name__ == "__main__":
+    set_logger(logging_file=CWD_DIR / "aedt_test_framework.log")
     args_cli = parse_arguments()
     aedt_tester = ElectronicsDesktopTester(
         version=args_cli.aedt_version,
