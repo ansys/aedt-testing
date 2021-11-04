@@ -4,12 +4,12 @@ import json
 import os
 import platform
 import re
-import shutil
 import subprocess
 import tempfile
 import threading
 from contextlib import contextmanager
 from distutils.dir_util import copy_tree
+from distutils.dir_util import remove_tree
 from distutils.file_util import copy_file
 from pathlib import Path
 from time import sleep
@@ -80,14 +80,11 @@ class ElectronicsDesktopTester:
                 project_config = self.project_tests_config[project_name]
 
                 logger.info(f"Add project {project_name}")
-                project_path = resolve_project_path(project_name, project_config)
-
                 copy_dependencies(project_config, tmp_dir)
-                shutil.copy2(project_path, tmp_dir)
-                tmp_proj = os.path.join(tmp_dir, project_path.name)
+                project_path = copy_proj(project_name, project_config, tmp_dir)
 
                 thread_kwargs = {
-                    "project_path": tmp_proj,
+                    "project_path": project_path,
                     "allocated_machines": allocated_machines,
                     "project_config": project_config,
                     "project_name": project_name,
@@ -121,8 +118,8 @@ class ElectronicsDesktopTester:
 
     def initialize_results(self) -> None:
         if self.results_path.exists():
-            shutil.rmtree(self.results_path)
-        shutil.copytree(MODULE_DIR / "static", self.results_path)
+            remove_tree(str(self.results_path))
+        copy_tree(str(MODULE_DIR / "static"), str(self.results_path))
 
         for project_name, project_config in self.project_tests_config.items():
             self.report_data.append(
@@ -286,55 +283,38 @@ def allocate_task_within_node(
             }
 
 
-def resolve_project_path(project_name: str, project_config: Dict[str, str]) -> Path:
-    if "path" in project_config:
-        project_path = project_config["path"].replace("\\", "/")
-        project_path = Path(project_path)
-        if not project_path.is_absolute():
-            project_path = CWD_DIR / project_path
-    else:
-        project_path = CWD_DIR / (project_name + ".aedt")
-
-    if not project_path.exists():
-        raise FileExistsError(f"Project {project_path} doesn't exist")
-
-    return project_path.resolve()
+def copy_proj(project_name, project_config, dst):
+    src = project_config.get("path", project_name + ".aedt")
+    return copy_path(src, dst)
 
 
-def copy_dependencies(config_dict: dict, target: str) -> None:
+def copy_dependencies(config_dict: dict, dst: str) -> None:
     deps = config_dict.get("dependencies", None)
-    if not deps:
-        return
 
     if isinstance(deps, list):
         for dep in deps:
-            dep = dep.replace("\\", "/")
-            if os.path.isfile(dep):
-                shutil.copy2()
-            else:
-                shutil.copytree(dep, target)
+            copy_path(dep, dst)
     elif isinstance(deps, str):
-        deps = deps.replace("\\", "/")
-        shutil.copytree(deps, target)
+        copy_path(deps, dst)
 
 
-def copy_single_file(file_path, dst):
-    file_path = file_path.replace("\\", "/")
-    file_path = Path(file_path).expanduser().resolve()
-
-    if file_path.is_absolute():
-        if file_path.is_file():
-            copy_file(file_path, dst)
-        else:
-            copy_tree(file_path.parent, dst, verbose=0)
+def copy_path(src, dst):
+    if len(Path(src).parents) > 1:
+        unpack_dst = str(Path(dst) / Path(src).parents[0])
     else:
-        if len(file_path.parents) > 1:
-            shutil.copytree(file_path.parents[1], dst)
-        else:
-            if file_path.is_file():
-                shutil.copy2(file_path, dst)
-            else:
-                shutil.copytree(file_path, dst)
+        unpack_dst = str(Path(dst))
+
+    src = src.replace("\\", "/")
+    src = Path(src).expanduser().resolve()
+
+    if not src.exists():
+        raise FileExistsError(f"File {src} doesn't exist")
+
+    if src.is_file():
+        file_path = copy_file(str(src), unpack_dst)
+        return file_path[0]
+    else:
+        return copy_tree(str(src.parent), unpack_dst)
 
 
 def mkdtemp_persistent(*args, persistent=True, **kwargs):
