@@ -8,8 +8,7 @@
 
     <title>project name</title>
     <!-- Styles -->
-    <link href="css/lib/bootstrap.min.css" rel="stylesheet">
-    
+    <link href="css/css-lib/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
   </head>
 
@@ -22,7 +21,7 @@
             <div class="col-lg-8 p-r-0 title-margin-right">
               <div class="page-header">
                 <div class="page-title">
-                  <h1>project name</h1>
+                  <h1>{{ project_name }}</h1>
                 </div>
               </div>
             </div>
@@ -31,7 +30,7 @@
               <div class="page-header">
                 <div class="page-title">
                   <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="main.html">Dashboard</a></li>
                     <li class="breadcrumb-item active">Reports</li>
                   </ol>
                 </div>
@@ -41,138 +40,26 @@
           </div>
           <!-- /# row -->
           <section id="main-content">
+            {% for plot in plots %}
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="card">
+                    <div class="card-title">
+                      <h4> {{ plot.name}} </h4>
+                    </div>
+                    <div>
+                      <canvas id="sales-chart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
             <div class="row">
-              <div class="col-lg-6">
-                <div class="card">
-                  <div class="card-title">
-                    <h4>Yearly Sales </h4>
-
-                  </div>
-                  <div class="sales-chart">
-                    <canvas id="sales-chart"></canvas>
-                  </div>
-                </div>
-              </div>
-              <!-- /# column -->
-              <div class="col-lg-6">
-                <div class="card">
-                  <div class="card-title">
-                    <h4>Team Total Completed </h4>
-
-                  </div>
-                  <div class="sales-chart">
-                    <canvas id="team-chart"></canvas>
-                  </div>
-                </div>
-                <!-- /# card -->
-              </div>
-              <!-- /# column -->
-            </div>
-            <!-- /# row -->
-            <div class="row">
-              <!-- Bar Chart -->
-              <div class="col-sm-12 col-md-6">
-                <div class="panel">
-                  <div class="panel-heading">
-                    <div class="panel-title">
-                      <h4>Bar chart</h4>
+                <div class="col-lg-12">
+                    <div class="footer">
+                        <p>2021 &#xa9 Ansys Inc - <a href="https://www.ansys.com/">ansys.com</a></p>
                     </div>
-                  </div>
-                  <div class="panel-body">
-                    <canvas id="barChart"></canvas>
-                  </div>
                 </div>
-              </div>
-              <!-- Radar Chart -->
-              <div class="col-sm-12 col-md-6">
-                <div class="panel">
-                  <div class="panel-heading">
-                    <div class="panel-title">
-                      <h4>Rader chart</h4>
-                    </div>
-                  </div>
-                  <div class="panel-body">
-                    <canvas id="radarChart"></canvas>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <!-- Line Chart -->
-              <div class="col-sm-12 col-md-8">
-                <div class="panel panel-bd lobidrag">
-                  <div class="panel-heading">
-                    <div class="panel-title">
-                      <h4>Line chart</h4>
-                    </div>
-                  </div>
-                  <div class="panel-body">
-                    <canvas id="lineChart"></canvas>
-                  </div>
-                </div>
-              </div>
-              <!-- Pie Chart -->
-              <div class="col-sm-6 col-md-4">
-                <div class="panel">
-                  <div class="panel-heading">
-                    <div class="panel-title">
-                      <h4>Pie chart</h4>
-                    </div>
-                  </div>
-                  <div class="panel-body">
-                    <canvas id="pieChart"></canvas>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <!-- Doughnut Chart -->
-              <div class="col-sm-6 col-md-4">
-                <div class="panel">
-                  <div class="panel-heading">
-                    <div class="panel-title">
-                      <h4>Doughut chart</h4>
-                    </div>
-                  </div>
-                  <div class="panel-body">
-                    <canvas id="doughutChart"></canvas>
-                  </div>
-                </div>
-              </div>
-              <!-- Polar Chart -->
-              <div class="col-sm-6 col-md-4">
-                <div class="panel">
-                  <div class="panel-heading">
-                    <div class="panel-title">
-                      <h4>Polar chart</h4>
-                    </div>
-                  </div>
-                  <div class="panel-body">
-                    <canvas id="polarChart"></canvas>
-                  </div>
-                </div>
-              </div>
-              <!-- Single Bar Chart -->
-              <div class="col-sm-6 col-md-4">
-                <div class="panel">
-                  <div class="panel-heading">
-                    <div class="panel-title">
-                      <h4>Single Bar Chart</h4>
-                    </div>
-                  </div>
-                  <div class="panel-body">
-                    <canvas id="singelBarChart"></canvas>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="footer">
-                  <p>2018 © Admin Board. - <a href="#">example.com</a></p>
-                </div>
-              </div>
             </div>
           </section>
         </div>
@@ -181,14 +68,14 @@
 
 
     <!-- jquery vendor -->
-    <script src="js/lib/jquery.min.js"></script>
-    <script src="js/lib/jquery.nanoscroller.min.js"></script>
+    <script src="js/js-lib/jquery.min.js"></script>
+    <script src="js/js-lib/jquery.nanoscroller.min.js"></script>
     <!-- nano scroller -->
-    <script src="js/lib/bootstrap.min.js"></script>
+    <script src="js/js-lib/bootstrap.min.js"></script>
 
-    <script src="js/lib/chart-js/Chart.bundle.js"></script>
-    <script src="js/lib/chart-js/chartjs-init.js"></script>
-    <script src="js/lib/bootstrap.min.js"></script><script src="js/scripts.js"></script>
+    <script src="js/js-lib/chart-js/Chart.bundle.js"></script>
+    <script src="js/js-lib/chart-js/chartjs-init.js"></script>
+    <script src="js/js-lib/bootstrap.min.js"></script><script src="js/scripts.js"></script>
   </body>
 
 </html>
