@@ -72,8 +72,6 @@ class ElectronicsDesktopTester:
         """
         self.validate_hardware()
         self.initialize_results()
-        self.render_project_html()
-        return
 
         threads_list = []
         with mkdtemp_persistent(
@@ -198,6 +196,7 @@ class ElectronicsDesktopTester:
         for machine in allocated_machines:
             self.machines_dict[machine] += allocated_machines[machine]["cores"]
 
+        self.render_project_html(project_name=project_name)
         self.render_html(status="success", project_name=project_name)
 
     def allocator(self) -> Iterable:
