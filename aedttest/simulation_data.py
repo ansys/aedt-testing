@@ -1,8 +1,24 @@
+import argparse
 import json
 import os
 import re
+import shlex
+import sys
 
-from pyaedt.desktop import Desktop
+
+def parse_args():
+    arg_string = ScriptArgument  # noqa: F821
+    parser = argparse.ArgumentParser(description="Argparse Test script")
+    parser.add_argument("--path1")
+    args = parser.parse_args(shlex.split(arg_string))
+    return args.path1
+
+
+pyaedt_path = parse_args()
+sys.path.append(pyaedt_path)
+
+from pyaedt import get_pyaedt_app  # noqa: E402
+from pyaedt.desktop import Desktop  # noqa: E402
 
 project_dict = {"error_exception": []}
 
@@ -11,18 +27,19 @@ class AedtTestException(Exception):
     """Base class for exceptions in this module."""
 
 
-def get_single_setup_mesh_data(oDesign, var, setup, mesh_stats_file):
-    oDesign.GenerateMesh(setup)
-    oDesign.ExportMeshStats(setup, var, mesh_stats_file)
+def parse_mesh_stats(mesh_stats_file, design, setup):
 
     with open(mesh_stats_file) as fid:
         lines = fid.readlines()
 
     line = [x for x in lines if "Total number of mesh elements" in x]
 
-    mesh_data = int(line[0].strip().split(":")[1])
-
-    return mesh_data
+    if line:
+        mesh_data = int(line[0].strip().split(":")[1])
+        return mesh_data
+    else:
+        project_dict["error_exception"].append("{} {} has no total number of mesh".format(design, setup))
+        return None
 
 
 def parse_profile_file(profile_file, design, setup):
@@ -38,16 +55,6 @@ def parse_profile_file(profile_file, design, setup):
     else:
         simulation_time = re.findall(r"[0-9]*:[0-9][0-9]:[0-9][0-9]", elapsed_time)[2]
         return simulation_time
-
-
-def get_single_setup_simu_data(oDesign, var, setup, profile_file):
-
-    try:
-        oDesign.Analyze(setup)
-    except Exception:
-        raise AedtTestException("Failed to analyze {}".format(setup))
-
-    oDesign.ExportProfile(setup, var, profile_file)
 
 
 def parse_report(txt_file):
@@ -84,88 +91,98 @@ def parse_report(txt_file):
     return report_dict
 
 
-def get_report_data(oDesign, design, project_dir, design_dict):
-
-    oModule = oDesign.GetModule("ReportSetup")
-    report_names = oModule.GetAllReportNames()
-    report_dict = {"report": {}}
-    if not report_names:
-        raise AedtTestException("no report defined")
-
-    for report in report_names:
-        report_dict["report"][report] = {}
-
-        txt_file = os.path.join(project_dir, "{}.txt".format(report))
-        oModule.ExportToFile(report, txt_file, False)
-
-        single_report = parse_report(txt_file=txt_file)
-        report_dict["report"][report].update(single_report)
-
-    design_dict[design].update(report_dict)
-
-    return design_dict
-
-
-def get_all_setup_data(oDesign, design, design_dict, project_dir, project_name):
-    oModule = oDesign.GetModule("AnalysisSetup")
-    setups = oModule.GetSetups()
-
-    if not setups:
-        raise AedtTestException("Design {} has no setup".format(design))
-    for setup in setups:
-        design_dict[design][setup] = {}
-        mesh_stats_file = r"{}_{}_{}.mstat".format(project_name, design, setup)
-        profile_file = r"{}_{}_{}.prof".format(project_name, design, setup)
-        mesh_data = get_single_setup_mesh_data(
-            oDesign=oDesign,
-            var="",
-            setup=setup,
-            mesh_stats_file=os.path.join(project_dir, mesh_stats_file),
-        )
-        design_dict[design][setup]["mesh_data"] = mesh_data
-
-        simulation_time = get_single_setup_simu_data(
-            oDesign=oDesign,
-            var="",
-            setup=setup,
-            profile_file=os.path.join(project_dir, profile_file),
-        )
-
-        design_dict[design][setup]["simulation_time"] = simulation_time
-
-        return design_dict
+# def get_report_data(oDesign, design, project_dir, design_dict):
+#
+#     oModule = oDesign.GetModule("ReportSetup")
+#     report_names = oModule.GetAllReportNames()
+#     report_dict = {"report": {}}
+#     if not report_names:
+#         raise AedtTestException("no report defined")
+#
+#     for report in report_names:
+#         report_dict["report"][report] = {}
+#
+#         txt_file = os.path.join(project_dir, "{}.txt".format(report))
+#         oModule.ExportToFile(report, txt_file, False)
+#
+#         single_report = parse_report(txt_file=txt_file)
+#         report_dict["report"][report].update(single_report)
+#
+#     design_dict[design].update(report_dict)
+#
+#     return design_dict
 
 
-def extract_data(oProject, project_dir, project_name, design_names):
+def extract_data(project_dir, project_name, design_names):
     design_dict = {}
 
     for design in design_names:
         design_dict[design] = {}
-        try:
-            oDesign = oProject.SetActiveDesign(design)
-            design_dict = get_all_setup_data(oDesign, design, design_dict, project_dir, project_name)
-            design_dict = get_report_data(oDesign, design, project_dir, design_dict)
+        app = get_pyaedt_app(design_name=design)
 
-        except AedtTestException as e:
-            project_dict["error_exception"].append(str(e))
+        design_dict = extract_setup_data(app, design, design_dict, project_dir, project_name)
+
+        report_names = app.post.all_report_names
+
+        if not report_names:
+            project_dict["error_exception"].append("{} has no report".format(design))
+            design_dict[design]["report"] = {}
+        else:
+            pass
+            # for report in report_names:
+            #     app.post.export_report_to_txt(project_dir=project_dir, plot_name="{}.txt".format(report))
+
+    return design_dict
+
+
+def extract_setup_data(app, design, design_dict, project_dir, project_name):
+    """
+    extract mesh data and simulation time from setups
+    Args:
+        app:
+        design:
+        design_dict:
+        project_dir:
+        project_name:
+
+    Returns:
+
+    """
+    setups_names = app.get_setups()
+    if not setups_names:
+        project_dict["error_exception"].append("{} has no setups".format(design))
+    else:
+        for setup in setups_names:
+            design_dict[design][setup] = {}
+
+            success = app.analyze_setup(name=setup)
+
+            if not success:
+                project_dict["error_exception"].append("{} {} Analyze failed".format(design, setup))
+                continue
+
+            mesh_stats_file = os.path.join(project_dir, "{}_{}_{}.mstat".format(project_name, design, setup))
+            app.export_mesh_stats(setup_name=setup, variation_string="", mesh_path=mesh_stats_file)
+            mesh_data = parse_mesh_stats(mesh_stats_file=mesh_stats_file, design=design, setup=setup)
+            design_dict[design][setup]["mesh_data"] = mesh_data
+
+            profile_file = os.path.join(project_dir, "{}_{}_{}.prof".format(project_name, design, setup))
+            app.export_profile(setup_name=setup, variation_string="", file_path=profile_file)
+            simulation_time = parse_profile_file(profile_file=profile_file, design=design, setup=setup)
+            design_dict[design][setup]["simulation_time"] = simulation_time
+
     return design_dict
 
 
 def main():
-    desktop = Desktop("2021.1", False, False)
+    desktop = Desktop(non_graphical=False, new_desktop_session=False)
     project_name = desktop.project_list().pop()
+    project_dir = desktop.project_path(project_name=project_name)
     design_names = desktop.design_list()
 
-    oDesktop = desktop._main.oDesktop
-    oProject = oDesktop.GetActiveProject()
-    project_dir = oProject.GetPath()
-
     if design_names:
-        try:
-            design_dict = extract_data(oProject, project_dir, project_name, design_names)
-            project_dict.update(design_dict)
-        except AedtTestException as e:
-            project_dict["error_exception"].append(str(e))
+        design_dict = extract_data(project_dir, project_name, design_names)
+        project_dict.update(design_dict)
     else:
         project_dict["error_exception"].append("Project has no design")
 
