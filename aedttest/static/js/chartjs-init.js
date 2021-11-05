@@ -1,18 +1,13 @@
-( function ( $ ) {
-	"use strict";
-
-	//Sales chart
-	var ctx = document.getElementById( "sales-chart" );
-	ctx.height = 150;
-	var myChart = new Chart( ctx, {
+function create_line_chart(ctx, x_axis, version_1, y_axis_1, version_2, y_axis_2) {
+	new Chart(ctx, {
 		type: 'line',
 		data: {
-			labels: [ "2010", "2011", "2012", "2013", "2014", "2015", "2016" ],
+			labels: x_axis,
 			type: 'line',
 			defaultFontFamily: 'Montserrat',
-			datasets: [ {
-				label: "Foods",
-				data: [ 0, 30, 10, 120, 50, 63, 10 ],
+			datasets: [{
+				label: version_1,
+				data: y_axis_1,
 				backgroundColor: 'transparent',
 				borderColor: 'rgba(220,53,69,0.75)',
 				borderWidth: 3,
@@ -20,9 +15,9 @@
 				pointRadius: 5,
 				pointBorderColor: 'transparent',
 				pointBackgroundColor: 'rgba(220,53,69,0.75)',
-                    }, {
-				label: "Electronics",
-				data: [ 0, 50, 40, 80, 40, 79, 120 ],
+			}, {
+				label: version_2,
+				data: y_axis_2,
 				backgroundColor: 'transparent',
 				borderColor: 'rgba(40,167,69,0.75)',
 				borderWidth: 3,
@@ -30,7 +25,7 @@
 				pointRadius: 5,
 				pointBorderColor: 'transparent',
 				pointBackgroundColor: 'rgba(40,167,69,0.75)',
-                    } ]
+			}]
 		},
 		options: {
 			responsive: true,
@@ -54,7 +49,7 @@
 				},
 			},
 			scales: {
-				xAxes: [ {
+				xAxes: [{
 					display: true,
 					gridLines: {
 						display: false,
@@ -64,8 +59,8 @@
 						display: false,
 						labelString: 'Month'
 					}
-                        } ],
-				yAxes: [ {
+				}],
+				yAxes: [{
 					display: true,
 					gridLines: {
 						display: false,
@@ -75,12 +70,12 @@
 						display: true,
 						labelString: 'Value'
 					}
-                        } ]
+				}]
 			},
 			title: {
 				display: false,
 				text: 'Normal Legend'
 			}
 		}
-	} );
-} )( jQuery );
+	});
+}
