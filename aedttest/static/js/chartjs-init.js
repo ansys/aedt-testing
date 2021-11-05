@@ -1,13 +1,13 @@
-function create_line_chart(ctx, x_axis, version_1, y_axis_1, version_2, y_axis_2) {
+function create_line_chart(ctx, x_data, x_label, version_ref, y_data_ref, version_now, y_data_now) {
 	new Chart(ctx, {
 		type: 'line',
 		data: {
-			labels: x_axis,
+			labels: x_data,
 			type: 'line',
 			defaultFontFamily: 'Montserrat',
 			datasets: [{
-				label: version_1,
-				data: y_axis_1,
+				label: version_ref,
+				data: y_data_ref,
 				backgroundColor: 'transparent',
 				borderColor: 'rgba(220,53,69,0.75)',
 				borderWidth: 3,
@@ -16,8 +16,8 @@ function create_line_chart(ctx, x_axis, version_1, y_axis_1, version_2, y_axis_2
 				pointBorderColor: 'transparent',
 				pointBackgroundColor: 'rgba(220,53,69,0.75)',
 			}, {
-				label: version_2,
-				data: y_axis_2,
+				label: version_now,
+				data: y_data_now,
 				backgroundColor: 'transparent',
 				borderColor: 'rgba(40,167,69,0.75)',
 				borderWidth: 3,
@@ -49,29 +49,21 @@ function create_line_chart(ctx, x_axis, version_1, y_axis_1, version_2, y_axis_2
 				},
 			},
 			scales: {
-				xAxes: [{
-					display: true,
-					gridLines: {
-						display: false,
-						drawBorder: false
-					},
-					scaleLabel: {
-						display: false,
-						labelString: 'Month'
-					}
-				}],
-				yAxes: [{
-					display: true,
-					gridLines: {
-						display: false,
-						drawBorder: false
-					},
-					scaleLabel: {
-						display: true,
-						labelString: 'Value'
-					}
-				}]
-			},
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: x_label,
+                    },
+                },
+                y: {
+                    display: false,
+                    title: {
+                        display: true,
+                        text: "Value",
+                    },
+                },
+            },
 			title: {
 				display: false,
 				text: 'Normal Legend'

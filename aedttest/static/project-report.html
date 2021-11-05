@@ -84,11 +84,13 @@
           {% for plot in plots %}
             var ctx = document.getElementById( "{{ plot.id }}" );
             ctx.height = 150;
-            create_line_chart(ctx,  {{ plot.x_axis }},
-                {{ plot.version_1 }},
-                {{ plot.y_axis_1 }},
-                {{ plot.version_2 }},
-                {{ plot.y_axis_2 }},
+            create_line_chart(ctx,
+                    {{ plot.x_axis }},
+                    {{ plot.x_label|safe }},
+                    {{ plot.version_1 }},
+                    {{ plot.y_axis_1 }},
+                    {{ plot.version_2 }},
+                    {{ plot.y_axis_2 }},
             );
           {% endfor %}
       } )( jQuery );
