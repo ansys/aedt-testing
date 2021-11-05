@@ -45,10 +45,10 @@
                 <div class="col-lg-6">
                   <div class="card">
                     <div class="card-title">
-                      <h4> {{ plot.name}} </h4>
+                      <h4> {{ plot.name }} </h4>
                     </div>
                     <div>
-                      <canvas id="sales-chart"></canvas>
+                      <canvas id="{{ plot.id }}"></canvas>
                     </div>
                   </div>
                 </div>
@@ -76,6 +76,23 @@
     <script src="js/js-lib/Chart.bundle.js"></script>
     <script src="js/chartjs-init.js"></script>
     <script src="js/js-lib/bootstrap.min.js"></script><script src="js/scripts.js"></script>
+
+    <script>
+      ( function ( $ ) {
+          "use strict";
+
+          {% for plot in plots %}
+            var ctx = document.getElementById( "{{ plot.id }}" );
+            ctx.height = 150;
+            create_line_chart(ctx,  {{ plot.x_axis }},
+                {{ plot.version_1 }},
+                {{ plot.y_axis_1 }},
+                {{ plot.version_2 }},
+                {{ plot.y_axis_2 }},
+            );
+          {% endfor %}
+      } )( jQuery );
+    </script>
   </body>
 
 </html>

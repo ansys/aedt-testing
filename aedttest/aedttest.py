@@ -39,7 +39,8 @@ django_settings.configure(
     ]
 )
 django_setup()
-HTML_TEMPLATE = get_template("static/main.html")
+MAIN_PAGE_TEMPLATE = get_template("static/main.html")
+PROJECT_PAGE_TEMPLATE = get_template("static/project-report.html")
 
 
 class ElectronicsDesktopTester:
@@ -140,8 +141,43 @@ class ElectronicsDesktopTester:
                     proj["time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     break
 
-        data = HTML_TEMPLATE.render(context={"projects": self.report_data})
+        data = MAIN_PAGE_TEMPLATE.render(context={"projects": self.report_data})
         with open(self.results_path / "main.html", "w") as file:
+            file.write(data)
+
+    def render_project_html(self, project_name="test_project"):
+        report = [
+            {
+                "name": "my_xy_plot",
+                "id": "a12",
+                "x_axis": [2010, 2011, 2012, 2013, 2014, 2015, 2016],
+                "version_1": "194",
+                "y_axis_1": [0, 30, 10, 120, 50, 63, 10],
+                "version_2": "221",
+                "y_axis_2": [0, 50, 40, 80, 40, 79, 120],
+            },
+            {
+                "name": "xy_plot",
+                "id": "a13",
+                "x_axis": [2010, 2011, 2012, 2013, 2014, 2015, 2016],
+                "version_1": "194",
+                "y_axis_1": [0, 30, 10, 120, 50, 63, 10],
+                "version_2": "221",
+                "y_axis_2": [0, 50, 40, 80, 40, 79, 120],
+            },
+            {
+                "name": "Torque",
+                "id": "a15",
+                "x_axis": [2010, 2011, 2012, 2013, 2014, 2015, 2016],
+                "version_1": "194",
+                "y_axis_1": [0, 30, 10, 120, 50, 63, 10],
+                "version_2": "221",
+                "y_axis_2": [0, 50, 40, 80, 40, 79, 120],
+            },
+        ]
+
+        data = PROJECT_PAGE_TEMPLATE.render(context={"plots": report, "project_name": project_name})
+        with open(self.results_path / f"{project_name}.html", "w") as file:
             file.write(data)
 
     def task_runner(self, project_name: str, project_path: str, project_config: dict, allocated_machines: dict) -> None:
@@ -160,6 +196,7 @@ class ElectronicsDesktopTester:
         for machine in allocated_machines:
             self.machines_dict[machine] += allocated_machines[machine]["cores"]
 
+        self.render_project_html(project_name=project_name)
         self.render_html(status="success", project_name=project_name)
 
     def allocator(self) -> Iterable:
