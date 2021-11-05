@@ -91,51 +91,34 @@ def parse_report(txt_file):
     return report_dict
 
 
-# def get_report_data(oDesign, design, project_dir, design_dict):
-#
-#     oModule = oDesign.GetModule("ReportSetup")
-#     report_names = oModule.GetAllReportNames()
-#     report_dict = {"report": {}}
-#     if not report_names:
-#         raise AedtTestException("no report defined")
-#
-#     for report in report_names:
-#         report_dict["report"][report] = {}
-#
-#         txt_file = os.path.join(project_dir, "{}.txt".format(report))
-#         oModule.ExportToFile(report, txt_file, False)
-#
-#         single_report = parse_report(txt_file=txt_file)
-#         report_dict["report"][report].update(single_report)
-#
-#     design_dict[design].update(report_dict)
-#
-#     return design_dict
-
-
 def extract_data(project_dir, project_name, design_names):
-    design_dict = {}
+    designs_dict = {}
 
     for design in design_names:
-        design_dict[design] = {}
         app = get_pyaedt_app(design_name=design)
-
-        design_dict = extract_setup_data(app, design, design_dict, project_dir, project_name)
-
+        design_dict = extract_setup_data(app, design, project_dir, project_name)
+        designs_dict.update(design_dict)
         report_names = app.post.all_report_names
-
-        if not report_names:
-            project_dict["error_exception"].append("{} has no report".format(design))
-            design_dict[design]["report"] = {}
-        else:
-            pass
-            # for report in report_names:
-            #     app.post.export_report_to_txt(project_dir=project_dir, plot_name="{}.txt".format(report))
-
-    return design_dict
+        reports_dict = extract_reports_data(app, design, design_dict, project_dir, report_names)
+        designs_dict[design].update(reports_dict)
+    return designs_dict
 
 
-def extract_setup_data(app, design, design_dict, project_dir, project_name):
+def extract_reports_data(app, design, design_dict, project_dir, report_names):
+    reports_dict = {"report": {}}
+    if not report_names:
+        project_dict["error_exception"].append("{} has no report".format(design))
+        design_dict[design]["report"] = {}
+    else:
+        for report in report_names:
+            app.post.export_report_to_file(project_dir=project_dir, plot_name=report, extension=".txt")
+            report_file = os.path.join(project_dir, r"{}.txt".format(report))
+            single_report = parse_report(txt_file=report_file)
+            reports_dict["report"].update(single_report)
+    return reports_dict
+
+
+def extract_setup_data(app, design, project_dir, project_name):
     """
     extract mesh data and simulation time from setups
     Args:
@@ -148,15 +131,14 @@ def extract_setup_data(app, design, design_dict, project_dir, project_name):
     Returns:
 
     """
+    design_dict = {design: {}}
     setups_names = app.get_setups()
     if not setups_names:
         project_dict["error_exception"].append("{} has no setups".format(design))
     else:
         for setup in setups_names:
             design_dict[design][setup] = {}
-
             success = app.analyze_setup(name=setup)
-
             if not success:
                 project_dict["error_exception"].append("{} {} Analyze failed".format(design, setup))
                 continue
@@ -181,8 +163,8 @@ def main():
     design_names = desktop.design_list()
 
     if design_names:
-        design_dict = extract_data(project_dir, project_name, design_names)
-        project_dict.update(design_dict)
+        designs_dict = extract_data(project_dir, project_name, design_names)
+        project_dict.update(designs_dict)
     else:
         project_dict["error_exception"].append("Project has no design")
 
