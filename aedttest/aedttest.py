@@ -23,6 +23,7 @@ from django.conf import settings as django_settings
 from django.template.loader import get_template
 from logger import logger
 from logger import set_logger
+from pyaedt import __file__ as _py_aedt_path
 
 __authors__ = "Maksim Beliaev, Bo Yang"
 
@@ -56,7 +57,7 @@ class ElectronicsDesktopTester:
         self.proj_dir = self.out_dir if save_projects else None
 
         self.script = str(MODULE_DIR / "simulation_data.py")
-        self.script_args = None
+        self.script_args = f"--path1={Path(_py_aedt_path).parent.parent}"
 
         self.report_data = []
 
@@ -150,6 +151,7 @@ class ElectronicsDesktopTester:
             {
                 "name": "my_xy_plot",
                 "id": "a12",
+                "x_label": '"Time [ns]"',
                 "x_axis": [2010, 2011, 2012, 2013, 2014, 2015, 2016],
                 "version_1": "194",
                 "y_axis_1": [0, 30, 10, 120, 50, 63, 10],
@@ -159,6 +161,7 @@ class ElectronicsDesktopTester:
             {
                 "name": "xy_plot",
                 "id": "a13",
+                "x_label": '"Time [ns]"',
                 "x_axis": [2010, 2011, 2012, 2013, 2014, 2015, 2016],
                 "version_1": "194",
                 "y_axis_1": [0, 30, 10, 120, 50, 63, 10],
@@ -168,6 +171,7 @@ class ElectronicsDesktopTester:
             {
                 "name": "Torque",
                 "id": "a15",
+                "x_label": '"Time [ns]"',
                 "x_axis": [2010, 2011, 2012, 2013, 2014, 2015, 2016],
                 "version_1": "194",
                 "y_axis_1": [0, 30, 10, 120, 50, 63, 10],
