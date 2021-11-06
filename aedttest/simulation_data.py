@@ -39,7 +39,6 @@ def parse_mesh_stats(mesh_stats_file, design, setup):
         return mesh_data
     else:
         project_dict["error_exception"].append("{} {} has no total number of mesh".format(design, setup))
-        return None
 
 
 def parse_profile_file(profile_file, design, setup):
@@ -49,12 +48,11 @@ def parse_profile_file(profile_file, design, setup):
             if "Elapsed time" in line:
                 elapsed_time = line
 
-    if not elapsed_time:
-        project_dict["error_exception"].append(("{} {} no elapsed time in file".format(design, setup)))
-        return None
-    else:
+    if elapsed_time:
         simulation_time = re.findall(r"[0-9]*:[0-9][0-9]:[0-9][0-9]", elapsed_time)[2]
         return simulation_time
+    else:
+        project_dict["error_exception"].append(("{} {} no elapsed time in file".format(design, setup)))
 
 
 def parse_report(txt_file):
@@ -153,7 +151,7 @@ def extract_setup_data(app, design, project_dir, project_name):
             simulation_time = parse_profile_file(profile_file=profile_file, design=design, setup=setup)
             design_dict[design][setup]["simulation_time"] = simulation_time
 
-    return design_dict
+        return design_dict
 
 
 def main():
