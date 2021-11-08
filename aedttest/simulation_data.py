@@ -1,20 +1,24 @@
+import argparse
 import json
 import os
 import re
+import shlex
+import sys
 
 from pyaedt import get_pyaedt_app  # noqa: E402
 from pyaedt.desktop import Desktop  # noqa: E402
 
-# def parse_args():
-#     arg_string = ScriptArgument  # noqa: F821
-#     parser = argparse.ArgumentParser(description="Argparse Test script")
-#     parser.add_argument("--path1")
-#     args = parser.parse_args(shlex.split(arg_string))
-#     return args.path1
-#
-#
-# pyaedt_path = parse_args()
-# sys.path.append(pyaedt_path)
+
+def parse_args():
+    arg_string = ScriptArgument  # noqa: F821
+    parser = argparse.ArgumentParser(description="Argparse Test script")
+    parser.add_argument("--path1")
+    args = parser.parse_args(shlex.split(arg_string))
+    return args.path1
+
+
+pyaedt_path = parse_args()
+sys.path.append(pyaedt_path)
 
 project_dict = {"error_exception": []}
 
@@ -162,7 +166,7 @@ def extract_setup_data(app, design, project_dir, project_name):
 
 
 def main():
-    desktop = Desktop(specified_version="2021.1", non_graphical=False, new_desktop_session=False)
+    # desktop = Desktop(specified_version="2021.1", non_graphical=False, new_desktop_session=False)
 
     desktop = Desktop(non_graphical=False, new_desktop_session=False)
     project_name = desktop.project_list().pop()
