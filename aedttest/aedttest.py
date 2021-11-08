@@ -18,13 +18,14 @@ from typing import Dict
 from typing import Iterable
 from typing import Optional
 
-from clusters.job_hosts import get_job_machines
 from django import setup as django_setup
 from django.conf import settings as django_settings
 from django.template.loader import get_template
-from logger import logger
-from logger import set_logger
 from pyaedt import __file__ as _py_aedt_path
+
+from aedttest.clusters.job_hosts import get_job_machines
+from aedttest.logger import logger
+from aedttest.logger import set_logger
 
 __authors__ = "Maksim Beliaev, Bo Yang"
 
