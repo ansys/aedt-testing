@@ -21,8 +21,10 @@ Here you can see all available options with descriptions
         },
         "path": "input\\just_winding.aedt", # <-- (OPTIONAL) (default: project name + .aedt in current working 
                                           # directory, eg <cwd>/project_name1.aedt) Supports full and relative paths
-        "dependencies": ["input\\nested\\ctrl_prog"],  # <-- (OPTIONAL) (default: None) specifies file(s) to carry on
-                                                      # with project, eg control program script. Format: 
+                                          # if relative path is specified, folder structure would be preserved 
+                                          # during run
+        "dependencies": ["input\\nested\\ctrl_prog"],  # <-- (OPTIONAL) (default: None) specifies file(s)/folder(s) to 
+                                                      # carry on with project, eg control program script. Format: 
                                                       # (string) path or (list[str]) paths. Path could be relative or
                                                       # absolute
     },

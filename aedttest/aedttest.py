@@ -9,6 +9,7 @@ import tempfile
 import threading
 from contextlib import contextmanager
 from distutils.dir_util import copy_tree
+from distutils.dir_util import mkpath
 from distutils.dir_util import remove_tree
 from distutils.file_util import copy_file
 from pathlib import Path
@@ -340,13 +341,14 @@ def copy_dependencies(config_dict: dict, dst: str) -> None:
 
 
 def copy_path(src, dst):
-    if len(Path(src).parents) > 1:
-        unpack_dst = str(Path(dst) / Path(src).parents[0])
+    src = Path(src.replace("\\", "/"))
+    if not src.is_absolute() and len(src.parents) > 1:
+        unpack_dst = str(Path(dst) / src.parents[0])
     else:
         unpack_dst = str(Path(dst))
 
-    src = src.replace("\\", "/")
-    src = Path(src).expanduser().resolve()
+    mkpath(unpack_dst)
+    src = src.expanduser().resolve()
 
     if not src.exists():
         raise FileExistsError(f"File {src} doesn't exist")
