@@ -52,7 +52,7 @@ def parse_profile_file(profile_file, design, setup):
 
 
 def parse_report(txt_file):
-    report_dict = {}
+    report_dict = {"variation": {}}
 
     with open(txt_file) as file:
         lines = file.readlines()[5:]
@@ -69,19 +69,17 @@ def parse_report(txt_file):
     else:
         variations = re.split(r"\s{2,}", variations)
 
-    trace_duplex_count = 0
+    trace_duplicate_count = 0
     new_traces = []
     for variation, trace in zip(variations, traces):
-        if variation not in report_dict:
-            report_dict[variation] = {}
+        if variation not in report_dict["variation"]:
+            report_dict["variation"][variation] = {}
 
-        if trace not in report_dict[variation]:
-            report_dict[variation][trace] = []
-        else:
-            trace_duplex_count += 1
-            trace += str(trace_duplex_count)
-            report_dict[variation][trace] = []
+        if trace in report_dict["variation"][variation]:
+            trace_duplicate_count += 1
+            trace += str(trace_duplicate_count)
 
+        report_dict["variation"][variation][trace] = []
         new_traces.append(trace)
 
     for line in lines:
@@ -89,7 +87,7 @@ def parse_report(txt_file):
         report_dict["x_data"].append(xy_values[0])
 
         for variation, trace, value in zip(variations, new_traces, xy_values[1:]):
-            report_dict[variation][trace].append(value)
+            report_dict["variation"][variation][trace].append(value)
 
     return report_dict
 
