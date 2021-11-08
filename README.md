@@ -10,6 +10,7 @@ sweet of tests to validate stability/regression of results between different ver
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
+  * [Configuration file](#configuration-file)
   * [Local machine](#local-machine)
   * [Slurm](#slurm)
 - [Limitations](#limitations)
@@ -36,6 +37,10 @@ pip install
 ## Usage
 Electronics Desktop testing framework automatically identifies environment where it was launched. In this chapter we 
 will show basic examples of starting tests on local machine or on clusters with scheduler. In all scenarios we use CLI.
+
+### Configuration file
+Framework requires configuration file as input. Please read [configuration.md](docs/configuration.md) to understand how 
+to create a file.
 
 ### Local machine
 To start test on local machine use following command line
