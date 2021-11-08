@@ -28,6 +28,6 @@ jobs:
         
     - name: Unittests
       run: |
-        pytest unittests --disable-pytest-warnings
+        pytest unittests -v --disable-pytest-warnings
 
 
