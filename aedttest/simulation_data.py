@@ -28,13 +28,14 @@ def parse_mesh_stats(mesh_stats_file, design, setup):
     with open(mesh_stats_file) as fid:
         lines = fid.readlines()
 
-    line = [x for x in lines if "Total number of mesh elements" in x]
-
-    if line:
-        mesh_data = int(line[0].strip().split(":")[1])
-        return mesh_data
+    for line in lines:
+        if "Total number of mesh elements" in line:
+            mesh_data = int(line.strip().split(":")[1])
+            break
     else:
         project_dict["error_exception"].append("{} {} has no total number of mesh".format(design, setup))
+
+    return mesh_data
 
 
 def parse_profile_file(profile_file, design, setup):
