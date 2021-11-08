@@ -1,24 +1,20 @@
-import argparse
 import json
 import os
 import re
-import shlex
-import sys
-
-
-def parse_args():
-    arg_string = ScriptArgument  # noqa: F821
-    parser = argparse.ArgumentParser(description="Argparse Test script")
-    parser.add_argument("--path1")
-    args = parser.parse_args(shlex.split(arg_string))
-    return args.path1
-
-
-pyaedt_path = parse_args()
-sys.path.append(pyaedt_path)
 
 from pyaedt import get_pyaedt_app  # noqa: E402
 from pyaedt.desktop import Desktop  # noqa: E402
+
+# def parse_args():
+#     arg_string = ScriptArgument  # noqa: F821
+#     parser = argparse.ArgumentParser(description="Argparse Test script")
+#     parser.add_argument("--path1")
+#     args = parser.parse_args(shlex.split(arg_string))
+#     return args.path1
+#
+#
+# pyaedt_path = parse_args()
+# sys.path.append(pyaedt_path)
 
 project_dict = {"error_exception": []}
 
@@ -69,21 +65,30 @@ def parse_report(txt_file):
     variations = lines.pop(0).strip()
 
     if not variations:
-        variations = ["nominal"]
+        variations = ["nominal"] * len(traces)
     else:
         variations = re.split(r"\s{2,}", variations)
+
+    trace_duplex_count = 0
+    new_traces = []
+    for variation, trace in zip(variations, traces):
+        if variation not in report_dict:
+            report_dict[variation] = {}
+
+        if trace not in report_dict[variation]:
+            report_dict[variation][trace] = []
+        else:
+            trace_duplex_count += 1
+            trace += str(trace_duplex_count)
+            report_dict[variation][trace] = []
+
+        new_traces.append(trace)
 
     for line in lines:
         xy_values = [float(x) for x in line.strip().split()]  # todo nan
         report_dict["x_data"].append(xy_values[0])
 
-        for variation, trace, value in zip(variations, traces, xy_values[1:]):
-            if variation not in report_dict:
-                report_dict[variation] = {}
-
-            if trace not in report_dict[variation]:
-                report_dict[variation][trace] = []
-
+        for variation, trace, value in zip(variations, new_traces, xy_values[1:]):
             report_dict[variation][trace].append(value)
 
     return report_dict
@@ -97,22 +102,25 @@ def extract_data(project_dir, project_name, design_names):
         design_dict = extract_setup_data(app, design, project_dir, project_name)
         designs_dict.update(design_dict)
         report_names = app.post.all_report_names
-        reports_dict = extract_reports_data(app, design, design_dict, project_dir, report_names)
+        reports_dict = extract_reports_data(app, design, design_dict, project_name, project_dir, report_names)
         designs_dict[design].update(reports_dict)
     return designs_dict
 
 
-def extract_reports_data(app, design, design_dict, project_dir, report_names):
+def extract_reports_data(app, design, design_dict, project_name, project_dir, report_names):
     reports_dict = {"report": {}}
     if not report_names:
         project_dict["error_exception"].append("{} has no report".format(design))
         design_dict[design]["report"] = {}
     else:
         for report in report_names:
+            reports_dict["report"][report] = {}
             app.post.export_report_to_file(project_dir=project_dir, plot_name=report, extension=".txt")
             report_file = os.path.join(project_dir, r"{}.txt".format(report))
             single_report = parse_report(txt_file=report_file)
-            reports_dict["report"].update(single_report)
+            # reports_dict["report"]
+            reports_dict["report"][report].update(single_report)
+
     return reports_dict
 
 
@@ -155,6 +163,8 @@ def extract_setup_data(app, design, project_dir, project_name):
 
 
 def main():
+    desktop = Desktop(specified_version="2021.1", non_graphical=False, new_desktop_session=False)
+
     desktop = Desktop(non_graphical=False, new_desktop_session=False)
     project_name = desktop.project_list().pop()
     project_dir = desktop.project_path(project_name=project_name)
