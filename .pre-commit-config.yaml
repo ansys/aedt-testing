@@ -28,8 +28,11 @@ repos:
     rev: v1.1.1
     hooks:
       - id: markdown-toc
-        name: docs
-        files: docs\/.*\.md$
+        name: README.md-toc
+        files: ^README\.md$
       - id: markdown-toc
-        name: README.md
-        files: README\.md$
+        name: configuration.md-toc
+        files: .*/configuration\.md$
+      - id: markdown-toc
+        name: CONTRIBUTE.md-toc
+        files: .*/CONTRIBUTE\.md$
