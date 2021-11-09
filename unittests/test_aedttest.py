@@ -171,7 +171,7 @@ def test_get_aedt_executable_path():
 
 @mock.patch("aedttest.aedttest.subprocess.call", wraps=lambda x: x)
 @mock.patch("aedttest.aedttest.get_aedt_executable_path", return_value="aedt/install/path")
-def test_execute_aedt(mock1, mock_call):
+def test_execute_aedt(mock_aedt_path, mock_call):
 
     aedttest.execute_aedt(
         version="212",
@@ -187,6 +187,8 @@ def test_execute_aedt(mock1, mock_call):
             "single_node": False,
         },
     )
+
+    assert mock_aedt_path.call_args[0][0] == "212"
 
     assert mock_call.call_args[0][0] == [
         "aedt/install/path",
