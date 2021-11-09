@@ -8,20 +8,26 @@ import sys
 from pyaedt import get_pyaedt_app  # noqa: E402
 from pyaedt.desktop import Desktop  # noqa: E402
 
+DEBUG = False if "oDesktop" in dir() else True
+
 
 def parse_args():
     arg_string = ScriptArgument  # noqa: F821
-    parser = argparse.ArgumentParser(description="Argparse Test script")
-    parser.add_argument("--path1")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--pyaedt-path")
     args = parser.parse_args(shlex.split(arg_string))
-    return args.path1
+    return args.pyaedt_path
 
 
-try:
+if not DEBUG:
     pyaedt_path = parse_args()
     sys.path.append(pyaedt_path)
-except NameError:
-    pass
+    specified_version = None
+else:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--desktop-version", default="2021.1")
+    args = parser.parse_args()
+    specified_version = args.desktop_version
 
 project_dict = {"error_exception": []}
 
@@ -114,11 +120,11 @@ def extract_data(project_dir, project_name, design_names):
     return designs_dict
 
 
-def extract_reports_data(app, design, design_dict, project_name, project_dir, report_names):
+def extract_reports_data(app, design_name, design_dict, project_name, project_dir, report_names):
     reports_dict = {"report": {}}
     if not report_names:
-        project_dict["error_exception"].append("{} has no report".format(design))
-        design_dict[design]["report"] = {}
+        project_dict["error_exception"].append("{} has no report".format(design_name))
+        design_dict[design_name]["report"] = {}
     else:
         for report in report_names:
             reports_dict["report"][report] = {}
@@ -148,29 +154,29 @@ def extract_setup_data(app, design, project_dir, project_name):
     setups_names = app.get_setups()
     if not setups_names:
         project_dict["error_exception"].append("{} has no setups".format(design))
-    else:
-        for setup in setups_names:
-            design_dict[design][setup] = {}
-            success = app.analyze_setup(name=setup)
-            if not success:
-                project_dict["error_exception"].append("{} {} Analyze failed".format(design, setup))
-                continue
 
-            mesh_stats_file = os.path.join(project_dir, "{}_{}_{}.mstat".format(project_name, design, setup))
-            app.export_mesh_stats(setup_name=setup, variation_string="", mesh_path=mesh_stats_file)
-            mesh_data = parse_mesh_stats(mesh_stats_file=mesh_stats_file, design=design, setup=setup)
-            design_dict[design][setup]["mesh_data"] = mesh_data
+    for setup in setups_names:
+        design_dict[design][setup] = {}
+        success = app.analyze_setup(name=setup)
+        if not success:
+            project_dict["error_exception"].append("{} {} Analyze failed".format(design, setup))
+            continue
 
-            profile_file = os.path.join(project_dir, "{}_{}_{}.prof".format(project_name, design, setup))
-            app.export_profile(setup_name=setup, variation_string="", file_path=profile_file)
-            simulation_time = parse_profile_file(profile_file=profile_file, design=design, setup=setup)
-            design_dict[design][setup]["simulation_time"] = simulation_time
+        mesh_stats_file = os.path.join(project_dir, "{}_{}_{}.mstat".format(project_name, design, setup))
+        app.export_mesh_stats(setup_name=setup, variation_string="", mesh_path=mesh_stats_file)
+        mesh_data = parse_mesh_stats(mesh_stats_file=mesh_stats_file, design=design, setup=setup)
+        design_dict[design][setup]["mesh_data"] = mesh_data
 
-        return design_dict
+        profile_file = os.path.join(project_dir, "{}_{}_{}.prof".format(project_name, design, setup))
+        app.export_profile(setup_name=setup, variation_string="", file_path=profile_file)
+        simulation_time = parse_profile_file(profile_file=profile_file, design=design, setup=setup)
+        design_dict[design][setup]["simulation_time"] = simulation_time
+
+    return design_dict
 
 
 def main():
-    specified_version = None
+
     desktop = Desktop(specified_version=specified_version, non_graphical=False, new_desktop_session=False)
 
     project_name = desktop.project_list().pop()
