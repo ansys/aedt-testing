@@ -1,24 +1,21 @@
-import argparse
 import json
 import os
 import re
-import shlex
-import sys
 
 from pyaedt import get_pyaedt_app  # noqa: E402
 from pyaedt.desktop import Desktop  # noqa: E402
 
 
-def parse_args():
-    arg_string = ScriptArgument  # noqa: F821
-    parser = argparse.ArgumentParser(description="Argparse Test script")
-    parser.add_argument("--path1")
-    args = parser.parse_args(shlex.split(arg_string))
-    return args.path1
-
-
-pyaedt_path = parse_args()
-sys.path.append(pyaedt_path)
+# def parse_args():
+#     arg_string = ScriptArgument  # noqa: F821
+#     parser = argparse.ArgumentParser(description="Argparse Test script")
+#     parser.add_argument("--path1")
+#     args = parser.parse_args(shlex.split(arg_string))
+#     return args.path1
+#
+#
+# pyaedt_path = parse_args()
+# sys.path.append(pyaedt_path)
 
 project_dict = {"error_exception": []}
 
@@ -34,12 +31,9 @@ def parse_mesh_stats(mesh_stats_file, design, setup):
 
     for line in lines:
         if "Total number of mesh elements" in line:
-            mesh_data = int(line.strip().split(":")[1])
-            break
+            return int(line.strip().split(":")[1])
     else:
         project_dict["error_exception"].append("{} {} has no total number of mesh".format(design, setup))
-
-    return mesh_data
 
 
 def parse_profile_file(profile_file, design, setup):
