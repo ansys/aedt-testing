@@ -45,7 +45,7 @@ to create a file.
 ### Local machine
 To start test on local machine use following command line
 ```bash
-python aedttest/aedttest.py --aedt-version=212 --config-file=C:\git\aedt-testing\examples\example_config.json
+python aedttest/aedt_test_runner.py --aedt-version=212 --config-file=C:\git\aedt-testing\examples\example_config.json
 ```
 
 ### Slurm
@@ -55,7 +55,7 @@ sbatch \
     --partition ottc02 \
     --export "ALL,ANSYSEM_ROOT212=/ott/apps/software/ANSYS_EM_2021R2/AnsysEM21.2/Linux64,ANS_NODEPCHECK=1" \
     --nodes 12-12 \
-    --wrap "python3 aedttest/aedttest.py -cf=/lus01/mbeliaev/aedt-test/examples/example_config.json -av=212"
+    --wrap "python3 aedttest/aedt_test_runner.py -cf=/lus01/mbeliaev/aedt-test/examples/example_config.json -av=212"
 ```
 
 ## Limitations

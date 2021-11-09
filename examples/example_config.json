@@ -51,5 +51,18 @@
                 }
             }
         }
+    },
+    "19": {
+        "distribution": {
+            "cores": 4
+        },
+        "path": "input\\19.aedt",
+        "Maxwell2DDesign1": {
+            "Setup1": {
+                "mesh": {
+                    "total": 45
+                }
+            }
+        }
     }
 }
