@@ -14,9 +14,12 @@ from distutils.dir_util import remove_tree
 from distutils.file_util import copy_file
 from pathlib import Path
 from time import sleep
+from typing import Any
 from typing import Dict
 from typing import Iterable
+from typing import List
 from typing import Optional
+from typing import Union
 
 from django import setup as django_setup
 from django.conf import settings as django_settings
@@ -121,6 +124,13 @@ class ElectronicsDesktopTester:
                 raise ValueError(f"{proj} requires {proj_cores} cores. Not enough resources to run")
 
     def initialize_results(self) -> None:
+        """
+        Copy static web parts (HTML, CSS, JS).
+        Set all projects status to be 'Queued'
+
+        Returns:
+            None
+        """
         if self.results_path.exists():
             remove_tree(str(self.results_path))
         copy_tree(str(MODULE_DIR / "static"), str(self.results_path))
@@ -134,9 +144,20 @@ class ElectronicsDesktopTester:
                     "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }
             )
-        self.render_html(status="queued")
+        self.render_main_html(status="queued")
 
-    def render_html(self, status: str, project_name: Optional[str] = None) -> None:
+    def render_main_html(self, status: str, project_name: Optional[str] = None) -> None:
+        """
+        Renders main report page.
+        Using self.report_data updates django template with the data.
+
+        Args:
+            status: status of the project to update, if project_name is specified
+            project_name: name of the project to update status
+
+        Returns:
+            None
+        """
         if project_name:
             for proj in self.report_data:
                 if proj["name"] == project_name:
@@ -149,6 +170,16 @@ class ElectronicsDesktopTester:
             file.write(data)
 
     def render_project_html(self, project_name="test_project"):
+        """
+        Renders project report page. Creates new page if none exists
+        Updates django template with XY plots, mesh, etc data.
+
+        Args:
+            project_name: name of the project to render
+
+        Returns:
+            None
+        """
         report = [
             {
                 "name": "my_xy_plot",
@@ -187,7 +218,20 @@ class ElectronicsDesktopTester:
             file.write(data)
 
     def task_runner(self, project_name: str, project_path: str, project_config: dict, allocated_machines: dict) -> None:
-        self.render_html(status="running", project_name=project_name)
+        """
+        Task runner that is called by each thread.
+        Calls update of HTML pages status, starts AEDT process
+
+        Args:
+            project_name: (str) name of the project to start
+            project_path: (str) path to the project
+            project_config: (dict) configuration of project, distribution, etc
+            allocated_machines: (dict) machines and cores that were allocated for this task
+
+        Returns:
+            None
+        """
+        self.render_main_html(status="running", project_name=project_name)
 
         execute_aedt(
             self.version,
@@ -203,7 +247,7 @@ class ElectronicsDesktopTester:
             self.machines_dict[machine] += allocated_machines[machine]["cores"]
 
         self.render_project_html(project_name=project_name)
-        self.render_html(status="success", project_name=project_name)
+        self.render_main_html(status="success", project_name=project_name)
 
     def allocator(self) -> Iterable:
         """
@@ -260,10 +304,11 @@ def allocate_task(
     Allocate task on one or more nodes. Will use MPI and split the job
     If multiple parametric tasks are defined, distribute uniform
     Args:
-        distribution_config:
-        machines_dict:
+        distribution_config: (dict) data about required distribution for the project
+        machines_dict: (dict) all available machines in pool
 
     Returns:
+        (dict) allocated machines for the project or None if not allocated
     """
 
     if distribution_config.get("single_node", False):
@@ -310,10 +355,11 @@ def allocate_task_within_node(
     """
     Try to fit a task in a node without splitting
     Args:
-        distribution_config:
-        machines_dict:
+        distribution_config: (dict) data about required distribution for the project
+        machines_dict: (dict) all available machines in pool
 
     Returns:
+        (dict) allocated machines for the project or None if not allocated
     """
 
     for machine, cores in machines_dict.items():
@@ -326,13 +372,32 @@ def allocate_task_within_node(
             }
 
 
-def copy_proj(project_name, project_config, dst):
+def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> str:
+    """
+    Copy project to run location, temp by default
+    Args:
+        project_name: (str) name of the project to start
+        project_config: (dict) configuration of project, distribution, etc
+        dst: (str) path where to copy
+
+    Returns:
+        (str) location where it was copied
+    """
     src = project_config.get("path", project_name + ".aedt")
     return copy_path(src, dst)
 
 
-def copy_dependencies(config_dict: dict, dst: str) -> None:
-    deps = config_dict.get("dependencies", None)
+def copy_dependencies(project_config: Dict[str, Any], dst: str) -> None:
+    """
+    Copies project dependencies to run location
+    Args:
+        project_config: (dict) configuration of project, distribution, etc
+        dst: (str) path where to copy
+
+    Returns:
+        None
+    """
+    deps = project_config.get("dependencies", None)
 
     if isinstance(deps, list):
         for dep in deps:
@@ -341,7 +406,18 @@ def copy_dependencies(config_dict: dict, dst: str) -> None:
         copy_path(deps, dst)
 
 
-def copy_path(src, dst):
+def copy_path(src: str, dst: str) -> Union[str, List[str]]:
+    """
+    Copy path from src to dst
+    If src is a relative path, preserves relative folder tree
+    Args:
+        src: (str) path with copy target, relative or absolute
+        dst: (str) path where to copy
+
+    Returns:
+        (str) path to copied file or (list) with paths if folder is copied
+
+    """
     src = Path(src.replace("\\", "/"))
     if not src.is_absolute() and len(src.parents) > 1:
         unpack_dst = str(Path(dst) / src.parents[0])
@@ -362,6 +438,17 @@ def copy_path(src, dst):
 
 
 def mkdtemp_persistent(*args, persistent=True, **kwargs):
+    """
+    Provides a context manager to create a temporary/permanent directory depending on 'persistent' argument
+
+    Args:
+        *args: TemporaryDirectory args
+        persistent: (bool) if True, create permanent directory
+        **kwargs: TemporaryDirectory kwargs
+
+    Returns:
+        Context manager with temp directory from 'tempfile' module
+    """
     if persistent:
 
         @contextmanager
@@ -466,6 +553,12 @@ def get_aedt_executable_path(version: str) -> str:
 
 
 def parse_arguments() -> argparse.Namespace:
+    """
+    Parse CLI arguments
+
+    Returns:
+        (argparse.Namespace) validated arguments
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--aedt-version", "-av", required=True, help="Electronics Desktop version to test, e.g. 221")
     parser.add_argument("--config-file", "-cf", required=True, help="Project config file path")
