@@ -148,15 +148,15 @@ def test_copy_path_folder_relative():
 
 def test_get_aedt_executable_path():
     with mock.patch.dict(os.environ, {"ANSYSEM_ROOT212": "my/custom/path"}):
-        with mock.patch("aedttest.aedttest.platform.system", return_value="Linux"):
+        with mock.patch("aedttest.aedt_test_runner.platform.system", return_value="Linux"):
             aedt_path = aedt_test_runner.get_aedt_executable_path("212")
             assert Path(aedt_path) == Path("my/custom/path/ansysedt")
 
-        with mock.patch("aedttest.aedttest.platform.system", return_value="Windows"):
+        with mock.patch("aedttest.aedt_test_runner.platform.system", return_value="Windows"):
             aedt_path = aedt_test_runner.get_aedt_executable_path("212")
             assert Path(aedt_path) == Path("my/custom/path/ansysedt.exe")
 
-        with mock.patch("aedttest.aedttest.platform.system", return_value="MacOS"):
+        with mock.patch("aedttest.aedt_test_runner.platform.system", return_value="MacOS"):
             with pytest.raises(SystemError) as exc:
                 aedt_test_runner.get_aedt_executable_path("212")
 
@@ -169,8 +169,8 @@ def test_get_aedt_executable_path():
         assert "Environment variable ANSYSEM_ROOT212" in str(exc.value)
 
 
-@mock.patch("aedttest.aedttest.subprocess.call", wraps=lambda x: x)
-@mock.patch("aedttest.aedttest.get_aedt_executable_path", return_value="aedt/install/path")
+@mock.patch("aedttest.aedt_test_runner.subprocess.call", wraps=lambda x: x)
+@mock.patch("aedttest.aedt_test_runner.get_aedt_executable_path", return_value="aedt/install/path")
 def test_execute_aedt(mock_aedt_path, mock_call):
 
     aedt_test_runner.execute_aedt(
