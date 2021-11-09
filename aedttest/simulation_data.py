@@ -1,21 +1,27 @@
+import argparse
 import json
 import os
 import re
+import shlex
+import sys
 
 from pyaedt import get_pyaedt_app  # noqa: E402
 from pyaedt.desktop import Desktop  # noqa: E402
 
 
-# def parse_args():
-#     arg_string = ScriptArgument  # noqa: F821
-#     parser = argparse.ArgumentParser(description="Argparse Test script")
-#     parser.add_argument("--path1")
-#     args = parser.parse_args(shlex.split(arg_string))
-#     return args.path1
-#
-#
-# pyaedt_path = parse_args()
-# sys.path.append(pyaedt_path)
+def parse_args():
+    arg_string = ScriptArgument  # noqa: F821
+    parser = argparse.ArgumentParser(description="Argparse Test script")
+    parser.add_argument("--path1")
+    args = parser.parse_args(shlex.split(arg_string))
+    return args.path1
+
+
+try:
+    pyaedt_path = parse_args()
+    sys.path.append(pyaedt_path)
+except NameError:
+    pass
 
 project_dict = {"error_exception": []}
 
@@ -68,15 +74,19 @@ def parse_report(txt_file):
     else:
         variations = re.split(r"\s{2,}", variations)
 
-    trace_duplicate_count = 0
+    # increment of duplicated traces under each variation
+    trace_duplicate_count = {}
     new_traces = []
     for variation, trace in zip(variations, traces):
         if variation not in report_dict["variation"]:
             report_dict["variation"][variation] = {}
+            trace_duplicate_count[variation] = {}
 
         if trace in report_dict["variation"][variation]:
-            trace_duplicate_count += 1
-            trace += str(trace_duplicate_count)
+            trace_duplicate_count[variation][trace] += 1
+            trace += "(" + str(trace_duplicate_count[variation][trace]) + ")"
+        else:
+            trace_duplicate_count[variation][trace] = 0
 
         report_dict["variation"][variation][trace] = []
         new_traces.append(trace)
@@ -160,9 +170,9 @@ def extract_setup_data(app, design, project_dir, project_name):
 
 
 def main():
-    # desktop = Desktop(specified_version="2021.1", non_graphical=False, new_desktop_session=False)
+    specified_version = None
+    desktop = Desktop(specified_version=specified_version, non_graphical=False, new_desktop_session=False)
 
-    desktop = Desktop(non_graphical=False, new_desktop_session=False)
     project_name = desktop.project_list().pop()
     project_dir = desktop.project_path(project_name=project_name)
     design_names = desktop.design_list()
