@@ -7,8 +7,8 @@ import sys
 
 from pyaedt import get_pyaedt_app  # noqa: E402
 from pyaedt.desktop import Desktop  # noqa: E402
+from pyaedt.generic.general_methods import generate_unique_name
 from pyaedt.generic.report_file_parser import parse_file
-
 
 DEBUG = False if "oDesktop" in dir() else True
 
@@ -119,19 +119,23 @@ def extract_data(desktop, project_dir, project_name, design_names):
     for design_name in design_names:
         design_dict = {design_name: {"mesh": {}, "simulation_time": {}, "report": {}}}
         app = get_pyaedt_app(design_name=design_name)
-        setups_names = app.get_setups()
+        setups_names = app.setup_names
+
         if not setups_names:
             project_dict["error_exception"].append("Design {} has no setups".format(design_name))
             designs_dict.update(design_dict)
             continue
 
+        sweeps = app.existing_analysis_sweeps
+
+        setup_dict = dict(zip(setups_names, sweeps))
+
         design_dict = extract_design_data(
             desktop=desktop,
             app=app,
             design_name=design_name,
-            setup_names=setups_names,
+            setup_dict=setup_dict,
             project_dir=project_dir,
-            project_name=project_name,
             design_dict=design_dict,
         )
 
@@ -140,31 +144,39 @@ def extract_data(desktop, project_dir, project_name, design_names):
     return designs_dict
 
 
-def extract_design_data(desktop, app, design_name, setup_names, project_dir, project_name, design_dict):
+def extract_design_data(desktop, app, design_name, setup_dict, project_dir, design_dict):
 
     success = desktop.analyze_all(design=design_name)
     if success:
-        variation_strings = app.available_variations.get_variation_strings()
-        if not variation_strings:
-            variation_strings = "nominal"
+        for setup, sweep in setup_dict.items():
+            variation_strings = app.available_variations.get_variation_strings(sweep)
+            if not variation_strings[0]:
+                mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
+                app.export_mesh_stats(setup, "", mesh_stats_file)
+                mesh_data = parse_mesh_stats(mesh_stats_file, design_name, "nominal", setup)
+                design_dict[design_name]["mesh"] = {"nominal": {setup: mesh_data}}
 
-        for variation_string in variation_strings:
-            if "'" in variation_string:
-                file_name = "{}_{}_{}".format(project_name, design_name, variation_string.replace("'", ""))
+                profile_file = generate_unique_file_path(project_dir, ".prof")
+                app.export_profile(setup, "", profile_file)
+                simulation_time = parse_profile_file(profile_file, design_name, "nominal", setup)
+                design_dict[design_name]["simulation_time"] = {"nominal": {setup: simulation_time}}
+                continue
 
-            design_dict[design_name]["mesh"][variation_string] = {}
-            design_dict[design_name]["simulation_time"][variation_string] = {}
-            for setup_name in setup_names:
-                mesh_stats_file = os.path.join(project_dir, "{}_{}.mstat".format(file_name, setup_name))
-                app.export_mesh_stats(setup_name, variation_string, mesh_stats_file)
-                mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_string, setup_name)
-                design_dict[design_name]["mesh"][variation_string][setup_name] = mesh_data
-                profile_file = os.path.join(project_dir, "{}_{}.prof".format(file_name, setup_name))
-                app.export_profile(setup_name, variation_string, profile_file)
-                simulation_time = parse_profile_file(profile_file, design_name, variation_string, setup_name)
-                design_dict[design_name]["simulation_time"][variation_string][setup_name] = simulation_time
+            for variation_string in variation_strings:
+                design_dict[design_name]["mesh"][variation_string] = {}
+                design_dict[design_name]["simulation_time"][variation_string] = {}
 
-        # todo
+                mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
+                app.export_mesh_stats(setup, variation_string, mesh_stats_file)
+                mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_string, setup)
+                design_dict[design_name]["mesh"][variation_string][setup] = mesh_data
+
+                profile_file = generate_unique_file_path(project_dir, ".prof")
+                app.export_profile(setup, variation_string, profile_file)
+                simulation_time = parse_profile_file(profile_file, design_name, variation_string, setup)
+                design_dict[design_name]["simulation_time"][variation_string][setup] = simulation_time
+
+        # todo add report
         return design_dict
     else:
         project_dict["error_exception"].append("{} analyze_all failed".format(design_name))
@@ -188,6 +200,18 @@ def extract_reports_data(app, design_name, design_dict, project_name, project_di
             reports_dict["report"][report].update(single_report)
 
     return reports_dict
+
+
+def generate_unique_file_path(project_dir, extension):
+    file_name = generate_unique_name("")
+
+    file_path = os.path.join(project_dir, file_name + extension)
+
+    while os.path.exists(file_path):
+        file_name = generate_unique_name(file_name)
+        file_path = os.path.join(project_dir, file_name + extension)
+
+    return file_path
 
 
 def main():
