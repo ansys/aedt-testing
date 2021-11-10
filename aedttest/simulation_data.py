@@ -7,6 +7,7 @@ import sys
 
 from pyaedt import get_pyaedt_app  # noqa: E402
 from pyaedt.desktop import Desktop  # noqa: E402
+from pyaedt.generic.report_file_parser import parse_file
 
 DEBUG = False if "oDesktop" in dir() else True
 
@@ -36,7 +37,7 @@ class AedtTestException(Exception):
     """Base class for exceptions in this module."""
 
 
-def parse_mesh_stats(mesh_stats_file, design, setup):
+def parse_mesh_stats(mesh_stats_file, design, variation, setup):
 
     with open(mesh_stats_file) as fid:
         lines = fid.readlines()
@@ -45,7 +46,7 @@ def parse_mesh_stats(mesh_stats_file, design, setup):
         if "Total number of mesh elements" in line:
             return int(line.strip().split(":")[1])
     else:
-        project_dict["error_exception"].append("{} {} has no total number of mesh".format(design, setup))
+        project_dict["error_exception"].append("{} {} {} has no total number of mesh".format(design, variation, setup))
 
 
 def parse_profile_file(profile_file, design, setup):
@@ -107,16 +108,44 @@ def parse_report(txt_file):
     return report_dict
 
 
-def extract_data(project_dir, project_name, design_names):
+def extract_data(desktop, project_dir, project_name, design_names):
     designs_dict = {}
 
-    for design in design_names:
-        app = get_pyaedt_app(design_name=design)
-        design_dict = extract_setup_data(app, design, project_dir, project_name)
-        designs_dict.update(design_dict)
-        report_names = app.post.all_report_names
-        reports_dict = extract_reports_data(app, design, design_dict, project_name, project_dir, report_names)
-        designs_dict[design].update(reports_dict)
+    for design_name in design_names:
+        designs_dict[design_name] = {"mesh": {}, "simulation_time": {}, "report": {}}
+        app = get_pyaedt_app(design_name=design_name)
+        setups_names = app.get_setups()
+        if not setups_names:
+            project_dict["error_exception"].append("{} has no setups".format(design_name))
+            continue
+        success = desktop.analyze_all(design=design_name)
+        if success:
+            variation_strings = app.available_variations.get_variation_strings()
+            if not variation_strings:
+                variation_strings = "nominal"
+
+            for variation_string in variation_strings:
+                if "'" in variation_string:
+                    file_name = "{}_{}_{}".format(project_name, design_name, variation_string.replace("'", ""))
+
+                for setup_name in setups_names:
+                    mesh_stats_file = os.path.join(project_dir, "{}_{}.mstat".format(file_name, setup_name))
+                    app.export_mesh_stats(
+                        setup_name=setup_name, variation_string=variation_string, mesh_path=mesh_stats_file
+                    )
+
+                    mesh_data = parse_mesh_stats(
+                        mesh_stats_file=mesh_stats_file,
+                        design=design_name,
+                        variation=variation_string,
+                        setup=setup_name,
+                    )
+
+                    designs_dict[design_name]["mesh"][setup_name] = mesh_data
+
+        else:
+            project_dict["error_exception"].append("{} analyze_all failed".format(design_name))
+
     return designs_dict
 
 
@@ -128,10 +157,13 @@ def extract_reports_data(app, design_name, design_dict, project_name, project_di
     else:
         for report in report_names:
             reports_dict["report"][report] = {}
-            app.post.export_report_to_file(project_dir=project_dir, plot_name=report, extension=".txt")
-            report_file = os.path.join(project_dir, r"{}.txt".format(report))
-            single_report = parse_report(txt_file=report_file)
-            # reports_dict["report"]
+
+            report_file = app.post.export_report_to_file(
+                output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
+            )
+
+            single_report = parse_file(report_file)
+
             reports_dict["report"][report].update(single_report)
 
     return reports_dict
@@ -184,7 +216,7 @@ def main():
     design_names = desktop.design_list()
 
     if design_names:
-        designs_dict = extract_data(project_dir, project_name, design_names)
+        designs_dict = extract_data(desktop, project_dir, project_name, design_names)
         project_dict.update(designs_dict)
     else:
         project_dict["error_exception"].append("Project has no design")
