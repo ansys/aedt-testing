@@ -113,14 +113,13 @@ def parse_report(txt_file):
     return report_dict
 
 
-def extract_data(desktop, project_dir, project_name, design_names):
+def extract_data(desktop, project_dir, design_names):
     designs_dict = {}
 
     for design_name in design_names:
         design_dict = {design_name: {"mesh": {}, "simulation_time": {}, "report": {}}}
         app = get_pyaedt_app(design_name=design_name)
         setups_names = app.setup_names
-
         if not setups_names:
             project_dict["error_exception"].append("Design {} has no setups".format(design_name))
             designs_dict.update(design_dict)
@@ -140,6 +139,21 @@ def extract_data(desktop, project_dir, project_name, design_names):
         )
 
         designs_dict.update(design_dict)
+
+        report_names = app.post.all_report_names
+
+        if not report_names:
+            project_dict["error_exception"].append("Design {} has no reports".format(design_name))
+            continue
+
+        for report in report_names:
+            report_file_path = app.post.export_report_to_file(
+                output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
+            )
+
+            report_dict = parse_file(report_file_path)
+
+            design_dict[design_name]["report"].update(report_dict)
 
     return designs_dict
 
@@ -223,7 +237,7 @@ def main():
     design_names = desktop.design_list()
 
     if design_names:
-        designs_dict = extract_data(desktop, project_dir, project_name, design_names)
+        designs_dict = extract_data(desktop, project_dir, design_names)
         project_dict.update(designs_dict)
     else:
         project_dict["error_exception"].append("Project has no design")
