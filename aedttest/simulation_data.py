@@ -143,10 +143,14 @@ def extract_reports_data(app, design_name, project_dir, report_names):
                 output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
             )
             data_dict = parse_file(report_file)
-            single_report = {report: data_dict}
-            report_dict.update(single_report)
+            report_dict.update(data_dict)
 
     return report_dict
+
+
+def check_nan(data_dict):
+    for plot in data_dict:
+        pass  # todo check nan
 
 
 def generate_unique_file_path(project_dir, extension):
