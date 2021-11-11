@@ -166,31 +166,21 @@ def extract_design_data(desktop, app, design_name, setup_dict, project_dir, desi
     if success:
         for setup, sweep in setup_dict.items():
             variation_strings = app.available_variations.get_variation_strings(sweep)
-            if not variation_strings[0]:
-                mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
-                app.export_mesh_stats(setup, "", mesh_stats_file)
-                mesh_data = parse_mesh_stats(mesh_stats_file, design_name, "nominal", setup)
-                design_dict[design_name]["mesh"] = {"nominal": {setup: mesh_data}}
-
-                profile_file = generate_unique_file_path(project_dir, ".prof")
-                app.export_profile(setup, "", profile_file)
-                simulation_time = parse_profile_file(profile_file, design_name, "nominal", setup)
-                design_dict[design_name]["simulation_time"] = {"nominal": {setup: simulation_time}}
-                continue
-
             for variation_string in variation_strings:
-                design_dict[design_name]["mesh"][variation_string] = {}
-                design_dict[design_name]["simulation_time"][variation_string] = {}
+                variation_name = "nominal" if not variation_string else variation_string
+
+                design_dict[design_name]["mesh"][variation_name] = {}
+                design_dict[design_name]["simulation_time"][variation_name] = {}
 
                 mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
                 app.export_mesh_stats(setup, variation_string, mesh_stats_file)
                 mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_string, setup)
-                design_dict[design_name]["mesh"][variation_string][setup] = mesh_data
+                design_dict[design_name]["mesh"][variation_name][setup] = mesh_data
 
                 profile_file = generate_unique_file_path(project_dir, ".prof")
                 app.export_profile(setup, variation_string, profile_file)
                 simulation_time = parse_profile_file(profile_file, design_name, variation_string, setup)
-                design_dict[design_name]["simulation_time"][variation_string][setup] = simulation_time
+                design_dict[design_name]["simulation_time"][variation_name][setup] = simulation_time
 
         # todo add report
         return design_dict
