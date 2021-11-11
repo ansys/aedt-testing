@@ -31,7 +31,7 @@ else:
     args = parser.parse_args()
     specified_version = args.desktop_version
 
-project_dict = {"error_exception": []}
+project_dict = {"error_exception": [], "designs": {}}
 
 
 class AedtTestException(Exception):
@@ -171,7 +171,7 @@ def main():
 
     if design_names:
         designs_dict = extract_data(desktop, project_dir, design_names)
-        project_dict.update(designs_dict)
+        project_dict["designs"].update(designs_dict)
     else:
         project_dict["error_exception"].append("Project has no design")
 
