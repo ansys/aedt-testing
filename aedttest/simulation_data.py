@@ -70,51 +70,6 @@ def parse_profile_file(profile_file, design, variation, setup):
         )
 
 
-def parse_report(txt_file):
-    report_dict = {"variation": {}}
-
-    with open(txt_file) as file:
-        lines = file.readlines()[5:]
-
-    traces = lines.pop(0).strip()
-    traces = re.split(r"\s{2,}", traces)
-    report_dict["x_label"] = traces.pop(0)
-    report_dict["x_data"] = []
-
-    variations = lines.pop(0).strip()
-
-    if not variations:
-        variations = ["nominal"] * len(traces)
-    else:
-        variations = re.split(r"\s{2,}", variations)
-
-    # increment of duplicated traces under each variation
-    trace_duplicate_count = {}
-    new_traces = []
-    for variation, trace in zip(variations, traces):
-        if variation not in report_dict["variation"]:
-            report_dict["variation"][variation] = {}
-            trace_duplicate_count[variation] = {}
-
-        if trace in report_dict["variation"][variation]:
-            trace_duplicate_count[variation][trace] += 1
-            trace += "(" + str(trace_duplicate_count[variation][trace]) + ")"
-        else:
-            trace_duplicate_count[variation][trace] = 0
-
-        report_dict["variation"][variation][trace] = []
-        new_traces.append(trace)
-
-    for line in lines:
-        xy_values = [float(x) for x in line.strip().split()]  # todo nan
-        report_dict["x_data"].append(xy_values[0])
-
-        for variation, trace, value in zip(variations, new_traces, xy_values[1:]):
-            report_dict["variation"][variation][trace].append(value)
-
-    return report_dict
-
-
 def extract_data(desktop, project_dir, design_names):
     designs_dict = {}
 
