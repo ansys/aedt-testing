@@ -8,7 +8,7 @@ import sys
 from pyaedt import get_pyaedt_app  # noqa: E402
 from pyaedt.desktop import Desktop  # noqa: E402
 from pyaedt.generic.general_methods import generate_unique_name
-from pyaedt.generic.report_file_parser import parse_file
+from pyaedt.generic.report_file_parser import parse_rdat_file
 
 DEBUG = False if "oDesktop" in dir() else True
 
@@ -142,7 +142,7 @@ def extract_reports_data(app, design_name, project_dir, report_names):
             report_file = app.post.export_report_to_file(
                 output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
             )
-            data_dict = parse_file(report_file)
+            data_dict = parse_rdat_file(report_file)
             check_nan(data_dict)
             report_dict.update(data_dict)
 
@@ -150,7 +150,6 @@ def extract_reports_data(app, design_name, project_dir, report_names):
 
 
 def check_nan(data_dict):
-
     for plot_name, traces_dict in data_dict.items():
         for trace_name in traces_dict:
             curves_dict = traces_dict[trace_name]["curves"]
