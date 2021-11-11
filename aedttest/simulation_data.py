@@ -60,7 +60,9 @@ def parse_profile_file(profile_file, design, variation, setup):
                 elapsed_time = line
 
     if elapsed_time:
-        simulation_time = re.findall(r"[0-9]*:[0-9][0-9]:[0-9][0-9]", elapsed_time)[2]
+        split_line = elapsed_time.split("Elapsed time")[1]
+
+        simulation_time = re.findall(r"[0-9]*:[0-9][0-9]:[0-9][0-9]", split_line)[0]
         return simulation_time
     else:
         project_dict["error_exception"].append(
