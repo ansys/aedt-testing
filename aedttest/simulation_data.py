@@ -128,9 +128,7 @@ def extract_data(desktop, project_dir, design_names):
             continue
 
         sweeps = app.existing_analysis_sweeps
-
         setup_dict = dict(zip(setups_names, sweeps))
-
         design_dict = extract_design_data(
             desktop=desktop,
             app=app,
@@ -140,22 +138,13 @@ def extract_data(desktop, project_dir, design_names):
             design_dict=design_dict,
         )
 
-        designs_dict.update(design_dict)
-
         report_names = app.post.all_report_names
+        reports_dict = extract_reports_data(
+            app=app, design_name=design_name, project_dir=project_dir, report_names=report_names
+        )
+        design_dict[design_name]["report"] = reports_dict
 
-        if not report_names:
-            project_dict["error_exception"].append("Design {} has no reports".format(design_name))
-            continue
-
-        for report in report_names:
-            report_file_path = app.post.export_report_to_file(
-                output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
-            )
-
-            report_dict = parse_file(report_file_path)
-
-            design_dict[design_name]["report"].update(report_dict)
+        designs_dict.update(design_dict)
 
     return designs_dict
 
@@ -182,30 +171,25 @@ def extract_design_data(desktop, app, design_name, setup_dict, project_dir, desi
                 simulation_time = parse_profile_file(profile_file, design_name, variation_string, setup)
                 design_dict[design_name]["simulation_time"][variation_name][setup] = simulation_time
 
-        # todo add report
         return design_dict
     else:
         project_dict["error_exception"].append("{} analyze_all failed".format(design_name))
 
 
-def extract_reports_data(app, design_name, design_dict, project_name, project_dir, report_names):
-    reports_dict = {"report": {}}
+def extract_reports_data(app, design_name, project_dir, report_names):
+    report_dict = {}
     if not report_names:
         project_dict["error_exception"].append("{} has no report".format(design_name))
-        design_dict[design_name]["report"] = {}
     else:
         for report in report_names:
-            reports_dict["report"][report] = {}
-
             report_file = app.post.export_report_to_file(
                 output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
             )
+            data_dict = parse_file(report_file)
+            single_report = {report: data_dict}
+            report_dict.update(single_report)
 
-            single_report = parse_file(report_file)
-
-            reports_dict["report"][report].update(single_report)
-
-    return reports_dict
+    return report_dict
 
 
 def generate_unique_file_path(project_dir, extension):
