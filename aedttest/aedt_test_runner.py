@@ -51,18 +51,27 @@ PROJECT_PAGE_TEMPLATE = get_template("static/project-report.html")
 
 class ElectronicsDesktopTester:
     def __init__(
-        self, version: str, max_cores: int, max_tasks: int, config_file: str, out_dir: str, save_projects: bool
+        self,
+        version: str,
+        max_cores: int,
+        max_tasks: int,
+        config_file: str,
+        out_dir: str,
+        save_projects: bool,
+        only_reference: bool,
     ) -> None:
         logger.info(f"Initialize new Electronics Desktop Test run. Configuration file is {config_file}")
         self.version = version
         self.max_cores = max_cores
         self.max_tasks = max_tasks
+        self.active_tasks = 0
         self.out_dir = Path(out_dir) if out_dir else CWD_DIR
         self.results_path = self.out_dir / "results"
         self.proj_dir = self.out_dir if save_projects else None
+        self.only_reference = only_reference
 
         self.script = str(MODULE_DIR / "simulation_data.py")
-        self.script_args = f"--path1={Path(_py_aedt_path).parent.parent}"
+        self.script_args = f"--pyaedt-path={Path(_py_aedt_path).parent.parent}"
 
         self.report_data = []
 
@@ -102,8 +111,29 @@ class ElectronicsDesktopTester:
 
             [th.join() for th in threads_list]  # wait for all threads to finish before delete folder
 
-            msg = f"Job is completed.\nYou can view output by opening in web browser: {self.results_path / 'main.html'}"
+            if self.only_reference:
+                combined_report_path = self.create_combined_report()
+                msg = f"Reference result file is stored under {combined_report_path}"
+            else:
+                msg = (
+                    "Job is completed.\n"
+                    f"You can view output by opening in web browser: {self.results_path / 'main.html'}"
+                )
+
             logger.info(msg)
+
+    def create_combined_report(self) -> Path:
+        combined_report_path = self.results_path / "reference_results.json"
+        combined_data = {"error_exception": []}
+        for json_file in (self.results_path / "reference_folder").iterdir():
+            with open(json_file) as file:
+                single_data = json.load(file)
+                combined_data.update(single_data["designs"])
+                combined_data["error_exception"] += single_data["error_exception"]
+        with open(combined_report_path, "w") as file:
+            json.dump(combined_data, file, indent=4)
+
+        return combined_report_path
 
     def validate_hardware(self) -> None:
         """
@@ -169,7 +199,7 @@ class ElectronicsDesktopTester:
         with open(self.results_path / "main.html", "w") as file:
             file.write(data)
 
-    def render_project_html(self, project_name="test_project"):
+    def render_project_html(self, project_name: str, project_report: dict):
         """
         Renders project report page. Creates new page if none exists
         Updates django template with XY plots, mesh, etc data.
@@ -264,6 +294,10 @@ class ElectronicsDesktopTester:
         )
         proj_name = ""
         while sorted_by_cores_desc:
+            if self.active_tasks >= self.max_tasks:
+                logger.info("Number of maximum tasks limit is reached. Wait for job to finish")
+                sleep(4)
+
             allocated_machines = None
             for proj_name in sorted_by_cores_desc:
                 # first try to fit all jobs within a single node for stability, since projects are sorted
@@ -294,6 +328,7 @@ class ElectronicsDesktopTester:
                     self.machines_dict[machine] -= allocated_machines[machine]["cores"]
 
                 sorted_by_cores_desc.remove(proj_name)
+                self.active_tasks += 1
                 yield proj_name, allocated_machines
 
 
@@ -562,6 +597,9 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--aedt-version", "-av", required=True, help="Electronics Desktop version to test, e.g. 221")
     parser.add_argument("--config-file", "-cf", required=True, help="Project config file path")
+    parser.add_argument("--reference-file", help="Reference results file path")
+    parser.add_argument("--only-reference", action="store_true", help="Only create reference results")
+
     parser.add_argument(
         "--out-dir", "-o", help="Output directory for reports and project files (if --save-sim-data set)"
     )
@@ -581,6 +619,9 @@ def parse_arguments() -> argparse.Namespace:
         help="total number of parallel tasks limit",
     )
     cli_args = parser.parse_args()
+
+    if not cli_args.only_reference and not cli_args.reference_file:
+        raise ValueError("Either set --only-reference flag or provide path via --reference-file")
 
     if not (cli_args.max_cores or cli_args.max_tasks):
         logger.warning(
@@ -610,5 +651,6 @@ if __name__ == "__main__":
         config_file=args_cli.config_file,
         out_dir=args_cli.out_dir,
         save_projects=args_cli.save_sim_data,
+        only_reference=args_cli.only_reference,
     )
     aedt_tester.run()
