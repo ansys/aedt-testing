@@ -143,14 +143,27 @@ def extract_reports_data(app, design_name, project_dir, report_names):
                 output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
             )
             data_dict = parse_file(report_file)
+            check_nan(data_dict)
             report_dict.update(data_dict)
 
     return report_dict
 
 
 def check_nan(data_dict):
-    for plot in data_dict:
-        pass  # todo check nan
+
+    for plot_name, traces_dict in data_dict.items():
+        for trace_name in traces_dict:
+            curves_dict = traces_dict[trace_name]["curves"]
+            for curve_name in curves_dict:
+                if any(not isinstance(x, (float, int)) for x in curves_dict[curve_name]["x_data"]):
+                    project_dict["error_exception"].append(
+                        "Plot:{} Trace:{} Curve:{} X value not int or float".format(plot_name, trace_name, curve_name)
+                    )
+
+                if any(not isinstance(x, (float, int)) for x in curves_dict[curve_name]["y_data"]):
+                    project_dict["error_exception"].append(
+                        "Plot:{} Trace:{} Curve:{} Y value not int or float".format(plot_name, trace_name, curve_name)
+                    )
 
 
 def generate_unique_file_path(project_dir, extension):
