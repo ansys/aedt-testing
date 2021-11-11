@@ -158,8 +158,10 @@ def extract_design_data(desktop, app, design_name, setup_dict, project_dir, desi
             for variation_string in variation_strings:
                 variation_name = "nominal" if not variation_string else variation_string
 
-                design_dict[design_name]["mesh"][variation_name] = {}
-                design_dict[design_name]["simulation_time"][variation_name] = {}
+                if variation_name not in design_dict[design_name]["mesh"]:
+                    design_dict[design_name]["mesh"][variation_name] = {}
+                if variation_name not in design_dict[design_name]["simulation_time"]:
+                    design_dict[design_name]["simulation_time"][variation_name] = {}
 
                 mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
                 app.export_mesh_stats(setup, variation_string, mesh_stats_file)
