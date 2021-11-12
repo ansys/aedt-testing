@@ -5,11 +5,6 @@ import re
 import shlex
 import sys
 
-from pyaedt import get_pyaedt_app  # noqa: E402
-from pyaedt.desktop import Desktop  # noqa: E402
-from pyaedt.generic.general_methods import generate_unique_name
-from pyaedt.generic.report_file_parser import parse_file
-
 DEBUG = False if "oDesktop" in dir() else True
 
 
@@ -31,7 +26,14 @@ else:
     args = parser.parse_args()
     specified_version = args.desktop_version
 
-project_dict = {"error_exception": []}
+
+from pyaedt import get_pyaedt_app  # noqa: E402
+from pyaedt.desktop import Desktop  # noqa: E402
+from pyaedt.generic.general_methods import generate_unique_name  # noqa: E402
+from pyaedt.generic.report_file_parser import parse_rdat_file  # noqa: E402
+
+
+PROJECT_DICT = {"error_exception": [], "designs": {}}
 
 
 class AedtTestException(Exception):
@@ -47,7 +49,7 @@ def parse_mesh_stats(mesh_stats_file, design, variation, setup):
         if "Total number of mesh elements" in line:
             return int(line.strip().split(":")[1])
     else:
-        project_dict["error_exception"].append(
+        PROJECT_DICT["error_exception"].append(
             "Design:{} Variation: {} Setup: {} has no mesh stats".format(design, variation, setup)
         )
 
@@ -65,7 +67,7 @@ def parse_profile_file(profile_file, design, variation, setup):
         simulation_time = re.findall(r"[0-9]*:[0-9][0-9]:[0-9][0-9]", split_line)[0]
         return simulation_time
     else:
-        project_dict["error_exception"].append(
+        PROJECT_DICT["error_exception"].append(
             ("Design:{} Variation:{} Setup:{} no elapsed time in file".format(design, variation, setup))
         )
 
@@ -78,7 +80,7 @@ def extract_data(desktop, project_dir, design_names):
         app = get_pyaedt_app(design_name=design_name)
         setups_names = app.setup_names
         if not setups_names:
-            project_dict["error_exception"].append("Design {} has no setups".format(design_name))
+            PROJECT_DICT["error_exception"].append("Design {} has no setups".format(design_name))
             designs_dict.update(design_dict)
             continue
 
@@ -130,28 +132,43 @@ def extract_design_data(desktop, app, design_name, setup_dict, project_dir, desi
 
         return design_dict
     else:
-        project_dict["error_exception"].append("{} analyze_all failed".format(design_name))
+        PROJECT_DICT["error_exception"].append("{} analyze_all failed".format(design_name))
 
 
 def extract_reports_data(app, design_name, project_dir, report_names):
     report_dict = {}
     if not report_names:
-        project_dict["error_exception"].append("{} has no report".format(design_name))
+        PROJECT_DICT["error_exception"].append("{} has no report".format(design_name))
     else:
         for report in report_names:
             report_file = app.post.export_report_to_file(
                 output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
             )
-            data_dict = parse_file(report_file)
-            single_report = {report: data_dict}
-            report_dict.update(single_report)
+            data_dict = parse_rdat_file(report_file)
+            data_dict = check_nan(data_dict)
+            report_dict.update(data_dict)
 
     return report_dict
 
 
+def check_nan(data_dict):
+
+    for plot_name in data_dict.keys():
+        for trace_name in data_dict[plot_name].keys():
+            curves_dict = data_dict[plot_name][trace_name]["curves"]
+            for curve_name in list(curves_dict.keys()):
+
+                if any(not isinstance(x, (float, int)) for x in curves_dict[curve_name]["x_data"]) or any(
+                    not isinstance(x, (float, int)) for x in curves_dict[curve_name]["y_data"]
+                ):
+
+                    curves_dict.pop(curve_name)
+
+    return data_dict
+
+
 def generate_unique_file_path(project_dir, extension):
     file_name = generate_unique_name("")
-
     file_path = os.path.join(project_dir, file_name + extension)
 
     while os.path.exists(file_path):
@@ -171,13 +188,13 @@ def main():
 
     if design_names:
         designs_dict = extract_data(desktop, project_dir, design_names)
-        project_dict.update(designs_dict)
+        PROJECT_DICT["designs"].update(designs_dict)
     else:
-        project_dict["error_exception"].append("Project has no design")
+        PROJECT_DICT["error_exception"].append("Project has no design")
 
     out_json = r"{}.json".format(project_name)
     with open(os.path.join(project_dir, out_json), "w") as outfile:
-        json.dump(project_dict, outfile, indent=4)
+        json.dump(PROJECT_DICT, outfile, indent=4)
 
 
 if __name__ == "__main__":
