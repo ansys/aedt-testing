@@ -276,8 +276,24 @@ class ElectronicsDesktopTester:
         for machine in allocated_machines:
             self.machines_dict[machine] += allocated_machines[machine]["cores"]
 
-        self.render_project_html(project_name=project_name)
+        project_report = self.prepare_project_report(project_name, project_path)
+
+        if not self.only_reference:
+            self.render_project_html(project_name, project_report)
+
         self.render_main_html(status="success", project_name=project_name)
+        self.active_tasks -= 1
+
+    def prepare_project_report(self, project_name, project_path):
+        report_file = Path(project_path).parent / f"{project_name}.json"
+        if not report_file.exists():
+            project_report = {"error_exception": [f"Project report for {project_name} does not exist"]}
+        else:
+            copy_path(str(report_file), str(self.results_path / "reference_folder"))
+            with open(report_file) as file:
+                project_report = json.load(file)
+
+        return project_report
 
     def allocator(self) -> Iterable:
         """
