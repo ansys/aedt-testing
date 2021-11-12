@@ -5,11 +5,6 @@ import re
 import shlex
 import sys
 
-from pyaedt import get_pyaedt_app  # noqa: E402
-from pyaedt.desktop import Desktop  # noqa: E402
-from pyaedt.generic.general_methods import generate_unique_name
-from pyaedt.generic.report_file_parser import parse_rdat_file
-
 DEBUG = False if "oDesktop" in dir() else True
 
 
@@ -30,6 +25,13 @@ else:
     parser.add_argument("--desktop-version", default="2021.1")
     args = parser.parse_args()
     specified_version = args.desktop_version
+
+
+from pyaedt import get_pyaedt_app  # noqa: E402
+from pyaedt.desktop import Desktop  # noqa: E402
+from pyaedt.generic.general_methods import generate_unique_name  # noqa: E402
+from pyaedt.generic.report_file_parser import parse_rdat_file  # noqa: E402
+
 
 PROJECT_DICT = {"error_exception": [], "designs": {}}
 
@@ -150,22 +152,20 @@ def extract_reports_data(app, design_name, project_dir, report_names):
 
 
 def check_nan(data_dict):
+    to_be_removed = []
+
     for plot_name, traces_dict in data_dict.items():
         for trace_name in traces_dict:
             curves_dict = traces_dict[trace_name]["curves"]
             for curve_name in curves_dict:
-                if any(not isinstance(x, (float, int)) for x in curves_dict[curve_name]["x_data"]):
-                    data_dict[plot_name][trace_name]["curves"][curve_name]["x_data"] = []
+                if any(not isinstance(x, (float, int)) for x in curves_dict[curve_name]["x_data"]) or any(
+                    not isinstance(x, (float, int)) for x in curves_dict[curve_name]["y_data"]
+                ):
 
-                    PROJECT_DICT["error_exception"].append(
-                        "Plot:{} Trace:{} Curve:{} X value not int or float".format(plot_name, trace_name, curve_name)
-                    )
+                    to_be_removed.append({"plot_name": plot_name, "trace_name": trace_name, "curve_name": curve_name})
 
-                if any(not isinstance(x, (float, int)) for x in curves_dict[curve_name]["y_data"]):
-                    data_dict[plot_name][trace_name]["curves"][curve_name]["y_data"] = []
-                    PROJECT_DICT["error_exception"].append(
-                        "Plot:{} Trace:{} Curve:{} Y value not int or float".format(plot_name, trace_name, curve_name)
-                    )
+    [data_dict[x["plot_name"]][x["trace_name"]]["curves"].pop(x["curve_name"]) for x in to_be_removed]
+
     return data_dict
 
 
