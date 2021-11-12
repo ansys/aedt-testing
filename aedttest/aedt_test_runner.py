@@ -272,6 +272,9 @@ class ElectronicsDesktopTester:
                         for curve_name, curve_data in trace_data["curves"].items():
                             # todo create Y label for units
                             plot_id += 1
+                            y_ref_data = self.reference_data["projects"][project_name]["designs"][design_name][
+                                "report"
+                            ][report_name][trace_name]["curves"][curve_name]["y_data"]
                             project_report["plots"].append(
                                 {
                                     "name": f"{design_name}:{report_name}:{trace_name}:{curve_name}",
@@ -279,9 +282,7 @@ class ElectronicsDesktopTester:
                                     "x_label": f'"{trace_data["x_name"]} [{trace_data["x_unit"]}]"',
                                     "x_axis": curve_data["x_data"],
                                     "version_1": self.reference_data["aedt_version"],
-                                    "y_axis_1": self.reference_data["projects"][project_name]["designs"][design_name][
-                                        "report"
-                                    ][report_name][trace_name]["curves"][curve_name]["y_data"],
+                                    "y_axis_1": y_ref_data,
                                     "version_2": str(self.version),
                                     "y_axis_2": curve_data["y_data"],
                                 }
