@@ -152,19 +152,17 @@ def extract_reports_data(app, design_name, project_dir, report_names):
 
 
 def check_nan(data_dict):
-    to_be_removed = []
 
-    for plot_name, traces_dict in data_dict.items():
-        for trace_name in traces_dict:
-            curves_dict = traces_dict[trace_name]["curves"]
-            for curve_name in curves_dict:
+    for plot_name in data_dict.keys():
+        for trace_name in data_dict[plot_name].keys():
+            curves_dict = data_dict[plot_name][trace_name]["curves"]
+            for curve_name in list(curves_dict.keys()):
+
                 if any(not isinstance(x, (float, int)) for x in curves_dict[curve_name]["x_data"]) or any(
                     not isinstance(x, (float, int)) for x in curves_dict[curve_name]["y_data"]
                 ):
 
-                    to_be_removed.append({"plot_name": plot_name, "trace_name": trace_name, "curve_name": curve_name})
-
-    [data_dict[x["plot_name"]][x["trace_name"]]["curves"].pop(x["curve_name"]) for x in to_be_removed]
+                    curves_dict.pop(curve_name)
 
     return data_dict
 
