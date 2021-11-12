@@ -169,7 +169,6 @@ def check_nan(data_dict):
 
 def generate_unique_file_path(project_dir, extension):
     file_name = generate_unique_name("")
-
     file_path = os.path.join(project_dir, file_name + extension)
 
     while os.path.exists(file_path):
