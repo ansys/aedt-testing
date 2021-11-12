@@ -59,6 +59,7 @@ class ElectronicsDesktopTester:
         out_dir: str,
         save_projects: bool,
         only_reference: bool,
+        reference_file: str,
     ) -> None:
         logger.info(f"Initialize new Electronics Desktop Test run. Configuration file is {config_file}")
         self.version = version
@@ -69,6 +70,10 @@ class ElectronicsDesktopTester:
         self.results_path = self.out_dir / "results"
         self.proj_dir = self.out_dir if save_projects else None
         self.only_reference = only_reference
+        self.reference_data = {}
+        if not only_reference:
+            with open(reference_file) as file:
+                self.reference_data = json.load(file)
 
         self.script = str(MODULE_DIR / "simulation_data.py")
         self.script_args = f"--pyaedt-path={Path(_py_aedt_path).parent.parent}"
@@ -111,25 +116,22 @@ class ElectronicsDesktopTester:
 
             [th.join() for th in threads_list]  # wait for all threads to finish before delete folder
 
-            if self.only_reference:
-                combined_report_path = self.create_combined_report()
-                msg = f"Reference result file is stored under {combined_report_path}"
-            else:
-                msg = (
-                    "Job is completed.\n"
-                    f"You can view output by opening in web browser: {self.results_path / 'main.html'}"
-                )
+            combined_report_path = self.create_combined_report()
+            msg = f"Job is completed.\nReference result file is stored under {combined_report_path}"
+
+            if not self.only_reference:
+                msg += f"\nYou can view report by opening in web browser: {self.results_path / 'main.html'}"
 
             logger.info(msg)
 
     def create_combined_report(self) -> Path:
         combined_report_path = self.results_path / "reference_results.json"
-        combined_data = {"error_exception": []}
+        combined_data = {"error_exception": [], "aedt_version": self.version, "projects": {}}
         for json_file in (self.results_path / "reference_folder").iterdir():
             with open(json_file) as file:
                 single_data = json.load(file)
-                combined_data.update(single_data["designs"])
-                combined_data["error_exception"] += single_data["error_exception"]
+                combined_data["projects"][json_file.stem] = single_data
+
         with open(combined_report_path, "w") as file:
             json.dump(combined_data, file, indent=4)
 
@@ -210,40 +212,7 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
-        report = [
-            {
-                "name": "my_xy_plot",
-                "id": "a12",
-                "x_label": '"Time [ns]"',
-                "x_axis": [2010, 2011, 2012, 2013, 2014, 2015, 2016],
-                "version_1": "194",
-                "y_axis_1": [0, 30, 10, 120, 50, 63, 10],
-                "version_2": "221",
-                "y_axis_2": [0, 50, 40, 80, 40, 79, 120],
-            },
-            {
-                "name": "xy_plot",
-                "id": "a13",
-                "x_label": '"Time [ns]"',
-                "x_axis": [2010, 2011, 2012, 2013, 2014, 2015, 2016],
-                "version_1": "194",
-                "y_axis_1": [0, 30, 10, 120, 50, 63, 10],
-                "version_2": "221",
-                "y_axis_2": [0, 50, 40, 80, 40, 79, 120],
-            },
-            {
-                "name": "Torque",
-                "id": "a15",
-                "x_label": '"Time [ns]"',
-                "x_axis": [2010, 2011, 2012, 2013, 2014, 2015, 2016],
-                "version_1": "194",
-                "y_axis_1": [0, 30, 10, 120, 50, 63, 10],
-                "version_2": "221",
-                "y_axis_2": [0, 50, 40, 80, 40, 79, 120],
-            },
-        ]
-
-        data = PROJECT_PAGE_TEMPLATE.render(context={"plots": report, "project_name": project_name})
+        data = PROJECT_PAGE_TEMPLATE.render(context={"plots": project_report["plots"], "project_name": project_name})
         with open(self.results_path / f"{project_name}.html", "w") as file:
             file.write(data)
 
@@ -286,12 +255,37 @@ class ElectronicsDesktopTester:
 
     def prepare_project_report(self, project_name, project_path):
         report_file = Path(project_path).parent / f"{project_name}.json"
+        project_report = {"plots": [], "error_exception": []}
         if not report_file.exists():
-            project_report = {"error_exception": [f"Project report for {project_name} does not exist"]}
+            project_report["error_exception"].append(f"Project report for {project_name} does not exist")
         else:
             copy_path(str(report_file), str(self.results_path / "reference_folder"))
+            if self.only_reference:
+                return project_report
             with open(report_file) as file:
-                project_report = json.load(file)
+                project_data = json.load(file)
+
+            plot_id = 0
+            for design_name, design_data in project_data["designs"].items():
+                for report_name, report_data in design_data["report"].items():
+                    for trace_name, trace_data in report_data.items():
+                        for curve_name, curve_data in trace_data["curves"].items():
+                            # todo create Y label for units
+                            plot_id += 1
+                            project_report["plots"].append(
+                                {
+                                    "name": f"{design_name}:{report_name}:{trace_name}:{curve_name}",
+                                    "id": f"a{plot_id}",
+                                    "x_label": f'"{trace_data["x_name"]} [{trace_data["x_unit"]}]"',
+                                    "x_axis": curve_data["x_data"],
+                                    "version_1": self.reference_data["aedt_version"],
+                                    "y_axis_1": self.reference_data["projects"][project_name]["designs"][design_name][
+                                        "report"
+                                    ][report_name][trace_name]["curves"][curve_name]["y_data"],
+                                    "version_2": str(self.version),
+                                    "y_axis_2": curve_data["y_data"],
+                                }
+                            )
 
         return project_report
 
@@ -334,9 +328,9 @@ class ElectronicsDesktopTester:
                 else:
                     msg = "Waiting for resources. Cores left per machine:\n"
                     for machine, cores in self.machines_dict.items():
-                        msg += f"{machine} has {cores} cores free\n"
+                        msg += f"{machine} has {cores} core(s) free\n"
 
-                    logger.info(msg)
+                    logger.debug(msg)
                     sleep(5)
 
             if allocated_machines:
@@ -668,5 +662,6 @@ if __name__ == "__main__":
         out_dir=args_cli.out_dir,
         save_projects=args_cli.save_sim_data,
         only_reference=args_cli.only_reference,
+        reference_file=args_cli.reference_file,
     )
     aedt_tester.run()
