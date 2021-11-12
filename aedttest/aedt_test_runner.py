@@ -249,10 +249,12 @@ class ElectronicsDesktopTester:
 
         project_report = self.prepare_project_report(project_name, project_path)
 
+        link = None
         if not self.only_reference:
             self.render_project_html(project_name, project_report)
+            link = f"{project_name}.html"
 
-        self.render_main_html(status="success", project_name=project_name, link=f"{project_name}.html")
+        self.render_main_html(status="success", project_name=project_name, link=link)
         self.active_tasks -= 1
 
     def prepare_project_report(self, project_name, project_path):
