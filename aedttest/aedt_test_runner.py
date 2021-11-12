@@ -173,12 +173,13 @@ class ElectronicsDesktopTester:
                     "name": project_name,
                     "cores": project_config["distribution"]["cores"],
                     "status": "queued",
+                    "link": None,
                     "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }
             )
         self.render_main_html(status="queued")
 
-    def render_main_html(self, status: str, project_name: Optional[str] = None) -> None:
+    def render_main_html(self, status: str, project_name: Optional[str] = None, link: Optional[str] = None) -> None:
         """
         Renders main report page.
         Using self.report_data updates django template with the data.
@@ -195,6 +196,7 @@ class ElectronicsDesktopTester:
                 if proj["name"] == project_name:
                     proj["status"] = status
                     proj["time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    proj["link"] = link
                     break
 
         data = MAIN_PAGE_TEMPLATE.render(context={"projects": self.report_data})
@@ -250,7 +252,7 @@ class ElectronicsDesktopTester:
         if not self.only_reference:
             self.render_project_html(project_name, project_report)
 
-        self.render_main_html(status="success", project_name=project_name)
+        self.render_main_html(status="success", project_name=project_name, link=f"{project_name}.html")
         self.active_tasks -= 1
 
     def prepare_project_report(self, project_name, project_path):
