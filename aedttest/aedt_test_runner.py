@@ -274,6 +274,7 @@ class ElectronicsDesktopTester:
             allocated_machines,
             distribution_config=project_config["distribution"],
         )
+        logger.debug(f"Project {project_name} analyses finished. Prepare report.")
 
         # return cores back
         for machine in allocated_machines:
