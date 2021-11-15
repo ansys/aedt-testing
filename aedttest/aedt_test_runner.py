@@ -49,6 +49,33 @@ MAIN_PAGE_TEMPLATE = get_template("static/main.html")
 PROJECT_PAGE_TEMPLATE = get_template("static/project-report.html")
 
 
+def main() -> None:
+    """
+    Main function that is executed by 'flit' CLI script and by executing this python file
+    Returns:
+        None
+    """
+    try:
+        cli_args = parse_arguments()
+    except ValueError as exc:
+        logger.error(str(exc))
+        raise SystemExit(1)
+    aedt_tester = ElectronicsDesktopTester(
+        version=cli_args.aedt_version,
+        max_cores=cli_args.max_cores,
+        max_tasks=cli_args.max_tasks,
+        config_file=cli_args.config_file,
+        out_dir=cli_args.out_dir,
+        save_projects=cli_args.save_sim_data,
+        only_reference=cli_args.only_reference,
+        reference_file=cli_args.reference_file,
+    )
+    try:
+        aedt_tester.run()
+    except Exception as exc:
+        logger.exception(str(exc))
+
+
 class ElectronicsDesktopTester:
     def __init__(
         self,
@@ -667,24 +694,4 @@ def parse_arguments() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
-    try:
-        args_cli = parse_arguments()
-    except ValueError as exc:
-        logger.error(str(exc))
-        raise SystemExit(1)
-
-    aedt_tester = ElectronicsDesktopTester(
-        version=args_cli.aedt_version,
-        max_cores=args_cli.max_cores,
-        max_tasks=args_cli.max_tasks,
-        config_file=args_cli.config_file,
-        out_dir=args_cli.out_dir,
-        save_projects=args_cli.save_sim_data,
-        only_reference=args_cli.only_reference,
-        reference_file=args_cli.reference_file,
-    )
-
-    try:
-        aedt_tester.run()
-    except Exception as exc:
-        logger.exception(str(exc))
+    main()
