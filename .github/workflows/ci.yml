@@ -28,6 +28,6 @@ jobs:
         
     - name: Unittests
       run: |
-        pytest test/unittests -v
+        pytest tests/unittests -v
 
 
