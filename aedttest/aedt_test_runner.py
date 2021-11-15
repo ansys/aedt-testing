@@ -143,6 +143,7 @@ class ElectronicsDesktopTester:
 
             [th.join() for th in threads_list]  # wait for all threads to finish before delete folder
 
+            self.render_main_html()  # make thread-safe render
             combined_report_path = self.create_combined_report()
             msg = f"Job is completed.\nReference result file is stored under {combined_report_path}"
 
@@ -204,29 +205,19 @@ class ElectronicsDesktopTester:
                 "cores": project_config["distribution"]["cores"],
                 "status": "queued",
                 "link": None,
-                "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "time": time_now(),
             }
 
-        self.render_main_html(status="queued")
+        self.render_main_html()
 
-    def render_main_html(self, status: str, project_name: Optional[str] = None, link: Optional[str] = None) -> None:
+    def render_main_html(self) -> None:
         """
         Renders main report page.
         Using self.report_data updates django template with the data.
 
-        Args:
-            status: status of the project to update, if project_name is specified
-            project_name: name of the project to update status
-            link: (str) hyperlink to the project HTML page
-
         Returns:
             None
         """
-        if project_name:
-            self.report_data[project_name]["time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            self.report_data[project_name]["link"] = link
-            self.report_data[project_name]["status"] = status
-
         data = MAIN_PAGE_TEMPLATE.render(context={"projects": self.report_data})
         with open(self.results_path / "main.html", "w") as file:
             file.write(data)
@@ -261,7 +252,9 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
-        self.render_main_html(status="running", project_name=project_name)
+        self.report_data[project_name]["time"] = time_now()
+        self.report_data[project_name]["status"] = "running"
+        self.render_main_html()
 
         execute_aedt(
             self.version,
@@ -279,12 +272,14 @@ class ElectronicsDesktopTester:
 
         project_report = self.prepare_project_report(project_name, project_path)
 
-        link = None
         if not self.only_reference:
             self.render_project_html(project_name, project_report)
-            link = f"{project_name}.html"
+            self.report_data[project_name]["link"] = f"{project_name}.html"
 
-        self.render_main_html(status="success", project_name=project_name, link=link)
+        self.report_data[project_name]["time"] = time_now()
+        self.report_data[project_name]["status"] = "success"
+
+        self.render_main_html()
         self.active_tasks -= 1
 
     def prepare_project_report(self, project_name, project_path):
@@ -631,6 +626,10 @@ def get_aedt_executable_path(version: str) -> str:
     aedt_path = os.path.join(aedt_path, executable)
 
     return aedt_path
+
+
+def time_now():
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def parse_arguments() -> argparse.Namespace:
