@@ -90,8 +90,8 @@ class ElectronicsDesktopTester:
     ) -> None:
         logger.info(f"Initialize new Electronics Desktop Test run. Configuration file is {config_file}")
         self.version = version
-        self.max_cores = max_cores
-        self.max_tasks = max_tasks
+        self.max_cores = max_cores or 99999  # extremely high, like unlimited
+        self.max_tasks = max_tasks or 99999  # extremely high, like unlimited
         self.active_tasks = 0
         self.out_dir = Path(out_dir) if out_dir else CWD_DIR
         self.results_path = self.out_dir / "results"
