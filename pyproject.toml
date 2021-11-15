@@ -1,0 +1,44 @@
+# description if packaging system requirements
+[build-system]
+requires = [
+    "flit_core >=3.2,<4",
+]
+build-backend = "flit_core.buildapi"
+
+# desciption of current module
+[project]
+name = "aedttest"
+authors = [
+    {name = "Maksim Beliaev", email = "beliaev.m.s@gmail.com"},
+    {name = "Bo Yang", email = "boy@kth.se"},
+]
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = ["License :: OSI Approved :: MIT License"]
+dynamic = ["version", "description"]
+
+dependencies = [
+    "pyaedt==0.4.7",
+    "Django==3.2.8",
+]
+
+# development dependencies
+[project.optional-dependencies]
+test = [
+    "black==21.9b0",
+    "pre-commit==2.15.0",
+    "mypy==0.910",
+    "pytest==6.2.5",
+    "pytest-cov==3.0.0",
+]
+
+deploy = [
+    "flit==3.4.0",
+]
+
+[project.urls]
+Home = "https://github.com/ansys/aedt-testing"
+
+# CLI script command
+[project.scripts]
+aedt_test_runner = "aedttest.aedt_test_runner:main"
