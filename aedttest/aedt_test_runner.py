@@ -24,11 +24,12 @@ from typing import Union
 from django import setup as django_setup
 from django.conf import settings as django_settings
 from django.template.loader import get_template
-from pyaedt import __file__ as _py_aedt_path
 
 from aedttest.clusters.job_hosts import get_job_machines
 from aedttest.logger import logger
 from aedttest.logger import set_logger
+
+from pyaedt import __file__ as _py_aedt_path  # noreorder
 
 __authors__ = "Maksim Beliaev, Bo Yang"
 
@@ -100,7 +101,7 @@ class ElectronicsDesktopTester:
             for project_name, allocated_machines in self.allocator():
                 project_config = self.project_tests_config[project_name]
 
-                logger.info(f"Add project {project_name}")
+                logger.info(f"Start project {project_name}")
                 copy_dependencies(project_config, tmp_dir)
                 project_path = copy_proj(project_name, project_config, tmp_dir)
 
@@ -127,7 +128,12 @@ class ElectronicsDesktopTester:
     def create_combined_report(self) -> Path:
         combined_report_path = self.results_path / "reference_results.json"
         combined_data = {"error_exception": [], "aedt_version": self.version, "projects": {}}
-        for json_file in (self.results_path / "reference_folder").iterdir():
+
+        reference_folder = self.results_path / "reference_folder"
+        if not reference_folder.exists():
+            raise RuntimeError("Reference results were not generated. Probably projects failed to run")
+
+        for json_file in reference_folder.iterdir():
             with open(json_file) as file:
                 single_data = json.load(file)
                 combined_data["projects"][json_file.stem] = single_data
@@ -310,7 +316,7 @@ class ElectronicsDesktopTester:
         proj_name = ""
         while sorted_by_cores_desc:
             if self.active_tasks >= self.max_tasks:
-                logger.info("Number of maximum tasks limit is reached. Wait for job to finish")
+                logger.debug("Number of maximum tasks limit is reached. Wait for job to finish")
                 sleep(4)
 
             allocated_machines = None
@@ -633,7 +639,12 @@ def parse_arguments() -> argparse.Namespace:
         type=int,
         help="total number of parallel tasks limit",
     )
+
+    parser.add_argument("--debug", action="store_true", help="Adds additional DEBUG logs")
     cli_args = parser.parse_args()
+
+    log_level = 10 if cli_args.debug else 20
+    set_logger(logging_file=CWD_DIR / "aedt_test_framework.log", level=log_level)
 
     if not cli_args.only_reference and not cli_args.reference_file:
         raise ValueError("Either set --only-reference flag or provide path via --reference-file")
@@ -657,8 +668,12 @@ def parse_arguments() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
-    set_logger(logging_file=CWD_DIR / "aedt_test_framework.log")
-    args_cli = parse_arguments()
+    try:
+        args_cli = parse_arguments()
+    except ValueError as exc:
+        logger.error(str(exc))
+        raise SystemExit(1)
+
     aedt_tester = ElectronicsDesktopTester(
         version=args_cli.aedt_version,
         max_cores=args_cli.max_cores,
@@ -669,4 +684,8 @@ if __name__ == "__main__":
         only_reference=args_cli.only_reference,
         reference_file=args_cli.reference_file,
     )
-    aedt_tester.run()
+
+    try:
+        aedt_tester.run()
+    except Exception as exc:
+        logger.exception(str(exc))
