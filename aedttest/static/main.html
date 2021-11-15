@@ -63,7 +63,11 @@
                                             {% for project in projects %}
                                                 <tr>
                                                     <td>
-                                                        {{ project.name }}
+                                                        {% if project.link %}
+                                                            <a href="{{ project.link }}">{{ project.name }}</a>
+                                                        {% else %}
+                                                            {{ project.name }}
+                                                        {% endif %}
                                                     </td>
                                                     <td>
                                                         {{ project.cores }}

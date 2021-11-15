@@ -51,18 +51,32 @@ PROJECT_PAGE_TEMPLATE = get_template("static/project-report.html")
 
 class ElectronicsDesktopTester:
     def __init__(
-        self, version: str, max_cores: int, max_tasks: int, config_file: str, out_dir: str, save_projects: bool
+        self,
+        version: str,
+        max_cores: int,
+        max_tasks: int,
+        config_file: str,
+        out_dir: str,
+        save_projects: bool,
+        only_reference: bool,
+        reference_file: str,
     ) -> None:
         logger.info(f"Initialize new Electronics Desktop Test run. Configuration file is {config_file}")
         self.version = version
         self.max_cores = max_cores
         self.max_tasks = max_tasks
+        self.active_tasks = 0
         self.out_dir = Path(out_dir) if out_dir else CWD_DIR
         self.results_path = self.out_dir / "results"
         self.proj_dir = self.out_dir if save_projects else None
+        self.only_reference = only_reference
+        self.reference_data = {}
+        if not only_reference:
+            with open(reference_file) as file:
+                self.reference_data = json.load(file)
 
         self.script = str(MODULE_DIR / "simulation_data.py")
-        self.script_args = f"--path1={Path(_py_aedt_path).parent.parent}"
+        self.script_args = f"--pyaedt-path={Path(_py_aedt_path).parent.parent}"
 
         self.report_data = []
 
@@ -102,8 +116,26 @@ class ElectronicsDesktopTester:
 
             [th.join() for th in threads_list]  # wait for all threads to finish before delete folder
 
-            msg = f"Job is completed.\nYou can view output by opening in web browser: {self.results_path / 'main.html'}"
+            combined_report_path = self.create_combined_report()
+            msg = f"Job is completed.\nReference result file is stored under {combined_report_path}"
+
+            if not self.only_reference:
+                msg += f"\nYou can view report by opening in web browser: {self.results_path / 'main.html'}"
+
             logger.info(msg)
+
+    def create_combined_report(self) -> Path:
+        combined_report_path = self.results_path / "reference_results.json"
+        combined_data = {"error_exception": [], "aedt_version": self.version, "projects": {}}
+        for json_file in (self.results_path / "reference_folder").iterdir():
+            with open(json_file) as file:
+                single_data = json.load(file)
+                combined_data["projects"][json_file.stem] = single_data
+
+        with open(combined_report_path, "w") as file:
+            json.dump(combined_data, file, indent=4)
+
+        return combined_report_path
 
     def validate_hardware(self) -> None:
         """
@@ -141,12 +173,13 @@ class ElectronicsDesktopTester:
                     "name": project_name,
                     "cores": project_config["distribution"]["cores"],
                     "status": "queued",
+                    "link": None,
                     "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }
             )
         self.render_main_html(status="queued")
 
-    def render_main_html(self, status: str, project_name: Optional[str] = None) -> None:
+    def render_main_html(self, status: str, project_name: Optional[str] = None, link: Optional[str] = None) -> None:
         """
         Renders main report page.
         Using self.report_data updates django template with the data.
@@ -163,13 +196,14 @@ class ElectronicsDesktopTester:
                 if proj["name"] == project_name:
                     proj["status"] = status
                     proj["time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    proj["link"] = link
                     break
 
         data = MAIN_PAGE_TEMPLATE.render(context={"projects": self.report_data})
         with open(self.results_path / "main.html", "w") as file:
             file.write(data)
 
-    def render_project_html(self, project_name="test_project"):
+    def render_project_html(self, project_name: str, project_report: dict):
         """
         Renders project report page. Creates new page if none exists
         Updates django template with XY plots, mesh, etc data.
@@ -180,40 +214,7 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
-        report = [
-            {
-                "name": "my_xy_plot",
-                "id": "a12",
-                "x_label": '"Time [ns]"',
-                "x_axis": [2010, 2011, 2012, 2013, 2014, 2015, 2016],
-                "version_1": "194",
-                "y_axis_1": [0, 30, 10, 120, 50, 63, 10],
-                "version_2": "221",
-                "y_axis_2": [0, 50, 40, 80, 40, 79, 120],
-            },
-            {
-                "name": "xy_plot",
-                "id": "a13",
-                "x_label": '"Time [ns]"',
-                "x_axis": [2010, 2011, 2012, 2013, 2014, 2015, 2016],
-                "version_1": "194",
-                "y_axis_1": [0, 30, 10, 120, 50, 63, 10],
-                "version_2": "221",
-                "y_axis_2": [0, 50, 40, 80, 40, 79, 120],
-            },
-            {
-                "name": "Torque",
-                "id": "a15",
-                "x_label": '"Time [ns]"',
-                "x_axis": [2010, 2011, 2012, 2013, 2014, 2015, 2016],
-                "version_1": "194",
-                "y_axis_1": [0, 30, 10, 120, 50, 63, 10],
-                "version_2": "221",
-                "y_axis_2": [0, 50, 40, 80, 40, 79, 120],
-            },
-        ]
-
-        data = PROJECT_PAGE_TEMPLATE.render(context={"plots": report, "project_name": project_name})
+        data = PROJECT_PAGE_TEMPLATE.render(context={"plots": project_report["plots"], "project_name": project_name})
         with open(self.results_path / f"{project_name}.html", "w") as file:
             file.write(data)
 
@@ -246,8 +247,52 @@ class ElectronicsDesktopTester:
         for machine in allocated_machines:
             self.machines_dict[machine] += allocated_machines[machine]["cores"]
 
-        self.render_project_html(project_name=project_name)
-        self.render_main_html(status="success", project_name=project_name)
+        project_report = self.prepare_project_report(project_name, project_path)
+
+        link = None
+        if not self.only_reference:
+            self.render_project_html(project_name, project_report)
+            link = f"{project_name}.html"
+
+        self.render_main_html(status="success", project_name=project_name, link=link)
+        self.active_tasks -= 1
+
+    def prepare_project_report(self, project_name, project_path):
+        report_file = Path(project_path).parent / f"{project_name}.json"
+        project_report = {"plots": [], "error_exception": []}
+        if not report_file.exists():
+            project_report["error_exception"].append(f"Project report for {project_name} does not exist")
+        else:
+            copy_path(str(report_file), str(self.results_path / "reference_folder"))
+            if self.only_reference:
+                return project_report
+            with open(report_file) as file:
+                project_data = json.load(file)
+
+            plot_id = 0
+            for design_name, design_data in project_data["designs"].items():
+                for report_name, report_data in design_data["report"].items():
+                    for trace_name, trace_data in report_data.items():
+                        for curve_name, curve_data in trace_data["curves"].items():
+                            # todo create Y label for units
+                            plot_id += 1
+                            y_ref_data = self.reference_data["projects"][project_name]["designs"][design_name][
+                                "report"
+                            ][report_name][trace_name]["curves"][curve_name]["y_data"]
+                            project_report["plots"].append(
+                                {
+                                    "name": f"{design_name}:{report_name}:{trace_name}:{curve_name}",
+                                    "id": f"a{plot_id}",
+                                    "x_label": f'"{trace_data["x_name"]} [{trace_data["x_unit"]}]"',
+                                    "x_axis": curve_data["x_data"],
+                                    "version_1": self.reference_data["aedt_version"],
+                                    "y_axis_1": y_ref_data,
+                                    "version_2": str(self.version),
+                                    "y_axis_2": curve_data["y_data"],
+                                }
+                            )
+
+        return project_report
 
     def allocator(self) -> Iterable:
         """
@@ -264,6 +309,10 @@ class ElectronicsDesktopTester:
         )
         proj_name = ""
         while sorted_by_cores_desc:
+            if self.active_tasks >= self.max_tasks:
+                logger.info("Number of maximum tasks limit is reached. Wait for job to finish")
+                sleep(4)
+
             allocated_machines = None
             for proj_name in sorted_by_cores_desc:
                 # first try to fit all jobs within a single node for stability, since projects are sorted
@@ -284,9 +333,9 @@ class ElectronicsDesktopTester:
                 else:
                     msg = "Waiting for resources. Cores left per machine:\n"
                     for machine, cores in self.machines_dict.items():
-                        msg += f"{machine} has {cores} cores free\n"
+                        msg += f"{machine} has {cores} core(s) free\n"
 
-                    logger.info(msg)
+                    logger.debug(msg)
                     sleep(5)
 
             if allocated_machines:
@@ -294,6 +343,7 @@ class ElectronicsDesktopTester:
                     self.machines_dict[machine] -= allocated_machines[machine]["cores"]
 
                 sorted_by_cores_desc.remove(proj_name)
+                self.active_tasks += 1
                 yield proj_name, allocated_machines
 
 
@@ -562,6 +612,9 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--aedt-version", "-av", required=True, help="Electronics Desktop version to test, e.g. 221")
     parser.add_argument("--config-file", "-cf", required=True, help="Project config file path")
+    parser.add_argument("--reference-file", help="Reference results file path")
+    parser.add_argument("--only-reference", action="store_true", help="Only create reference results")
+
     parser.add_argument(
         "--out-dir", "-o", help="Output directory for reports and project files (if --save-sim-data set)"
     )
@@ -581,6 +634,9 @@ def parse_arguments() -> argparse.Namespace:
         help="total number of parallel tasks limit",
     )
     cli_args = parser.parse_args()
+
+    if not cli_args.only_reference and not cli_args.reference_file:
+        raise ValueError("Either set --only-reference flag or provide path via --reference-file")
 
     if not (cli_args.max_cores or cli_args.max_tasks):
         logger.warning(
@@ -610,5 +666,7 @@ if __name__ == "__main__":
         config_file=args_cli.config_file,
         out_dir=args_cli.out_dir,
         save_projects=args_cli.save_sim_data,
+        only_reference=args_cli.only_reference,
+        reference_file=args_cli.reference_file,
     )
     aedt_tester.run()
