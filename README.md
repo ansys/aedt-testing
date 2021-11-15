@@ -31,7 +31,7 @@ Current framework has the following features:
 ## Installation
 To install the package use:
 ```bash
-pip install
+pip install .
 ```
 
 ## Usage
