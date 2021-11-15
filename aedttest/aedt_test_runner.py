@@ -31,7 +31,6 @@ from aedttest.logger import set_logger
 
 from pyaedt import __file__ as _py_aedt_path  # noreorder
 
-__authors__ = "Maksim Beliaev, Bo Yang"
 
 MODULE_DIR = Path(__file__).resolve().parent
 CWD_DIR = Path.cwd()
