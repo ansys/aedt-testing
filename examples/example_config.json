@@ -10,14 +10,7 @@
             "multilevel_distribution_tasks": 0,
             "single_node": true
         },
-        "path": "input\\just_winding.aedt",
-        "Maxwell2DDesign1": {
-            "Setup1": {
-                "mesh": {
-                    "total": 45
-                }
-            }
-        }
+        "path": "input\\just_winding.aedt"
     },
     "expression_excitation": {
         "distribution": {
