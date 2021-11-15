@@ -345,6 +345,7 @@ class ElectronicsDesktopTester:
             if self.active_tasks >= self.max_tasks:
                 logger.debug("Number of maximum tasks limit is reached. Wait for job to finish")
                 sleep(4)
+                continue
 
             allocated_machines = None
             for proj_name in sorted_by_cores_desc:
