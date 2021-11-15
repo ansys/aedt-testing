@@ -4,6 +4,7 @@
 
 - [Configure your enviornment](#configure-your-enviornment)
 - [Validate types](#validate-types)
+- [Build package](#build-package)
 
 <!-- tocstop -->
 
@@ -21,4 +22,11 @@ pre-commit install
 ## Validate types
 ```bash
 mypy --config-file=./mypy.ini tests
+```
+
+
+## Build package
+package is built using:
+```bash
+flit build
 ```

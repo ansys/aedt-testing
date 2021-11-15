@@ -90,8 +90,8 @@ class ElectronicsDesktopTester:
     ) -> None:
         logger.info(f"Initialize new Electronics Desktop Test run. Configuration file is {config_file}")
         self.version = version
-        self.max_cores = max_cores or 99999  # extremely high, like unlimited
-        self.max_tasks = max_tasks or 99999  # extremely high, like unlimited
+        self.max_cores = max_cores
+        self.max_tasks = max_tasks
         self.active_tasks = 0
         self.out_dir = Path(out_dir) if out_dir else CWD_DIR
         self.results_path = self.out_dir / "results"
@@ -654,18 +654,8 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--save-sim-data", "-s", action="store_true", help="Save simulation data under output dir (--out-dir flag)"
     )
-    parser.add_argument(
-        "--max-cores",
-        "-c",
-        type=int,
-        help="total number of cores limit",
-    )
-    parser.add_argument(
-        "--max-tasks",
-        "-t",
-        type=int,
-        help="total number of parallel tasks limit",
-    )
+    parser.add_argument("--max-cores", "-c", type=int, help="total number of cores limit", default=99999)
+    parser.add_argument("--max-tasks", "-t", type=int, help="total number of parallel tasks limit", default=99999)
 
     parser.add_argument("--debug", action="store_true", help="Adds additional DEBUG logs")
     cli_args = parser.parse_args()
