@@ -105,7 +105,7 @@ class ElectronicsDesktopTester:
         self.script = str(MODULE_DIR / "simulation_data.py")
         self.script_args = f"--pyaedt-path={Path(_py_aedt_path).parent.parent}"
 
-        self.report_data = []
+        self.report_data = {}
 
         self.machines_dict = {machine.hostname: machine.cores for machine in get_job_machines()}
 
@@ -200,15 +200,13 @@ class ElectronicsDesktopTester:
         copy_tree(str(MODULE_DIR / "static"), str(self.results_path))
 
         for project_name, project_config in self.project_tests_config.items():
-            self.report_data.append(
-                {
-                    "name": project_name,
-                    "cores": project_config["distribution"]["cores"],
-                    "status": "queued",
-                    "link": None,
-                    "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                }
-            )
+            self.report_data[project_name] = {
+                "cores": project_config["distribution"]["cores"],
+                "status": "queued",
+                "link": None,
+                "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            }
+
         self.render_main_html(status="queued")
 
     def render_main_html(self, status: str, project_name: Optional[str] = None, link: Optional[str] = None) -> None:
@@ -219,17 +217,15 @@ class ElectronicsDesktopTester:
         Args:
             status: status of the project to update, if project_name is specified
             project_name: name of the project to update status
+            link: (str) hyperlink to the project HTML page
 
         Returns:
             None
         """
         if project_name:
-            for proj in self.report_data:
-                if proj["name"] == project_name:
-                    proj["status"] = status
-                    proj["time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    proj["link"] = link
-                    break
+            self.report_data[project_name]["time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            self.report_data[project_name]["link"] = link
+            self.report_data[project_name]["status"] = status
 
         data = MAIN_PAGE_TEMPLATE.render(context={"projects": self.report_data})
         with open(self.results_path / "main.html", "w") as file:
@@ -242,6 +238,7 @@ class ElectronicsDesktopTester:
 
         Args:
             project_name: name of the project to render
+            project_report: (dict) data to render on plots
 
         Returns:
             None

@@ -41,7 +41,6 @@
                 </div>
                 <!-- /# row -->
                 <section id="main-content">
-
                     <div class="row">
                         <div class="col-lg-8">
                             <div class="card">
@@ -60,13 +59,13 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                            {% for project in projects %}
+                                            {% for project_name, project in projects.items %}
                                                 <tr>
                                                     <td>
                                                         {% if project.link %}
-                                                            <a href="{{ project.link }}">{{ project.name }}</a>
+                                                            <a href="{{ project.link }}">{{ project_name }}</a>
                                                         {% else %}
-                                                            {{ project.name }}
+                                                            {{ project_name }}
                                                         {% endif %}
                                                     </td>
                                                     <td>
