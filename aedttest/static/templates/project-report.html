@@ -38,8 +38,8 @@
             </div>
           </div>
           <section id="main-content">
-          {% if errors %}
-            <div class="row">
+            {% if errors %}
+              <div class="row">
                   <div class="col-lg-8">
                       <div class="card">
                           <div class="card-title pr">
@@ -58,6 +58,84 @@
                                       {% endfor %}
                                       </tbody>
                                   </table>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+            {% endif %}
+            {% if sim_time %}
+              <div class="row">
+                  <div class="col-lg-8">
+                      <div class="card">
+                          <div class="card-title pr">
+                              <h4>Simulation Time</h4>
+                          </div>
+                          <div class="card-body">
+                              <div class="table-responsive">
+                                  <table class="table project-data-table m-t-20">
+                                    <thead>
+                                        <tr>
+                                            <th>Source</th>
+                                            <th>Reference Time</th>
+                                            <th>Current Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for time in sim_time %}
+                                        <tr>
+                                            <td>
+                                                {{ time.name }}
+                                            </td>
+                                            <td>
+                                                {{ time.ref }}
+                                            </td>
+                                            <td>
+                                                {{ time.current }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+            {% endif %}
+            {% if mesh %}
+              <div class="row">
+                  <div class="col-lg-8">
+                      <div class="card">
+                          <div class="card-title pr">
+                              <h4>Mesh Statistics</h4>
+                          </div>
+                          <div class="card-body">
+                              <div class="table-responsive">
+                                  <table class="table project-data-table m-t-20">
+                                    <thead>
+                                        <tr>
+                                            <th>Source</th>
+                                            <th>Reference Elements Count</th>
+                                            <th>Current Elements Count</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for mesh_data in mesh %}
+                                        <tr>
+                                            <td>
+                                                {{ mesh_data.name }}
+                                            </td>
+                                            <td>
+                                                {{ mesh_data.ref }}
+                                            </td>
+                                            <td>
+                                                {{ mesh_data.current }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
                               </div>
                           </div>
                       </div>
