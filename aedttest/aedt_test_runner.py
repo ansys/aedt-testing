@@ -304,6 +304,7 @@ class ElectronicsDesktopTester:
                 project_data = json.load(file)
 
             # todo handle if some reference data does not exist
+            # todo handle if current report misses something from reference data
             project_report["error_exception"] += project_data["error_exception"]
             for design_name, design_data in project_data["designs"].items():
                 # get mesh data
@@ -341,9 +342,14 @@ class ElectronicsDesktopTester:
     def extract_mesh_or_time_data(self, key_name, design_data, design_name, project_name, project_report):
         for variation_name, variation_data in design_data[key_name].items():
             for setup_name, current_stat in variation_data.items():
-                reference = self.reference_data["projects"][project_name]["designs"][design_name][key_name][
-                    variation_name
-                ][setup_name]
+                reference_dict = self.reference_data["projects"][project_name]["designs"][design_name][key_name]
+                if variation_name not in reference_dict:
+                    project_report["error_exception"].append(
+                        f"Variation ({variation_name}) was not found in reference results for design: {design_name}"
+                    )
+                    continue
+
+                reference = reference_dict[variation_name][setup_name]
                 project_report[key_name].append(
                     {
                         "name": f"{design_name}:{setup_name}:{variation_name}",
