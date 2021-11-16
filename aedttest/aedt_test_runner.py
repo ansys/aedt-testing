@@ -239,6 +239,8 @@ class ElectronicsDesktopTester:
             "plots": project_report["plots"],
             "project_name": project_name,
             "errors": project_report["error_exception"],
+            "mesh": project_report["mesh"],
+            "sim_time": project_report["simulation_time"],
         }
         data = PROJECT_PAGE_TEMPLATE.render(context=page_ctx)
         with open(self.results_path / f"{project_name}.html", "w") as file:
@@ -291,7 +293,7 @@ class ElectronicsDesktopTester:
 
     def prepare_project_report(self, project_name, project_path):
         report_file = Path(project_path).parent / f"{project_name}.json"
-        project_report = {"plots": [], "error_exception": []}
+        project_report = {"plots": [], "error_exception": [], "mesh": [], "simulation_time": []}
         if not report_file.exists():
             project_report["error_exception"].append(f"Project report for {project_name} does not exist")
         else:
@@ -301,31 +303,54 @@ class ElectronicsDesktopTester:
             with open(report_file) as file:
                 project_data = json.load(file)
 
-            plot_id = 0
+            # todo handle if some reference data does not exist
             project_report["error_exception"] += project_data["error_exception"]
             for design_name, design_data in project_data["designs"].items():
-                for report_name, report_data in design_data["report"].items():
-                    for trace_name, trace_data in report_data.items():
-                        for curve_name, curve_data in trace_data["curves"].items():
-                            # todo create Y label for units
-                            plot_id += 1
-                            y_ref_data = self.reference_data["projects"][project_name]["designs"][design_name][
-                                "report"
-                            ][report_name][trace_name]["curves"][curve_name]["y_data"]
-                            project_report["plots"].append(
-                                {
-                                    "name": f"{design_name}:{report_name}:{trace_name}:{curve_name}",
-                                    "id": f"a{plot_id}",
-                                    "x_label": f'"{trace_data["x_name"]} [{trace_data["x_unit"]}]"',
-                                    "x_axis": curve_data["x_data"],
-                                    "version_1": self.reference_data["aedt_version"],
-                                    "y_axis_1": y_ref_data,
-                                    "version_2": str(self.version),
-                                    "y_axis_2": curve_data["y_data"],
-                                }
-                            )
+                # get mesh data
+                self.extract_mesh_or_time_data("mesh", design_data, design_name, project_name, project_report)
+                # get simulation time
+                self.extract_mesh_or_time_data(
+                    "simulation_time", design_data, design_name, project_name, project_report
+                )
+                # extract XY curve data
+                self.extract_curve_data(design_data, design_name, project_name, project_report)
 
         return project_report
+
+    def extract_curve_data(self, design_data, design_name, project_name, project_report):
+        for report_name, report_data in design_data["report"].items():
+            for trace_name, trace_data in report_data.items():
+                for curve_name, curve_data in trace_data["curves"].items():
+                    # todo create Y label for units
+                    y_ref_data = self.reference_data["projects"][project_name]["designs"][design_name]["report"][
+                        report_name
+                    ][trace_name]["curves"][curve_name]["y_data"]
+                    project_report["plots"].append(
+                        {
+                            "name": f"{design_name}:{report_name}:{trace_name}:{curve_name}",
+                            "id": unique_id(),
+                            "x_label": f'"{trace_data["x_name"]} [{trace_data["x_unit"]}]"',
+                            "x_axis": curve_data["x_data"],
+                            "version_1": self.reference_data["aedt_version"],
+                            "y_axis_1": y_ref_data,
+                            "version_2": str(self.version),
+                            "y_axis_2": curve_data["y_data"],
+                        }
+                    )
+
+    def extract_mesh_or_time_data(self, key_name, design_data, design_name, project_name, project_report):
+        for variation_name, variation_data in design_data[key_name].items():
+            for setup_name, current_stat in variation_data.items():
+                reference = self.reference_data["projects"][project_name]["designs"][design_name][key_name][
+                    variation_name
+                ][setup_name]
+                project_report[key_name].append(
+                    {
+                        "name": f"{design_name}:{setup_name}:{variation_name}",
+                        "ref": reference,
+                        "current": current_stat,
+                    }
+                )
 
     def allocator(self) -> Iterable:
         """
@@ -547,6 +572,20 @@ def mkdtemp_persistent(*args, persistent=True, **kwargs):
         return normal_mkdtemp()
     else:
         return tempfile.TemporaryDirectory(*args, **kwargs)
+
+
+def generator_unique_id():
+    i = 1
+    while True:
+        yield f"a{i}"
+        i += 1
+
+
+id_generator = generator_unique_id()
+
+
+def unique_id():
+    return next(id_generator)
 
 
 def execute_aedt(
