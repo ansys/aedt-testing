@@ -177,7 +177,7 @@ thead tr th {
   font-weight: 500;
 }
 thead tr th:last-child {
-  text-align: left;
+  text-align: right;
 }
 tbody tr th {
   color: #373757;
@@ -189,7 +189,7 @@ tbody tr td {
   color: #868e96;
 }
 tbody tr td:last-child {
-  text-align: left;
+  text-align: right;
 }
 .table > tbody > tr > td,
 .table > tbody > tr > th,
