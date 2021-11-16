@@ -40,13 +40,13 @@ django_settings.configure(
     TEMPLATES=[
         {
             "BACKEND": "django.template.backends.django.DjangoTemplates",
-            "DIRS": [MODULE_DIR],  # if you want the templates from a file
+            "DIRS": [MODULE_DIR / "static" / "templates"],  # if you want the templates from a file
         },
     ]
 )
 django_setup()
-MAIN_PAGE_TEMPLATE = get_template("static/main.html")
-PROJECT_PAGE_TEMPLATE = get_template("static/project-report.html")
+MAIN_PAGE_TEMPLATE = get_template("main.html")
+PROJECT_PAGE_TEMPLATE = get_template("project-report.html")
 
 
 def main() -> None:
