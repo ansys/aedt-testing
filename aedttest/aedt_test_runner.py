@@ -143,7 +143,7 @@ class ElectronicsDesktopTester:
 
             [th.join() for th in threads_list]  # wait for all threads to finish before delete folder
 
-            self.render_main_html()  # make thread-safe render
+            self.render_main_html(finished=True)  # make thread-safe render
             combined_report_path = self.create_combined_report()
             msg = f"Job is completed.\nReference result file is stored under {combined_report_path}"
 
@@ -210,7 +210,7 @@ class ElectronicsDesktopTester:
 
         self.render_main_html()
 
-    def render_main_html(self) -> None:
+    def render_main_html(self, finished: bool = False) -> None:
         """
         Renders main report page.
         Using self.report_data updates django template with the data.
@@ -218,7 +218,7 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
-        data = MAIN_PAGE_TEMPLATE.render(context={"projects": self.report_data})
+        data = MAIN_PAGE_TEMPLATE.render(context={"projects": self.report_data, "finished": finished})
         with open(self.results_path / "main.html", "w") as file:
             file.write(data)
 
@@ -272,12 +272,13 @@ class ElectronicsDesktopTester:
 
         project_report = self.prepare_project_report(project_name, project_path)
 
+        status = "success" if not project_report["error_exception"] else "fail"
         if not self.only_reference:
             self.render_project_html(project_name, project_report)
             self.report_data[project_name]["link"] = f"{project_name}.html"
 
         self.report_data[project_name]["time"] = time_now()
-        self.report_data[project_name]["status"] = "success"
+        self.report_data[project_name]["status"] = status
 
         self.render_main_html()
         self.active_tasks -= 1
@@ -296,6 +297,7 @@ class ElectronicsDesktopTester:
 
             plot_id = 0
             for design_name, design_data in project_data["designs"].items():
+                project_report["error_exception"] += design_data["error_exception"]
                 for report_name, report_data in design_data["report"].items():
                     for trace_name, trace_data in report_data.items():
                         for curve_name, curve_data in trace_data["curves"].items():
