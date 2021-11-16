@@ -5,7 +5,10 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-     <meta http-equiv="refresh" content="5" />
+    {% if not finished %}
+        <meta http-equiv="refresh" content="10" />
+    {% endif %}
+
     <title>Ansys Electronics Desktop Testing Framework</title>
     <!-- ================= Favicon ================== -->
     <!-- Styles -->
@@ -41,7 +44,6 @@
                 </div>
                 <!-- /# row -->
                 <section id="main-content">
-
                     <div class="row">
                         <div class="col-lg-8">
                             <div class="card">
@@ -60,13 +62,13 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                            {% for project in projects %}
+                                            {% for project_name, project in projects.items %}
                                                 <tr>
                                                     <td>
                                                         {% if project.link %}
-                                                            <a href="{{ project.link }}">{{ project.name }}</a>
+                                                            <a href="{{ project.link }}">{{ project_name }}</a>
                                                         {% else %}
-                                                            {{ project.name }}
+                                                            {{ project_name }}
                                                         {% endif %}
                                                     </td>
                                                     <td>

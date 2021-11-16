@@ -40,13 +40,13 @@ django_settings.configure(
     TEMPLATES=[
         {
             "BACKEND": "django.template.backends.django.DjangoTemplates",
-            "DIRS": [MODULE_DIR],  # if you want the templates from a file
+            "DIRS": [MODULE_DIR / "static" / "templates"],  # if you want the templates from a file
         },
     ]
 )
 django_setup()
-MAIN_PAGE_TEMPLATE = get_template("static/main.html")
-PROJECT_PAGE_TEMPLATE = get_template("static/project-report.html")
+MAIN_PAGE_TEMPLATE = get_template("main.html")
+PROJECT_PAGE_TEMPLATE = get_template("project-report.html")
 
 
 def main() -> None:
@@ -105,7 +105,7 @@ class ElectronicsDesktopTester:
         self.script = str(MODULE_DIR / "simulation_data.py")
         self.script_args = f"--pyaedt-path={Path(_py_aedt_path).parent.parent}"
 
-        self.report_data = []
+        self.report_data = {}
 
         self.machines_dict = {machine.hostname: machine.cores for machine in get_job_machines()}
 
@@ -143,6 +143,7 @@ class ElectronicsDesktopTester:
 
             [th.join() for th in threads_list]  # wait for all threads to finish before delete folder
 
+            self.render_main_html(finished=True)  # make thread-safe render
             combined_report_path = self.create_combined_report()
             msg = f"Job is completed.\nReference result file is stored under {combined_report_path}"
 
@@ -197,41 +198,28 @@ class ElectronicsDesktopTester:
         """
         if self.results_path.exists():
             remove_tree(str(self.results_path))
-        copy_tree(str(MODULE_DIR / "static"), str(self.results_path))
+        copy_path(str(MODULE_DIR / "static" / "css"), str(self.results_path))
+        copy_path(str(MODULE_DIR / "static" / "js"), str(self.results_path))
 
         for project_name, project_config in self.project_tests_config.items():
-            self.report_data.append(
-                {
-                    "name": project_name,
-                    "cores": project_config["distribution"]["cores"],
-                    "status": "queued",
-                    "link": None,
-                    "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                }
-            )
-        self.render_main_html(status="queued")
+            self.report_data[project_name] = {
+                "cores": project_config["distribution"]["cores"],
+                "status": "queued",
+                "link": None,
+                "time": time_now(),
+            }
 
-    def render_main_html(self, status: str, project_name: Optional[str] = None, link: Optional[str] = None) -> None:
+        self.render_main_html()
+
+    def render_main_html(self, finished: bool = False) -> None:
         """
         Renders main report page.
         Using self.report_data updates django template with the data.
 
-        Args:
-            status: status of the project to update, if project_name is specified
-            project_name: name of the project to update status
-
         Returns:
             None
         """
-        if project_name:
-            for proj in self.report_data:
-                if proj["name"] == project_name:
-                    proj["status"] = status
-                    proj["time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    proj["link"] = link
-                    break
-
-        data = MAIN_PAGE_TEMPLATE.render(context={"projects": self.report_data})
+        data = MAIN_PAGE_TEMPLATE.render(context={"projects": self.report_data, "finished": finished})
         with open(self.results_path / "main.html", "w") as file:
             file.write(data)
 
@@ -242,6 +230,7 @@ class ElectronicsDesktopTester:
 
         Args:
             project_name: name of the project to render
+            project_report: (dict) data to render on plots
 
         Returns:
             None
@@ -264,7 +253,9 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
-        self.render_main_html(status="running", project_name=project_name)
+        self.report_data[project_name]["time"] = time_now()
+        self.report_data[project_name]["status"] = "running"
+        self.render_main_html()
 
         execute_aedt(
             self.version,
@@ -274,6 +265,7 @@ class ElectronicsDesktopTester:
             allocated_machines,
             distribution_config=project_config["distribution"],
         )
+        logger.debug(f"Project {project_name} analyses finished. Prepare report.")
 
         # return cores back
         for machine in allocated_machines:
@@ -281,12 +273,15 @@ class ElectronicsDesktopTester:
 
         project_report = self.prepare_project_report(project_name, project_path)
 
-        link = None
+        status = "success" if not project_report["error_exception"] else "fail"
         if not self.only_reference:
             self.render_project_html(project_name, project_report)
-            link = f"{project_name}.html"
+            self.report_data[project_name]["link"] = f"{project_name}.html"
 
-        self.render_main_html(status="success", project_name=project_name, link=link)
+        self.report_data[project_name]["time"] = time_now()
+        self.report_data[project_name]["status"] = status
+
+        self.render_main_html()
         self.active_tasks -= 1
 
     def prepare_project_report(self, project_name, project_path):
@@ -303,6 +298,7 @@ class ElectronicsDesktopTester:
 
             plot_id = 0
             for design_name, design_data in project_data["designs"].items():
+                project_report["error_exception"] += design_data["error_exception"]
                 for report_name, report_data in design_data["report"].items():
                     for trace_name, trace_data in report_data.items():
                         for curve_name, curve_data in trace_data["curves"].items():
@@ -344,6 +340,7 @@ class ElectronicsDesktopTester:
             if self.active_tasks >= self.max_tasks:
                 logger.debug("Number of maximum tasks limit is reached. Wait for job to finish")
                 sleep(4)
+                continue
 
             allocated_machines = None
             for proj_name in sorted_by_cores_desc:
@@ -502,10 +499,15 @@ def copy_path(src: str, dst: str) -> Union[str, List[str]]:
     """
     src = Path(src.replace("\\", "/"))
     if not src.is_absolute() and len(src.parents) > 1:
-        unpack_dst = str(Path(dst) / src.parents[0])
+        unpack_dst = Path(dst) / src.parents[0]
+        if not src.is_file():
+            unpack_dst /= src.name
+    elif not src.is_file():
+        unpack_dst = Path(dst) / src.name
     else:
-        unpack_dst = str(Path(dst))
+        unpack_dst = Path(dst)
 
+    unpack_dst = str(unpack_dst)
     mkpath(unpack_dst)
     src = src.expanduser().resolve()
 
@@ -516,7 +518,7 @@ def copy_path(src: str, dst: str) -> Union[str, List[str]]:
         file_path = copy_file(str(src), unpack_dst)
         return file_path[0]
     else:
-        return copy_tree(str(src.parent), unpack_dst)
+        return copy_tree(str(src), unpack_dst)
 
 
 def mkdtemp_persistent(*args, persistent=True, **kwargs):
@@ -634,6 +636,10 @@ def get_aedt_executable_path(version: str) -> str:
     return aedt_path
 
 
+def time_now():
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
 def parse_arguments() -> argparse.Namespace:
     """
     Parse CLI arguments
@@ -653,18 +659,8 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--save-sim-data", "-s", action="store_true", help="Save simulation data under output dir (--out-dir flag)"
     )
-    parser.add_argument(
-        "--max-cores",
-        "-c",
-        type=int,
-        help="total number of cores limit",
-    )
-    parser.add_argument(
-        "--max-tasks",
-        "-t",
-        type=int,
-        help="total number of parallel tasks limit",
-    )
+    parser.add_argument("--max-cores", "-c", type=int, help="total number of cores limit", default=99999)
+    parser.add_argument("--max-tasks", "-t", type=int, help="total number of parallel tasks limit", default=99999)
 
     parser.add_argument("--debug", action="store_true", help="Adds additional DEBUG logs")
     cli_args = parser.parse_args()
