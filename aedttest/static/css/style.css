@@ -211,10 +211,10 @@ tbody tr td:last-child {
 .table .badge {
   text-transform: uppercase;
 }
-.student-data-table label {
+.project-data-table label {
   margin-right: 7px;
 }
-.student-data-table td span a {
+.project-data-table td span a {
   padding: 3px;
 }
 .table td,

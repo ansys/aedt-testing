@@ -235,7 +235,12 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
-        data = PROJECT_PAGE_TEMPLATE.render(context={"plots": project_report["plots"], "project_name": project_name})
+        page_ctx = {
+            "plots": project_report["plots"],
+            "project_name": project_name,
+            "errors": project_report["error_exception"],
+        }
+        data = PROJECT_PAGE_TEMPLATE.render(context=page_ctx)
         with open(self.results_path / f"{project_name}.html", "w") as file:
             file.write(data)
 
