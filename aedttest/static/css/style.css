@@ -177,7 +177,7 @@ thead tr th {
   font-weight: 500;
 }
 thead tr th:last-child {
-  text-align: right;
+  text-align: left;
 }
 tbody tr th {
   color: #373757;
@@ -189,7 +189,7 @@ tbody tr td {
   color: #868e96;
 }
 tbody tr td:last-child {
-  text-align: right;
+  text-align: left;
 }
 .table > tbody > tr > td,
 .table > tbody > tr > th,
@@ -211,10 +211,10 @@ tbody tr td:last-child {
 .table .badge {
   text-transform: uppercase;
 }
-.student-data-table label {
+.project-data-table label {
   margin-right: 7px;
 }
-.student-data-table td span a {
+.project-data-table td span a {
   padding: 3px;
 }
 .table td,

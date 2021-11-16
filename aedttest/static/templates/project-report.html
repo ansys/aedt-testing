@@ -36,10 +36,34 @@
                 </div>
               </div>
             </div>
-            <!-- /# column -->
           </div>
-          <!-- /# row -->
           <section id="main-content">
+          {% if errors %}
+            <div class="row">
+                  <div class="col-lg-8">
+                      <div class="card">
+                          <div class="card-title pr">
+                              <h4>Error Messages</h4>
+                          </div>
+                          <div class="card-body">
+                              <div class="table-responsive">
+                                  <table class="table project-data-table m-t-20">
+                                      <tbody>
+                                      {% for error in errors %}
+                                          <tr>
+                                              <td>
+                                                  {{ error }}
+                                              </td>
+                                          </tr>
+                                      {% endfor %}
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+            {% endif %}
             {% for plot in plots %}
               <div class="row">
                 <div class="col-lg-6">
