@@ -198,7 +198,8 @@ class ElectronicsDesktopTester:
         """
         if self.results_path.exists():
             remove_tree(str(self.results_path))
-        copy_tree(str(MODULE_DIR / "static"), str(self.results_path))
+        copy_path(str(MODULE_DIR / "static" / "css"), str(self.results_path))
+        copy_path(str(MODULE_DIR / "static" / "js"), str(self.results_path))
 
         for project_name, project_config in self.project_tests_config.items():
             self.report_data[project_name] = {
@@ -498,10 +499,15 @@ def copy_path(src: str, dst: str) -> Union[str, List[str]]:
     """
     src = Path(src.replace("\\", "/"))
     if not src.is_absolute() and len(src.parents) > 1:
-        unpack_dst = str(Path(dst) / src.parents[0])
+        unpack_dst = Path(dst) / src.parents[0]
+        if not src.is_file():
+            unpack_dst /= src.name
+    elif not src.is_file():
+        unpack_dst = Path(dst) / src.name
     else:
-        unpack_dst = str(Path(dst))
+        unpack_dst = Path(dst)
 
+    unpack_dst = str(unpack_dst)
     mkpath(unpack_dst)
     src = src.expanduser().resolve()
 
@@ -512,7 +518,7 @@ def copy_path(src: str, dst: str) -> Union[str, List[str]]:
         file_path = copy_file(str(src), unpack_dst)
         return file_path[0]
     else:
-        return copy_tree(str(src.parent), unpack_dst)
+        return copy_tree(str(src), unpack_dst)
 
 
 def mkdtemp_persistent(*args, persistent=True, **kwargs):
