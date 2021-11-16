@@ -44,10 +44,11 @@
               <div class="row">
                 <div class="col-lg-6">
                   <div class="card">
-                    <div class="card-title">
-                      <h4> {{ plot.name }} </h4>
-                    </div>
-                    <div>
+                    <button type="button" class="btn btn-info"
+                            data-toggle="collapse" data-target="#col{{ plot.id }}" onclick="draw_{{ plot.id }}()">
+                      {{ plot.name }}
+                    </button>
+                    <div id="col{{ plot.id }}" class="collapse">
                       <canvas id="{{ plot.id }}"></canvas>
                     </div>
                   </div>
@@ -78,22 +79,29 @@
     <script src="js/js-lib/bootstrap.min.js"></script><script src="js/scripts.js"></script>
 
     <script>
-      ( function ( $ ) {
-          "use strict";
+      {% for plot in plots %}
+        function draw_{{ plot.id }}(){
+          // function is called every time when name of the plot is clicked
+          var ctx = $('#{{ plot.id }}');
+          if ($('#{{ plot.id }}').hasClass("show")) {
+            // destroy chart when collapsed
+            $('#{{ plot.id }}').data('chart').destroy();
+            return;
+          }
 
-          {% for plot in plots %}
-            var ctx = document.getElementById( "{{ plot.id }}" );
-            ctx.height = 150;
-            create_line_chart(ctx,
-                    {{ plot.x_axis }},
-                    {{ plot.x_label|safe }},
-                    {{ plot.version_1 }},
-                    {{ plot.y_axis_1 }},
-                    {{ plot.version_2 }},
-                    {{ plot.y_axis_2 }},
-            );
-          {% endfor %}
-      } )( jQuery );
+          ctx.height = 150;
+          let chart = create_line_chart(ctx,
+                  {{ plot.x_axis }},
+                  {{ plot.x_label|safe }},
+                  {{ plot.version_1 }},
+                  {{ plot.y_axis_1 }},
+                  {{ plot.version_2 }},
+                  {{ plot.y_axis_2 }},
+          );
+          // save chart instance to context data
+          $('#{{ plot.id }}').data('chart', chart);
+        }
+      {% endfor %}
     </script>
   </body>
 

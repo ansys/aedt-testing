@@ -4,7 +4,7 @@ function create_line_chart(ctx, x_data, x_label, version_ref, y_data_ref, versio
 	  diff_array.push(element - y_data_now[index])
 	});
 
-	new Chart(ctx, {
+	return new Chart(ctx, {
 		type: 'line',
 		data: {
 			labels: x_data,
@@ -65,17 +65,17 @@ function create_line_chart(ctx, x_data, x_label, version_ref, y_data_ref, versio
 				},
 			},
 			scales: {
-                x: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: x_label,
-                    },
-                },
-                y: {
-                    display: true,
-                },
-            },
+				x: {
+					display: true,
+					title: {
+						display: true,
+						text: x_label,
+					},
+				},
+				y: {
+					display: true,
+				},
+			},
 			title: {
 				display: false,
 				text: 'Normal Legend'

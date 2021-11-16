@@ -297,8 +297,8 @@ class ElectronicsDesktopTester:
                 project_data = json.load(file)
 
             plot_id = 0
+            project_report["error_exception"] += project_data["error_exception"]
             for design_name, design_data in project_data["designs"].items():
-                project_report["error_exception"] += design_data["error_exception"]
                 for report_name, report_data in design_data["report"].items():
                     for trace_name, trace_data in report_data.items():
                         for curve_name, curve_data in trace_data["curves"].items():
