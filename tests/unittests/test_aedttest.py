@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -6,6 +7,7 @@ from unittest import mock
 import pytest
 
 from aedttest import aedt_test_runner
+from aedttest.aedt_test_runner import ElectronicsDesktopTester
 from aedttest.clusters.job_hosts import get_job_machines
 
 
@@ -206,3 +208,89 @@ def test_execute_aedt(mock_aedt_path, mock_call):
         '"arg1"',
         "custom/pr.aedt",
     ]
+
+
+class BaseElectronicsDesktopTester:
+    reference_sample = {
+        "error_exception": [],
+        "aedt_version": "193",
+        "projects": {
+            "01_voltage_control": {
+                "error_exception": [],
+                "designs": {
+                    "ctrl_prog": {
+                        "report": {
+                            "Plot_2V2S6O": {
+                                "Current(Winding1)": {
+                                    "x_name": "Time",
+                                    "curves": {
+                                        "": {
+                                            "y_data": [
+                                                1,
+                                                0.0416939528629434,
+                                            ],
+                                            "x_data": [
+                                                0,
+                                                0.001,
+                                            ],
+                                        }
+                                    },
+                                    "y_unit": "A",
+                                    "x_unit": "s",
+                                },
+                            }
+                        }
+                    }
+                },
+            }
+        },
+    }
+
+    config_sample = {
+        "just_winding": {
+            "distribution": {
+                "cores": 2,
+                "distribution_types": ["Variations", "Frequencies"],
+                "parametric_tasks": 1,
+                "multilevel_distribution_tasks": 0,
+                "single_node": True,
+            },
+            "path": "input\\just_winding.aedt",
+        },
+    }
+
+    def setup(self):
+        with TemporaryDirectory() as tmp_dir:
+            conf_file = Path(tmp_dir) / "config.json"
+            with open(conf_file, "w") as file:
+                json.dump(self.config_sample, file)
+
+            ref_file = Path(tmp_dir) / "ref.json"
+            with open(ref_file, "w") as file:
+                json.dump(self.reference_sample, file)
+
+            self.aedt_tester = ElectronicsDesktopTester(
+                version="212",
+                max_cores=9999,
+                max_tasks=9999,
+                config_file=conf_file,
+                out_dir=None,
+                save_projects=None,
+                only_reference=None,
+                reference_file=ref_file,
+            )
+
+
+class TestValidateConfig(BaseElectronicsDesktopTester):
+    def test_missing_in_config(self):
+        with pytest.raises(KeyError) as exc:
+            self.aedt_tester.validate_config()
+
+        assert "Following projects defined in reference results: 01_voltage_control," in str(exc.value)
+
+    def test_missing_in_reference(self):
+        self.aedt_tester.reference_data["projects"] = {}
+        with pytest.raises(KeyError) as exc:
+            self.aedt_tester.validate_config()
+
+        assert "Following projects defined in configuration file: just_winding," in str(exc.value)

@@ -85,13 +85,13 @@ class ElectronicsDesktopTester:
     def __init__(
         self,
         version: str,
-        max_cores: int,
-        max_tasks: int,
-        config_file: str,
-        out_dir: str,
-        save_projects: bool,
-        only_reference: bool,
-        reference_file: str,
+        max_cores: Optional[int],
+        max_tasks: Optional[int],
+        config_file: Union[str, Path],
+        out_dir: Optional[str],
+        save_projects: Optional[bool],
+        only_reference: Optional[bool],
+        reference_file: Union[str, Path],
     ) -> None:
         logger.info(f"Initialize new Electronics Desktop Test run. Configuration file is {config_file}")
         self.version = version
@@ -145,6 +145,9 @@ class ElectronicsDesktopTester:
                     raise KeyError("'cores' divided by 'parametric_tasks' must be integer")
 
         if not self.only_reference:
+            if "projects" not in self.reference_data:
+                raise KeyError("'projects' key is not specified in Reference File")
+
             not_found_in_conf = set(self.reference_data["projects"]) - set(self.project_tests_config)
             if not_found_in_conf:
                 msg = (
@@ -153,7 +156,7 @@ class ElectronicsDesktopTester:
                 )
                 raise KeyError(msg)
 
-            not_found_in_ref = set(self.reference_data["projects"]) - set(self.project_tests_config)
+            not_found_in_ref = set(self.project_tests_config) - set(self.reference_data["projects"])
             if not_found_in_ref:
                 msg = (
                     f"Following projects defined in configuration file: {', '.join(list(not_found_in_ref))}"
