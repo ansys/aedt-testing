@@ -294,3 +294,36 @@ class TestValidateConfig(BaseElectronicsDesktopTester):
             self.aedt_tester.validate_config()
 
         assert "Following projects defined in configuration file: just_winding," in str(exc.value)
+
+    def test_missing_projects(self):
+        self.aedt_tester.reference_data = {}
+        with pytest.raises(KeyError) as exc:
+            self.aedt_tester.validate_config()
+
+        assert "'projects' key is not specified in Reference File" in str(exc.value)
+
+    def test_distribution(self):
+        config = self.aedt_tester.project_tests_config
+        distribution_config = config["just_winding"]["distribution"]
+
+        distribution_config["cores"] = 0
+        with pytest.raises(KeyError) as exc:
+            self.aedt_tester.validate_config()
+        assert "'parametric_tasks' key must be <= 'cores'" in str(exc.value)
+
+        distribution_config["parametric_tasks"] = 1.1
+        with pytest.raises(KeyError) as exc:
+            self.aedt_tester.validate_config()
+        assert "'parametric_tasks' key must be integer" in str(exc.value)
+
+        distribution_config["cores"] = 3
+        distribution_config["parametric_tasks"] = 2
+        with pytest.raises(KeyError) as exc:
+            self.aedt_tester.validate_config()
+        assert "'cores' divided by 'parametric_tasks' must be integer" in str(exc.value)
+
+        distribution_config["cores"] = 0
+        distribution_config["parametric_tasks"] = 0
+        with pytest.raises(KeyError) as exc:
+            self.aedt_tester.validate_config()
+        assert "'parametric_tasks' key must be >= 1" in str(exc.value)
