@@ -21,7 +21,7 @@ function set_slider_limit() {
         $(".thresh-elem").each(function () {
             max_limit = Math.max(max_limit, $(this).data('delta'));
         });
-        $('#threshold-slider').data("slider-max", max_limit);
+        $('#threshold-slider').slider({ max: max_limit });
     }
 }
 
