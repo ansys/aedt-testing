@@ -1,9 +1,14 @@
-function create_line_chart(ctx, x_data, x_label, version_ref, y_data_ref, version_now, y_data_now) {
-	let diff_array = [];
-	y_data_ref.forEach((element, index) => {
-	  diff_array.push(element - y_data_now[index])
-	});
-
+function create_line_chart(
+	ctx,
+	x_data,
+	x_label,
+	y_label,
+	version_ref,
+	y_data_ref,
+	version_now,
+	y_data_now,
+	diff
+) {
 	return new Chart(ctx, {
 		type: 'line',
 		data: {
@@ -32,7 +37,7 @@ function create_line_chart(ctx, x_data, x_label, version_ref, y_data_ref, versio
 				pointBackgroundColor: 'rgba(40,167,69,0.75)',
 			}, {
 				label: "Difference",
-				data: diff_array,
+				data: diff,
 				backgroundColor: 'transparent',
 				borderColor: 'rgba(148,40,167,0.75)',
 				borderWidth: 3,
@@ -74,6 +79,10 @@ function create_line_chart(ctx, x_data, x_label, version_ref, y_data_ref, versio
 				},
 				y: {
 					display: true,
+					title: {
+						display: true,
+						text: y_label,
+					},
 				},
 			},
 			title: {

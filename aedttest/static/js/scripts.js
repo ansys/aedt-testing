@@ -15,3 +15,18 @@
         }
     });
 })(jQuery);
+
+(function($) {
+    "use strict";
+    $(function () {
+        $(".btn-plot").each(function() {
+            if ($(this).data('delta') < 5) {
+                $(this).removeClass();
+                $(this).addClass("btn btn-info btn-plot badge-primary");
+            } else {
+                $(this).removeClass();
+                $(this).addClass("btn btn-info btn-plot badge-danger");
+            }
+        });
+    });
+})(jQuery);
