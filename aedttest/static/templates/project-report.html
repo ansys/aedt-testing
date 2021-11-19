@@ -41,6 +41,9 @@
             <section id="main-content">
                 <div class="row">
                     <div class="col-lg-8">
+                        <div class="card-title pr">
+                            <h4>Difference Threshold [%]</h4>
+                        </div>
                         <div class="slider slider-horizontal" id="threshold-slider-div">
 
                             <div class="tooltip tooltip-min top" role="presentation" style="display: none;">
@@ -176,7 +179,7 @@
                                     data-target="#col{{ plot.id }}"
                                     data-delta="{{ plot.delta }}"
                                     onclick="draw_{{ plot.id }}()">
-                                {{ plot.name }} [max&#916;{{ plot.delta }}%]
+                                {{ plot.name }} [max&#916; {{ plot.delta }}%]
                             </button>
                             <div id="col{{ plot.id }}" class="collapse">
                                 <canvas id="{{ plot.id }}"></canvas>
