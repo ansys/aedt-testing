@@ -9,6 +9,7 @@
     <title>{{ project_name }}</title>
     <!-- Styles -->
     <link href="css/css-lib/bootstrap.min.css" rel="stylesheet">
+    <link href="css/css-lib/bootstrap-slider.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
   </head>
 
@@ -38,6 +39,29 @@
             </div>
           </div>
           <section id="main-content">
+            <div class="row">
+                  <div class="col-lg-8">
+                                  <div class="slider slider-horizontal" id="threshold-slider-div">
+
+                <div class="tooltip tooltip-min top" role="presentation" style="display: none;">
+                    <div class="tooltip-arrow"></div>
+                    <div class="tooltip-inner"></div>
+                </div>
+                <div class="tooltip tooltip-max top" role="presentation" style="display: none;">
+                    <div class="tooltip-arrow"></div>
+                    <div class="tooltip-inner"></div>
+                </div>
+            </div>
+
+                    <input id="threshold-slider"
+                           data-slider-id='threshold-slider-div'
+                           type="text"
+                           data-slider-min="0"
+                           data-slider-max="{{ slider_limit }}"
+                           data-slider-value="0"
+                    />
+                      </div>
+                  </div>
             {% if errors %}
               <div class="row">
                   <div class="col-lg-8">
@@ -152,7 +176,7 @@
                             data-target="#col{{ plot.id }}"
                             data-delta="{{ plot.delta }}"
                             onclick="draw_{{ plot.id }}()">
-                      {{ plot.name }} [&#916;{{ plot.delta }}%]
+                      {{ plot.name }} [max&#916;{{ plot.delta }}%]
                     </button>
                     <div id="col{{ plot.id }}" class="collapse">
                       <canvas id="{{ plot.id }}"></canvas>
@@ -183,6 +207,7 @@
     <script src="js/js-lib/Chart.bundle.js"></script>
     <script src="js/chartjs-init.js"></script>
     <script src="js/js-lib/bootstrap.min.js"></script>
+    <script src="js/js-lib/bootstrap-slider.min.js"></script>
     <script src="js/scripts.js"></script>
 
     <script>

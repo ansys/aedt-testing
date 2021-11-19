@@ -295,6 +295,7 @@ class ElectronicsDesktopTester:
             "errors": project_report["error_exception"],
             "mesh": project_report["mesh"],
             "sim_time": project_report["simulation_time"],
+            "slider_limit": project_report["slider_limit"],
         }
         data = PROJECT_PAGE_TEMPLATE.render(context=page_ctx)
         with open(self.results_path / f"{project_name}.html", "w") as file:
@@ -347,7 +348,7 @@ class ElectronicsDesktopTester:
 
     def prepare_project_report(self, project_name, project_path):
         report_file = Path(project_path).parent / f"{project_name}.json"
-        project_report = {"plots": [], "error_exception": [], "mesh": [], "simulation_time": []}
+        project_report = {"plots": [], "error_exception": [], "mesh": [], "simulation_time": [], "slider_limit": 0}
         if not report_file.exists():
             project_report["error_exception"].append(f"Project report for {project_name} does not exist")
         else:
@@ -396,6 +397,8 @@ class ElectronicsDesktopTester:
                             # if 0, just skip, no sense for 'infinite' delta
                             max_delta = max(max_delta, abs(1 - ref / actual))
                     max_delta_perc = round(max_delta * 100, 3)
+
+                    project_report["slider_limit"] = max(project_report["slider_limit"], max_delta_perc)
 
                     project_report["plots"].append(
                         {

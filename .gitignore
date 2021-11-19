@@ -3,6 +3,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=pycharm,python,django
 
 input/
+results/
 dummy.py
 
 ### Django ###

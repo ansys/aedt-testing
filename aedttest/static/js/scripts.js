@@ -16,17 +16,33 @@
     });
 })(jQuery);
 
+function badge_change(limit) {
+    $(".btn-plot").each(function () {
+        if ($(this).data('delta') < limit) {
+            $(this).removeClass();
+            $(this).addClass("btn btn-info btn-plot badge-primary");
+        } else {
+            $(this).removeClass();
+            $(this).addClass("btn btn-info btn-plot badge-danger");
+        }
+    });
+}
+
 (function($) {
     "use strict";
     $(function () {
-        $(".btn-plot").each(function() {
-            if ($(this).data('delta') < 5) {
-                $(this).removeClass();
-                $(this).addClass("btn btn-info btn-plot badge-primary");
-            } else {
-                $(this).removeClass();
-                $(this).addClass("btn btn-info btn-plot badge-danger");
-            }
-        });
+        badge_change(5);
     });
 })(jQuery);
+
+
+$('#threshold-slider').slider({
+	formatter: function(value) {
+		return 'Current value: ' + value;
+	}
+});
+
+
+$('#threshold-slider').on('slide', function(slideEvt) {
+	badge_change(slideEvt.value);
+});
