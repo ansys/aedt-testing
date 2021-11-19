@@ -13,6 +13,7 @@
     <!-- ================= Favicon ================== -->
     <!-- Styles -->
     <link href="css/css-lib/bootstrap.min.css" rel="stylesheet">
+    <link href="css/css-lib/bootstrap-slider.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
 </head>
 
@@ -44,6 +45,22 @@
                 </div>
                 <!-- /# row -->
                 <section id="main-content">
+                    {% if all_delta is not None %}
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <div class="card-title pr">
+                                    <h4>Difference Threshold [%]</h4>
+                                </div>
+                                <input id="threshold-slider"
+                                       data-slider-id='threshold-slider-div'
+                                       type="text"
+                                       data-slider-min="0"
+                                       data-slider-max="0"
+                                       data-slider-value="0"
+                                />
+                            </div>
+                        </div>
+                    {% endif %}
                     <div class="row">
                         <div class="col-lg-8">
                             <div class="card">
@@ -58,6 +75,9 @@
                                                     <th>Project name</th>
                                                     <th>Cores</th>
                                                     <th>Date</th>
+                                                    {% if all_delta is not None %}
+                                                        <th>max&#916; [%]</th>
+                                                    {% endif %}
                                                     <th>Status</th>
                                                 </tr>
                                             </thead>
@@ -77,15 +97,23 @@
                                                     <td>
                                                         {{ project.time }}
                                                     </td>
+                                                    {% if project.delta is not None %}
+                                                        <td>
+                                                            <span class="thresh-elem badge"
+                                                                  data-delta="{{ project.delta }}">
+                                                                {{ project.delta }}
+                                                            </span>
+                                                        </td>
+                                                    {% endif %}
                                                     <td>
                                                         {% if project.status == "queued" %}
                                                             <span class="badge badge-warning">Queued</span>
                                                         {% elif project.status == "running" %}
                                                             <span class="badge badge-warning">Running</span>
                                                         {% elif project.status == "fail" %}
-                                                            <span class="badge badge-danger">Failure</span>
+                                                            <span class="badge badge-danger">Errors</span>
                                                         {% else %}
-                                                            <span class="badge badge-primary">Success</span>
+                                                            <span class="badge badge-primary">Finished</span>
                                                         {% endif %}
                                                     </td>
                                                 </tr>
@@ -114,11 +142,11 @@
     <!-- jquery vendor -->
     <script src="js/js-lib/jquery.min.js"></script>
     <script src="js/js-lib/jquery.nanoscroller.min.js"></script>
-    <!-- nano scroller -->
 
     <script src="js/js-lib/bootstrap.min.js"></script>
-    <script src="js/scripts.js"></script>
-    <!-- bootstrap -->
+    <script src="js/js-lib/bootstrap-slider.min.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/common.js"></script>
 
 </body>
 

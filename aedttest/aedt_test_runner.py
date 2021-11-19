@@ -255,13 +255,21 @@ class ElectronicsDesktopTester:
         copy_path_to(str(MODULE_DIR / "static" / "css"), str(self.results_path))
         copy_path_to(str(MODULE_DIR / "static" / "js"), str(self.results_path))
 
+        self.report_data["all_delta"] = 1 if not self.only_reference else None
+        self.report_data["projects"] = {}
+
         for project_name, project_config in self.project_tests_config.items():
-            self.report_data[project_name] = {
+            self.report_data["projects"][project_name] = {
                 "cores": project_config["distribution"]["cores"],
                 "status": "queued",
                 "link": None,
+                "delta": None,
                 "time": time_now(),
             }
+
+            if not self.only_reference:
+                # initialize integer for proper rendering
+                self.report_data["projects"][project_name]["delta"] = 0
 
         self.render_main_html()
 
@@ -273,7 +281,12 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
-        data = MAIN_PAGE_TEMPLATE.render(context={"projects": self.report_data, "finished": finished})
+        ctx = {
+            "projects": self.report_data["projects"],
+            "finished": finished,
+            "all_delta": self.report_data["all_delta"],
+        }
+        data = MAIN_PAGE_TEMPLATE.render(context=ctx)
         with open(self.results_path / "main.html", "w") as file:
             file.write(data)
 
@@ -315,8 +328,8 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
-        self.report_data[project_name]["time"] = time_now()
-        self.report_data[project_name]["status"] = "running"
+        self.report_data["projects"][project_name]["time"] = time_now()
+        self.report_data["projects"][project_name]["status"] = "running"
         self.render_main_html()
 
         execute_aedt(
@@ -338,10 +351,11 @@ class ElectronicsDesktopTester:
         status = "success" if not project_report["error_exception"] else "fail"
         if not self.only_reference:
             self.render_project_html(project_name, project_report)
-            self.report_data[project_name]["link"] = f"{project_name}.html"
+            self.report_data["projects"][project_name]["link"] = f"{project_name}.html"
+            self.report_data["projects"][project_name]["delta"] = project_report["slider_limit"]
 
-        self.report_data[project_name]["time"] = time_now()
-        self.report_data[project_name]["status"] = status
+        self.report_data["projects"][project_name]["time"] = time_now()
+        self.report_data["projects"][project_name]["status"] = status
 
         self.render_main_html()
         self.active_tasks -= 1
@@ -399,7 +413,7 @@ class ElectronicsDesktopTester:
                     max_delta_perc = round(max_delta * 100, 3)
 
                     # take always integer since ticks are integers, and +1 to allow to slide
-                    project_report["slider_limit"] = int(max(project_report["slider_limit"], max_delta_perc)) + 1
+                    project_report["slider_limit"] = max(project_report["slider_limit"], int(max_delta_perc) + 1)
 
                     project_report["plots"].append(
                         {
