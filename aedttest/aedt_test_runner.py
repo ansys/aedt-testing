@@ -255,13 +255,21 @@ class ElectronicsDesktopTester:
         copy_path_to(str(MODULE_DIR / "static" / "css"), str(self.results_path))
         copy_path_to(str(MODULE_DIR / "static" / "js"), str(self.results_path))
 
+        self.report_data["all_delta"] = 1 if not self.only_reference else None
+        self.report_data["projects"] = {}
+
         for project_name, project_config in self.project_tests_config.items():
-            self.report_data[project_name] = {
+            self.report_data["projects"][project_name] = {
                 "cores": project_config["distribution"]["cores"],
                 "status": "queued",
                 "link": None,
+                "delta": None,
                 "time": time_now(),
             }
+
+            if not self.only_reference:
+                # initialize integer for proper rendering
+                self.report_data["projects"][project_name]["delta"] = 0
 
         self.render_main_html()
 
@@ -273,7 +281,12 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
-        data = MAIN_PAGE_TEMPLATE.render(context={"projects": self.report_data, "finished": finished})
+        ctx = {
+            "projects": self.report_data["projects"],
+            "finished": finished,
+            "all_delta": self.report_data["all_delta"],
+        }
+        data = MAIN_PAGE_TEMPLATE.render(context=ctx)
         with open(self.results_path / "main.html", "w") as file:
             file.write(data)
 
@@ -295,6 +308,7 @@ class ElectronicsDesktopTester:
             "errors": project_report["error_exception"],
             "mesh": project_report["mesh"],
             "sim_time": project_report["simulation_time"],
+            "slider_limit": project_report["slider_limit"],
         }
         data = PROJECT_PAGE_TEMPLATE.render(context=page_ctx)
         with open(self.results_path / f"{project_name}.html", "w") as file:
@@ -314,8 +328,8 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
-        self.report_data[project_name]["time"] = time_now()
-        self.report_data[project_name]["status"] = "running"
+        self.report_data["projects"][project_name]["time"] = time_now()
+        self.report_data["projects"][project_name]["status"] = "running"
         self.render_main_html()
 
         execute_aedt(
@@ -337,17 +351,18 @@ class ElectronicsDesktopTester:
         status = "success" if not project_report["error_exception"] else "fail"
         if not self.only_reference:
             self.render_project_html(project_name, project_report)
-            self.report_data[project_name]["link"] = f"{project_name}.html"
+            self.report_data["projects"][project_name]["link"] = f"{project_name}.html"
+            self.report_data["projects"][project_name]["delta"] = project_report["slider_limit"]
 
-        self.report_data[project_name]["time"] = time_now()
-        self.report_data[project_name]["status"] = status
+        self.report_data["projects"][project_name]["time"] = time_now()
+        self.report_data["projects"][project_name]["status"] = status
 
         self.render_main_html()
         self.active_tasks -= 1
 
     def prepare_project_report(self, project_name, project_path):
         report_file = Path(project_path).parent / f"{project_name}.json"
-        project_report = {"plots": [], "error_exception": [], "mesh": [], "simulation_time": []}
+        project_report = {"plots": [], "error_exception": [], "mesh": [], "simulation_time": [], "slider_limit": 0}
         if not report_file.exists():
             project_report["error_exception"].append(f"Project report for {project_name} does not exist")
         else:
@@ -376,20 +391,43 @@ class ElectronicsDesktopTester:
         for report_name, report_data in design_data["report"].items():
             for trace_name, trace_data in report_data.items():
                 for curve_name, curve_data in trace_data["curves"].items():
-                    # todo create Y label for units
                     y_ref_data = self.reference_data["projects"][project_name]["designs"][design_name]["report"][
                         report_name
                     ][trace_name]["curves"][curve_name]["y_data"]
+
+                    if len(y_ref_data) != len(curve_data["y_data"]):
+                        msg = (
+                            f"Number of trace points in reference data [{len(y_ref_data)}] isn't equal to "
+                            f"number in current data [{len(curve_data['y_data'])}]"
+                        )
+                        project_report["error_exception"].append(msg)
+                        continue
+
+                    max_delta = 0
+                    difference = []
+                    for ref, actual in zip(y_ref_data, curve_data["y_data"]):
+                        difference.append(ref - actual)
+                        if actual != 0:
+                            # if 0, just skip, no sense for 'infinite' delta
+                            max_delta = max(max_delta, abs(1 - ref / actual))
+                    max_delta_perc = round(max_delta * 100, 3)
+
+                    # take always integer since ticks are integers, and +1 to allow to slide
+                    project_report["slider_limit"] = max(project_report["slider_limit"], int(max_delta_perc) + 1)
+
                     project_report["plots"].append(
                         {
                             "name": f"{design_name}:{report_name}:{trace_name}:{curve_name}",
                             "id": unique_id(),
                             "x_label": f'"{trace_data["x_name"]} [{trace_data["x_unit"]}]"',
+                            "y_label": f'"[{trace_data["y_unit"]}]"',
                             "x_axis": curve_data["x_data"],
-                            "version_1": self.reference_data["aedt_version"],
-                            "y_axis_1": y_ref_data,
-                            "version_2": str(self.version),
-                            "y_axis_2": curve_data["y_data"],
+                            "version_ref": self.reference_data["aedt_version"],
+                            "y_axis_ref": y_ref_data,
+                            "version_now": str(self.version),
+                            "y_axis_now": curve_data["y_data"],
+                            "diff": difference,
+                            "delta": max_delta_perc,
                         }
                     )
 

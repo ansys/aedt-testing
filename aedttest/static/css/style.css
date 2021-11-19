@@ -1,3 +1,7 @@
+#threshold-slider .slider-selection {
+	background: #BABABA;
+}
+
 .card-body {
   padding: 0;
 }
@@ -29,7 +33,7 @@
   border-radius: 4px;
 }
 .badge-primary {
-  background: #5873fe;
+  background: #0a7e01;
   color: #ffffff;
 }
 .badge-warning {

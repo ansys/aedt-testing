@@ -15,3 +15,23 @@
         }
     });
 })(jQuery);
+
+
+(function($) {
+    "use strict";
+    $(function () {
+        badge_change(5);
+    });
+})(jQuery);
+
+
+$('#threshold-slider').slider({
+	formatter: function(value) {
+		return 'Current value: ' + value;
+	}
+});
+
+
+$('#threshold-slider').on('slide', function(slideEvt) {
+	badge_change(slideEvt.value);
+});
