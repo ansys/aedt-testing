@@ -71,6 +71,11 @@ def main() -> None:
         reference_file=cli_args.reference_file,
     )
     try:
+        if not cli_args.suppress_validation:
+            aedt_tester.validate_config()
+            if cli_args.only_validate:
+                return
+
         aedt_tester.run()
     except Exception as exc:
         logger.exception(str(exc))
@@ -80,13 +85,13 @@ class ElectronicsDesktopTester:
     def __init__(
         self,
         version: str,
-        max_cores: int,
-        max_tasks: int,
-        config_file: str,
-        out_dir: str,
-        save_projects: bool,
-        only_reference: bool,
-        reference_file: str,
+        max_cores: Optional[int],
+        max_tasks: Optional[int],
+        config_file: Union[str, Path],
+        out_dir: Optional[str],
+        save_projects: Optional[bool],
+        only_reference: Optional[bool],
+        reference_file: Union[str, Path],
     ) -> None:
         logger.info(f"Initialize new Electronics Desktop Test run. Configuration file is {config_file}")
         self.version = version
@@ -111,6 +116,55 @@ class ElectronicsDesktopTester:
 
         with open(config_file) as file:
             self.project_tests_config = json.load(file)
+
+    def validate_config(self):
+        """
+        Make quick validation of --config-file [and --reference-file if present]
+        Checks that distribution is specified correctly and that projects in
+        reference identical to configuration
+
+        Returns:
+            None
+        """
+        for project_name, config in self.project_tests_config.items():
+            distribution_config = config["distribution"]
+            if "parametric_tasks" in distribution_config:
+                tasks = distribution_config["parametric_tasks"]
+                cores = distribution_config["cores"]
+                if not isinstance(tasks, int):
+                    raise KeyError("'parametric_tasks' key must be integer")
+
+                if tasks < 1:
+                    raise KeyError("'parametric_tasks' key must be >= 1")
+
+                if tasks > cores:
+                    # implicitly checks that cores >= 1
+                    raise KeyError("'parametric_tasks' key must be <= 'cores'")
+
+                if cores % tasks != 0:
+                    raise KeyError("'cores' divided by 'parametric_tasks' must be integer")
+
+        if not self.only_reference:
+            if "projects" not in self.reference_data:
+                raise KeyError("'projects' key is not specified in Reference File")
+
+            not_found_in_conf = set(self.reference_data["projects"]) - set(self.project_tests_config)
+            if not_found_in_conf:
+                msg = (
+                    f"Following projects defined in reference results: {', '.join(list(not_found_in_conf))}"
+                    ", but not specified in current configuration file"
+                )
+                raise KeyError(msg)
+
+            not_found_in_ref = set(self.project_tests_config) - set(self.reference_data["projects"])
+            if not_found_in_ref:
+                msg = (
+                    f"Following projects defined in configuration file: {', '.join(list(not_found_in_ref))}"
+                    ", but not found in reference results file"
+                )
+                raise KeyError(msg)
+
+        logger.info("Configuration validation is successful")
 
     def run(self) -> None:
         """
@@ -698,10 +752,18 @@ def parse_arguments() -> argparse.Namespace:
         (argparse.Namespace) validated arguments
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--aedt-version", "-av", required=True, help="Electronics Desktop version to test, e.g. 221")
-    parser.add_argument("--config-file", "-cf", required=True, help="Project config file path")
+    parser.add_argument("--aedt-version", required=True, help="Electronics Desktop version to test, e.g. 221")
+    parser.add_argument("--config-file", required=True, help="Project config file path")
     parser.add_argument("--reference-file", help="Reference results file path")
     parser.add_argument("--only-reference", action="store_true", help="Only create reference results")
+    parser.add_argument(
+        "--only-validate", action="store_true", help="Only validate current --config-file [and --reference-file]"
+    )
+    parser.add_argument(
+        "--suppress-validation",
+        action="store_true",
+        help="Suppress validation of config file and reference file (DANGEROUS)",
+    )
 
     parser.add_argument(
         "--out-dir", "-o", help="Output directory for reports and project files (if --save-sim-data set)"
@@ -720,6 +782,9 @@ def parse_arguments() -> argparse.Namespace:
 
     if not cli_args.only_reference and not cli_args.reference_file:
         raise ValueError("Either set --only-reference flag or provide path via --reference-file")
+
+    if cli_args.suppress_validation and cli_args.only_validate:
+        raise ValueError("--only-validate and --suppress-validation are mutually exclusive")
 
     if not (cli_args.max_cores or cli_args.max_tasks):
         logger.warning(
