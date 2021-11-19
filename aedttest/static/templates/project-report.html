@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 
-  <head>
+<head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,102 +11,102 @@
     <link href="css/css-lib/bootstrap.min.css" rel="stylesheet">
     <link href="css/css-lib/bootstrap-slider.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-  </head>
+</head>
 
-  <body>
+<body>
 
-    <div class="content-wrap">
-      <div class="main">
+<div class="content-wrap">
+    <div class="main">
         <div class="container-fluid">
-          <div class="row">
-            <div class="col-lg-8 p-r-0 title-margin-right">
-              <div class="page-header">
-                <div class="page-title">
-                  <h1>{{ project_name }}</h1>
-                </div>
-              </div>
-            </div>
-            <!-- /# column -->
-            <div class="col-lg-4 p-l-0 title-margin-left">
-              <div class="page-header">
-                <div class="page-title">
-                  <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="main.html">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Reports</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
-          </div>
-          <section id="main-content">
             <div class="row">
-                  <div class="col-lg-8">
-                                  <div class="slider slider-horizontal" id="threshold-slider-div">
-
-                <div class="tooltip tooltip-min top" role="presentation" style="display: none;">
-                    <div class="tooltip-arrow"></div>
-                    <div class="tooltip-inner"></div>
+                <div class="col-lg-8 p-r-0 title-margin-right">
+                    <div class="page-header">
+                        <div class="page-title">
+                            <h1>{{ project_name }}</h1>
+                        </div>
+                    </div>
                 </div>
-                <div class="tooltip tooltip-max top" role="presentation" style="display: none;">
-                    <div class="tooltip-arrow"></div>
-                    <div class="tooltip-inner"></div>
+                <!-- /# column -->
+                <div class="col-lg-4 p-l-0 title-margin-left">
+                    <div class="page-header">
+                        <div class="page-title">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="main.html">Dashboard</a></li>
+                                <li class="breadcrumb-item active">Reports</li>
+                            </ol>
+                        </div>
+                    </div>
                 </div>
             </div>
+            <section id="main-content">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="slider slider-horizontal" id="threshold-slider-div">
 
-                    <input id="threshold-slider"
-                           data-slider-id='threshold-slider-div'
-                           type="text"
-                           data-slider-min="0"
-                           data-slider-max="{{ slider_limit }}"
-                           data-slider-value="0"
-                    />
-                      </div>
-                  </div>
-            {% if errors %}
-              <div class="row">
-                  <div class="col-lg-8">
-                      <div class="card">
-                          <div class="card-title pr">
-                              <h4>Error Messages</h4>
-                          </div>
-                          <div class="card-body">
-                              <div class="table-responsive">
-                                  <table class="table project-data-table m-t-20">
-                                      <tbody>
-                                      {% for error in errors %}
-                                          <tr>
-                                              <td style="text-align: left">
-                                                  {{ error }}
-                                              </td>
-                                          </tr>
-                                      {% endfor %}
-                                      </tbody>
-                                  </table>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-            {% endif %}
-            {% if sim_time %}
-              <div class="row">
-                  <div class="col-lg-8">
-                      <div class="card">
-                          <div class="card-title pr">
-                              <h4>Simulation Time</h4>
-                          </div>
-                          <div class="card-body">
-                              <div class="table-responsive">
-                                  <table class="table project-data-table m-t-20">
-                                    <thead>
+                            <div class="tooltip tooltip-min top" role="presentation" style="display: none;">
+                                <div class="tooltip-arrow"></div>
+                                <div class="tooltip-inner"></div>
+                            </div>
+                            <div class="tooltip tooltip-max top" role="presentation" style="display: none;">
+                                <div class="tooltip-arrow"></div>
+                                <div class="tooltip-inner"></div>
+                            </div>
+                        </div>
+
+                        <input id="threshold-slider"
+                               data-slider-id='threshold-slider-div'
+                               type="text"
+                               data-slider-min="0"
+                               data-slider-max="{{ slider_limit }}"
+                               data-slider-value="0"
+                        />
+                    </div>
+                </div>
+                {% if errors %}
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-title pr">
+                                <h4>Error Messages</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table project-data-table m-t-20">
+                                        <tbody>
+                                        {% for error in errors %}
+                                        <tr>
+                                            <td style="text-align: left">
+                                                {{ error }}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% if sim_time %}
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-title pr">
+                                <h4>Simulation Time</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table project-data-table m-t-20">
+                                        <thead>
                                         <tr>
                                             <th>Source</th>
                                             <th>Reference Time</th>
                                             <th>Current Time</th>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for time in sim_time %}
+                                        </thead>
+                                        <tbody>
+                                        {% for time in sim_time %}
                                         <tr>
                                             <td>
                                                 {{ time.name }}
@@ -118,34 +118,34 @@
                                                 {{ time.current }}
                                             </td>
                                         </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-            {% endif %}
-            {% if mesh %}
-              <div class="row">
-                  <div class="col-lg-8">
-                      <div class="card">
-                          <div class="card-title pr">
-                              <h4>Mesh Statistics</h4>
-                          </div>
-                          <div class="card-body">
-                              <div class="table-responsive">
-                                  <table class="table project-data-table m-t-20">
-                                    <thead>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% if mesh %}
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-title pr">
+                                <h4>Mesh Statistics</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table project-data-table m-t-20">
+                                        <thead>
                                         <tr>
                                             <th>Source</th>
                                             <th>Reference Elements Count</th>
                                             <th>Current Elements Count</th>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for mesh_data in mesh %}
+                                        </thead>
+                                        <tbody>
+                                        {% for mesh_data in mesh %}
                                         <tr>
                                             <td>
                                                 {{ mesh_data.name }}
@@ -157,86 +157,86 @@
                                                 {{ mesh_data.current }}
                                             </td>
                                         </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-            {% endif %}
-            {% for plot in plots %}
-              <div class="row">
-                <div class="col-lg-6">
-                  <div class="card">
-                    <button type="button"
-                            class="btn btn-info btn-plot"
-                            data-toggle="collapse"
-                            data-target="#col{{ plot.id }}"
-                            data-delta="{{ plot.delta }}"
-                            onclick="draw_{{ plot.id }}()">
-                      {{ plot.name }} [max&#916;{{ plot.delta }}%]
-                    </button>
-                    <div id="col{{ plot.id }}" class="collapse">
-                      <canvas id="{{ plot.id }}"></canvas>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            {% endfor %}
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="footer">
-                        <p>2021 &#xa9 Ansys Inc - <a href="https://www.ansys.com/">ansys.com</a></p>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-          </section>
+                {% endif %}
+                {% for plot in plots %}
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <button type="button"
+                                    class="btn btn-info btn-plot"
+                                    data-toggle="collapse"
+                                    data-target="#col{{ plot.id }}"
+                                    data-delta="{{ plot.delta }}"
+                                    onclick="draw_{{ plot.id }}()">
+                                {{ plot.name }} [max&#916;{{ plot.delta }}%]
+                            </button>
+                            <div id="col{{ plot.id }}" class="collapse">
+                                <canvas id="{{ plot.id }}"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="footer">
+                            <p>2021 &#xa9 Ansys Inc - <a href="https://www.ansys.com/">ansys.com</a></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
-      </div>
     </div>
+</div>
 
 
-    <!-- jquery vendor -->
-    <script src="js/js-lib/jquery.min.js"></script>
-    <script src="js/js-lib/jquery.nanoscroller.min.js"></script>
-    <!-- nano scroller -->
-    <script src="js/js-lib/bootstrap.min.js"></script>
+<!-- jquery vendor -->
+<script src="js/js-lib/jquery.min.js"></script>
+<script src="js/js-lib/jquery.nanoscroller.min.js"></script>
+<!-- nano scroller -->
+<script src="js/js-lib/bootstrap.min.js"></script>
 
-    <script src="js/js-lib/Chart.bundle.js"></script>
-    <script src="js/chartjs-init.js"></script>
-    <script src="js/js-lib/bootstrap.min.js"></script>
-    <script src="js/js-lib/bootstrap-slider.min.js"></script>
-    <script src="js/scripts.js"></script>
+<script src="js/js-lib/Chart.bundle.js"></script>
+<script src="js/chartjs-init.js"></script>
+<script src="js/js-lib/bootstrap.min.js"></script>
+<script src="js/js-lib/bootstrap-slider.min.js"></script>
+<script src="js/scripts.js"></script>
 
-    <script>
-      {% for plot in plots %}
-        function draw_{{ plot.id }}(){
-          // function is called every time when name of the plot is clicked
-          var ctx = $('#{{ plot.id }}');
-          if ($('#{{ plot.id }}').hasClass("show")) {
-            // destroy chart when collapsed
-            $('#{{ plot.id }}').data('chart').destroy();
-            return;
-          }
+<script>
+  {% for plot in plots %}
+    function draw_{{ plot.id }}(){
+      // function is called every time when name of the plot is clicked
+      var ctx = $('#{{ plot.id }}');
+      if ($('#{{ plot.id }}').hasClass("show")) {
+        // destroy chart when collapsed
+        $('#{{ plot.id }}').data('chart').destroy();
+        return;
+      }
 
-          ctx.height = 150;
-          let chart = create_line_chart(ctx,
-                  {{ plot.x_axis }},
-                  {{ plot.x_label|safe }},
-                  {{ plot.y_label|safe }},
-                  {{ plot.version_ref }},
-                  {{ plot.y_axis_ref }},
-                  {{ plot.version_now }},
-                  {{ plot.y_axis_now }},
-                  {{ plot.diff }},
-          );
-          // save chart instance to context data
-          $('#{{ plot.id }}').data('chart', chart);
-        }
-      {% endfor %}
-    </script>
-  </body>
+      ctx.height = 150;
+      let chart = create_line_chart(ctx,
+              {{ plot.x_axis }},
+              {{ plot.x_label|safe }},
+              {{ plot.y_label|safe }},
+              {{ plot.version_ref }},
+              {{ plot.y_axis_ref }},
+              {{ plot.version_now }},
+              {{ plot.y_axis_now }},
+              {{ plot.diff }},
+      );
+      // save chart instance to context data
+      $('#{{ plot.id }}').data('chart', chart);
+    }
+  {% endfor %}
+</script>
 
+</body>
 </html>
