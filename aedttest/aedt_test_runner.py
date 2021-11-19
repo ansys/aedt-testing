@@ -398,7 +398,8 @@ class ElectronicsDesktopTester:
                             max_delta = max(max_delta, abs(1 - ref / actual))
                     max_delta_perc = round(max_delta * 100, 3)
 
-                    project_report["slider_limit"] = max(project_report["slider_limit"], max_delta_perc)
+                    # take always integer since ticks are integers, and +1 to allow to slide
+                    project_report["slider_limit"] = int(max(project_report["slider_limit"], max_delta_perc)) + 1
 
                     project_report["plots"].append(
                         {
