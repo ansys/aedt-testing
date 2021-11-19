@@ -252,8 +252,8 @@ class ElectronicsDesktopTester:
         """
         if self.results_path.exists():
             remove_tree(str(self.results_path))
-        copy_path(str(MODULE_DIR / "static" / "css"), str(self.results_path))
-        copy_path(str(MODULE_DIR / "static" / "js"), str(self.results_path))
+        copy_path_to(str(MODULE_DIR / "static" / "css"), str(self.results_path))
+        copy_path_to(str(MODULE_DIR / "static" / "js"), str(self.results_path))
 
         for project_name, project_config in self.project_tests_config.items():
             self.report_data[project_name] = {
@@ -351,7 +351,7 @@ class ElectronicsDesktopTester:
         if not report_file.exists():
             project_report["error_exception"].append(f"Project report for {project_name} does not exist")
         else:
-            copy_path(str(report_file), str(self.results_path / "reference_folder"))
+            copy_path_to(str(report_file), str(self.results_path / "reference_folder"))
             if self.only_reference:
                 return project_report
             with open(report_file) as file:
@@ -553,7 +553,7 @@ def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> st
         (str) location where it was copied
     """
     src = project_config.get("path", project_name + ".aedt")
-    return copy_path(src, dst)
+    return copy_path_to(src, dst)
 
 
 def copy_dependencies(project_config: Dict[str, Any], dst: str) -> None:
@@ -570,12 +570,12 @@ def copy_dependencies(project_config: Dict[str, Any], dst: str) -> None:
 
     if isinstance(deps, list):
         for dep in deps:
-            copy_path(dep, dst)
+            copy_path_to(dep, dst)
     elif isinstance(deps, str):
-        copy_path(deps, dst)
+        copy_path_to(deps, dst)
 
 
-def copy_path(src: str, dst: str) -> Union[str, List[str]]:
+def copy_path_to(src: str, dst: str) -> Union[str, List[str]]:
     """
     Copy path from src to dst
     If src is a relative path, preserves relative folder tree

@@ -89,7 +89,7 @@ def test_copy_path_file_absolute():
         file.touch()
         file_no.touch()
         with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
-            aedt_test_runner.copy_path(str(file), dst_tmp_dir)
+            aedt_test_runner.copy_path_to(str(file), dst_tmp_dir)
 
             assert Path(dst_tmp_dir, file.name).is_file()
             assert Path(dst_tmp_dir, file.name).exists()
@@ -106,7 +106,7 @@ def test_copy_path_file_relative():
         file.touch()
         file_no.touch()
         with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
-            aedt_test_runner.copy_path(str(file), dst_tmp_dir)
+            aedt_test_runner.copy_path_to(str(file), dst_tmp_dir)
 
             assert (Path(dst_tmp_dir) / file).is_file()
             assert (Path(dst_tmp_dir) / file).exists()
@@ -123,7 +123,7 @@ def test_copy_path_folder_absolute():
         file.touch()
         file2.touch()
         with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
-            aedt_test_runner.copy_path(str(folder), dst_tmp_dir)
+            aedt_test_runner.copy_path_to(str(folder), dst_tmp_dir)
 
             assert Path(dst_tmp_dir, "tmp_folder", file.name).is_file()
             assert Path(dst_tmp_dir, "tmp_folder", file.name).exists()
@@ -141,7 +141,7 @@ def test_copy_path_folder_relative():
         file.touch()
         file2.touch()
         with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
-            aedt_test_runner.copy_path(str(folder), dst_tmp_dir)
+            aedt_test_runner.copy_path_to(str(folder), dst_tmp_dir)
 
             assert (Path(dst_tmp_dir) / file).is_file()
             assert (Path(dst_tmp_dir) / file).exists()
