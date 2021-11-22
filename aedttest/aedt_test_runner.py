@@ -21,6 +21,7 @@ from typing import Iterable
 from typing import Iterator
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 from django import setup as django_setup
@@ -87,8 +88,8 @@ class ElectronicsDesktopTester:
     def __init__(
         self,
         version: str,
-        max_cores: Optional[int],
-        max_tasks: Optional[int],
+        max_cores: int,
+        max_tasks: int,
         config_file: Union[str, Path],
         out_dir: Optional[str],
         save_projects: Optional[bool],
@@ -197,7 +198,9 @@ class ElectronicsDesktopTester:
                 thread.start()
                 threads_list.append(thread)
 
-            [th.join() for th in threads_list]  # wait for all threads to finish before delete folder
+            for th in threads_list:
+                # wait for all threads to finish before delete folder
+                th.join()
 
             self.render_main_html(finished=True)  # make thread-safe render
             combined_report_path = self.create_combined_report()
@@ -215,7 +218,7 @@ class ElectronicsDesktopTester:
             (Path) path to the combined .json file
         """
         combined_report_path = self.results_path / "reference_results.json"
-        combined_data = {"error_exception": [], "aedt_version": self.version, "projects": {}}
+        combined_data: Dict[str, Any] = {"error_exception": [], "aedt_version": self.version, "projects": {}}
 
         reference_folder = self.results_path / "reference_folder"
         if not reference_folder.exists():
@@ -382,7 +385,13 @@ class ElectronicsDesktopTester:
         """
 
         report_file = Path(project_path).parent / f"{project_name}.json"
-        project_report = {"plots": [], "error_exception": [], "mesh": [], "simulation_time": [], "slider_limit": 0}
+        project_report: Dict[str, Union[List[Any], Any]] = {
+            "plots": [],
+            "error_exception": [],
+            "mesh": [],
+            "simulation_time": [],
+            "slider_limit": 0,
+        }
         if not report_file.exists():
             project_report["error_exception"].append(f"Project report for {project_name} does not exist")
         else:
@@ -412,7 +421,7 @@ class ElectronicsDesktopTester:
         design_data: Dict[str, Any],
         design_name: str,
         project_name: str,
-        project_report: Dict[str, Union[List[Any], int]],
+        project_report: Dict[str, Union[List[Any], Any]],
     ) -> None:
         """
         Extract all XY curves for a particular design.
@@ -476,7 +485,7 @@ class ElectronicsDesktopTester:
         design_data: Dict[str, Any],
         design_name: str,
         project_name: str,
-        project_report: Dict[str, Union[List[Any], int]],
+        project_report: Dict[str, Union[List[Any], Any]],
     ) -> None:
         """
         Extract mesh or simulation time information
@@ -509,7 +518,7 @@ class ElectronicsDesktopTester:
                     }
                 )
 
-    def allocator(self) -> Iterable:
+    def allocator(self) -> Iterable[Tuple[str, Dict[str, Dict[str, int]]]]:
         """
         Generator that yields resources. Waits until resources are available
 
@@ -617,7 +626,7 @@ def allocate_task(
 
 def allocate_task_within_node(
     distribution_config: Dict[str, int], machines_dict: Dict[str, int]
-) -> Dict[str, Dict[str, str]]:
+) -> Dict[str, Dict[str, int]]:
     """
     Try to fit a task in a node without splitting
     Args:
@@ -636,6 +645,7 @@ def allocate_task_within_node(
                     "tasks": distribution_config.get("parametric_tasks", 1),
                 }
             }
+    return {}
 
 
 def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> Union[str, List[str]]:
@@ -709,7 +719,7 @@ def copy_path_to(src: str, dst: str) -> Union[str, List[str]]:
 
 
 def mkdtemp_persistent(
-    *args: str, persistent: bool = True, **kwargs: str
+    *args: Any, persistent: bool = True, **kwargs: Any
 ) -> Union[_GeneratorContextManager[str], tempfile.TemporaryDirectory[str]]:
     """
     Provides a context manager to create a temporary/permanent directory depending on 'persistent' argument
