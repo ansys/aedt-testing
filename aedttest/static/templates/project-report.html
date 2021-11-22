@@ -39,20 +39,22 @@
                 </div>
             </div>
             <section id="main-content">
-                <div class="row">
-                    <div class="col-lg-8">
-                        <div class="card-title pr">
-                            <h4>Difference Threshold [%]</h4>
+                {% if slider_limit %}
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card-title pr">
+                                <h4>Difference Threshold [%]</h4>
+                            </div>
+                            <input id="threshold-slider"
+                                   data-slider-id='threshold-slider-div'
+                                   type="text"
+                                   data-slider-min="0"
+                                   data-slider-max="{{ slider_limit }}"
+                                   data-slider-value="0"
+                            />
                         </div>
-                        <input id="threshold-slider"
-                               data-slider-id='threshold-slider-div'
-                               type="text"
-                               data-slider-min="0"
-                               data-slider-max="{{ slider_limit }}"
-                               data-slider-value="0"
-                        />
                     </div>
-                </div>
+                {% endif %}
                 {% if errors %}
                 <div class="row">
                     <div class="col-lg-8">
@@ -92,7 +94,9 @@
                                         <thead>
                                         <tr>
                                             <th>Source</th>
-                                            <th>Reference Time</th>
+                                            {% if slider_limit %}
+                                                <th>Reference Time</th>
+                                            {% endif %}
                                             <th>Current Time</th>
                                         </tr>
                                         </thead>
@@ -102,9 +106,11 @@
                                             <td>
                                                 {{ time.name }}
                                             </td>
-                                            <td>
-                                                {{ time.ref }}
-                                            </td>
+                                            {% if slider_limit %}
+                                                <td>
+                                                    {{ time.ref }}
+                                                </td>
+                                            {% endif %}
                                             <td>
                                                 {{ time.current }}
                                             </td>
@@ -131,7 +137,9 @@
                                         <thead>
                                         <tr>
                                             <th>Source</th>
-                                            <th>Reference Elements Count</th>
+                                            {% if slider_limit %}
+                                                <th>Reference Elements Count</th>
+                                            {% endif %}
                                             <th>Current Elements Count</th>
                                         </tr>
                                         </thead>
@@ -141,9 +149,11 @@
                                             <td>
                                                 {{ mesh_data.name }}
                                             </td>
-                                            <td>
-                                                {{ mesh_data.ref }}
-                                            </td>
+                                            {% if slider_limit %}
+                                                <td>
+                                                    {{ mesh_data.ref }}
+                                                </td>
+                                            {% endif %}
                                             <td>
                                                 {{ mesh_data.current }}
                                             </td>
@@ -167,7 +177,11 @@
                                     data-target="#col{{ plot.id }}"
                                     data-delta="{{ plot.delta }}"
                                     onclick="draw_{{ plot.id }}()">
-                                {{ plot.name }} [max&#916; {{ plot.delta }}%]
+                                {% if slider_limit %}
+                                    {{ plot.name }} [max&#916; {{ plot.delta }}%]
+                                {% else %}
+                                    {{ plot.name }}
+                                {% endif %}
                             </button>
                             <div id="col{{ plot.id }}" class="collapse">
                                 <canvas id="{{ plot.id }}"></canvas>
