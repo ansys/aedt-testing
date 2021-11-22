@@ -362,13 +362,17 @@ class ElectronicsDesktopTester:
 
         project_report = self.prepare_project_report(project_name, project_path)
 
-        status = "success" if not project_report["error_exception"] else "fail"
         self.render_project_html(project_name, project_report)
-        self.report_data["projects"][project_name]["link"] = f"{project_name}.html"
-        self.report_data["projects"][project_name]["delta"] = project_report["slider_limit"]
 
-        self.report_data["projects"][project_name]["time"] = time_now()
-        self.report_data["projects"][project_name]["status"] = status
+        status = "success" if not project_report["error_exception"] else "fail"
+        self.report_data["projects"][project_name].update(
+            {
+                "link": f"{project_name}.html",
+                "delta": project_report["slider_limit"],
+                "time": time_now(),
+                "status": status,
+            }
+        )
 
         self.render_main_html()
         self.active_tasks -= 1
