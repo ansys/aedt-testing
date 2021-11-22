@@ -403,7 +403,26 @@ class ElectronicsDesktopTester:
 
         return project_report
 
-    def extract_curve_data(self, design_data, design_name, project_name, project_report):
+    def extract_curve_data(
+        self,
+        design_data: Dict[str, Any],
+        design_name: str,
+        project_name: str,
+        project_report: Dict[str, Union[List[Any], int]],
+    ) -> None:
+        """
+        Extract all XY curves for a particular design.
+        Mutate project_report
+
+        Args:
+            design_data: (dict) all the data related to a single design in project_name
+            design_name: (str) name of the design
+            project_name: (str) name of the project
+            project_report: (dict) project report dictionary that is required by 'render_project_html()'
+
+        Returns:
+            None
+        """
         for report_name, report_data in design_data["report"].items():
             for trace_name, trace_data in report_data.items():
                 for curve_name, curve_data in trace_data["curves"].items():
@@ -447,7 +466,27 @@ class ElectronicsDesktopTester:
                         }
                     )
 
-    def extract_mesh_or_time_data(self, key_name, design_data, design_name, project_name, project_report):
+    def extract_mesh_or_time_data(
+        self,
+        key_name: str,
+        design_data: Dict[str, Any],
+        design_name: str,
+        project_name: str,
+        project_report: Dict[str, Union[List[Any], int]],
+    ) -> None:
+        """
+        Extract mesh or simulation time information
+        Mutate project_report
+        Args:
+            key_name: (str) mesh or simulation_time, depending on what to extract
+            design_data: (dict) all the data related to a single design in project_name
+            design_name: (str) name of the design
+            project_name: (str) name of the project
+            project_report: (dict) project report dictionary that is required by 'render_project_html()'
+
+        Returns:
+            None
+        """
         for variation_name, variation_data in design_data[key_name].items():
             for setup_name, current_stat in variation_data.items():
                 reference_dict = self.reference_data["projects"][project_name]["designs"][design_name][key_name]
@@ -688,7 +727,12 @@ def mkdtemp_persistent(*args, persistent=True, **kwargs):
         return tempfile.TemporaryDirectory(*args, **kwargs)
 
 
-def generator_unique_id():
+def generator_unique_id() -> str:
+    """
+    Generator that incrementally yields new IDs
+    Yields:
+        (str) new unique ID
+    """
     i = 1
     while True:
         yield f"a{i}"
@@ -698,7 +742,12 @@ def generator_unique_id():
 id_generator = generator_unique_id()
 
 
-def unique_id():
+def unique_id() -> str:
+    """
+    When called runs generator to pick new unique ID
+    Returns:
+        (str) new ID
+    """
     return next(id_generator)
 
 
@@ -794,7 +843,7 @@ def get_aedt_executable_path(version: str) -> str:
     return aedt_path
 
 
-def time_now():
+def time_now() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
