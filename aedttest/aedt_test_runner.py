@@ -7,6 +7,7 @@ import re
 import subprocess
 import tempfile
 import threading
+from contextlib import _GeneratorContextManager
 from contextlib import contextmanager
 from distutils.dir_util import copy_tree
 from distutils.dir_util import mkpath
@@ -17,6 +18,7 @@ from time import sleep
 from typing import Any
 from typing import Dict
 from typing import Iterable
+from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Union
@@ -110,7 +112,7 @@ class ElectronicsDesktopTester:
         self.script = str(MODULE_DIR / "simulation_data.py")
         self.script_args = f"--pyaedt-path={Path(_py_aedt_path).parent.parent}"
 
-        self.report_data = {}
+        self.report_data: Dict[str, Any] = {}
 
         self.machines_dict = {machine.hostname: machine.cores for machine in get_job_machines()}
 
@@ -295,7 +297,7 @@ class ElectronicsDesktopTester:
         with open(self.results_path / "main.html", "w") as file:
             file.write(data)
 
-    def render_project_html(self, project_name: str, project_report: dict) -> None:
+    def render_project_html(self, project_name: str, project_report: Dict[str, Union[List[Any], int]]) -> None:
         """
         Renders project report page. Creates new page if none exists
         Updates django template with XY plots, mesh, etc data.
@@ -319,7 +321,9 @@ class ElectronicsDesktopTester:
         with open(self.results_path / f"{project_name}.html", "w") as file:
             file.write(data)
 
-    def task_runner(self, project_name: str, project_path: str, project_config: dict, allocated_machines: dict) -> None:
+    def task_runner(
+        self, project_name: str, project_path: str, project_config: Dict[str, Any], allocated_machines: Dict[str, Any]
+    ) -> None:
         """
         Task runner that is called by each thread.
         Mutates self.report_data["projects"] and self.machines_dict
@@ -574,7 +578,7 @@ def allocate_task(
     """
 
     if distribution_config.get("single_node", False):
-        return
+        return None
 
     allocated_machines = {}
     tasks = distribution_config.get("parametric_tasks", 1)
@@ -606,7 +610,7 @@ def allocate_task(
     if to_fill > 0:
         # not enough resources
         logger.debug("Not enough resources to split job")
-        return
+        return None
 
     return allocated_machines
 
@@ -634,7 +638,7 @@ def allocate_task_within_node(
             }
 
 
-def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> str:
+def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> Union[str, List[str]]:
     """
     Copy project to run location, temp by default
     Args:
@@ -680,31 +684,33 @@ def copy_path_to(src: str, dst: str) -> Union[str, List[str]]:
         (str) path to copied file or (list) with paths if folder is copied
 
     """
-    src = Path(src.replace("\\", "/"))
-    if not src.is_absolute() and len(src.parents) > 1:
-        unpack_dst = Path(dst) / src.parents[0]
-        if not src.is_file():
-            unpack_dst /= src.name
-    elif not src.is_file():
-        unpack_dst = Path(dst) / src.name
+    src_path = Path(src.replace("\\", "/"))
+    if not src_path.is_absolute() and len(src_path.parents) > 1:
+        unpack_dst = Path(dst) / src_path.parents[0]
+        if not src_path.is_file():
+            unpack_dst /= src_path.name
+    elif not src_path.is_file():
+        unpack_dst = Path(dst) / src_path.name
     else:
         unpack_dst = Path(dst)
 
-    unpack_dst = str(unpack_dst)
-    mkpath(unpack_dst)
-    src = src.expanduser().resolve()
+    dst = str(unpack_dst)
+    mkpath(dst)
+    src_path = src_path.expanduser().resolve()
 
-    if not src.exists():
-        raise FileExistsError(f"File {src} doesn't exist")
+    if not src_path.exists():
+        raise FileExistsError(f"File {src_path} doesn't exist")
 
-    if src.is_file():
-        file_path = copy_file(str(src), unpack_dst)
+    if src_path.is_file():
+        file_path = copy_file(str(src_path), dst)
         return file_path[0]
     else:
-        return copy_tree(str(src), unpack_dst)
+        return copy_tree(str(src_path), dst)
 
 
-def mkdtemp_persistent(*args, persistent=True, **kwargs):
+def mkdtemp_persistent(
+    *args: str, persistent: bool = True, **kwargs: str
+) -> Union[_GeneratorContextManager[str], tempfile.TemporaryDirectory[str]]:
     """
     Provides a context manager to create a temporary/permanent directory depending on 'persistent' argument
 
@@ -719,7 +725,7 @@ def mkdtemp_persistent(*args, persistent=True, **kwargs):
     if persistent:
 
         @contextmanager
-        def normal_mkdtemp():
+        def normal_mkdtemp() -> Iterator[str]:
             yield tempfile.mkdtemp(*args, **kwargs)
 
         return normal_mkdtemp()
@@ -727,7 +733,7 @@ def mkdtemp_persistent(*args, persistent=True, **kwargs):
         return tempfile.TemporaryDirectory(*args, **kwargs)
 
 
-def generator_unique_id() -> str:
+def generator_unique_id() -> Iterator[str]:
     """
     Generator that incrementally yields new IDs
     Yields:
@@ -753,11 +759,11 @@ def unique_id() -> str:
 
 def execute_aedt(
     version: str,
-    script: str = None,
-    script_args: str = None,
-    project_path: str = None,
-    machines: dict = None,
-    distribution_config: dict = None,
+    script: Optional[str] = None,
+    script_args: Optional[str] = None,
+    project_path: Optional[str] = None,
+    machines: Optional[Dict[str, Any]] = None,
+    distribution_config: Optional[Dict[str, Any]] = None,
 ) -> None:
     """
     Execute single instance of Electronics Desktop
@@ -786,14 +792,15 @@ def execute_aedt(
         )
         command.append(host_list)
 
-    if distribution_config.get("distribution_types", None):
+    if distribution_config and distribution_config.get("distribution_types", None):
         command.append("-distributed")
         dist_type_str = ",".join([dist_type for dist_type in distribution_config["distribution_types"]])
         command.append(f"includetypes={dist_type_str}")
 
-        if distribution_config.get("multilevel_distribution_tasks", 0) > 0:
+        tasks = distribution_config.get("multilevel_distribution_tasks", 0)
+        if tasks > 0:
             command.append("maxlevels=2")
-            command.append(f"numlevel1={distribution_config['multilevel_distribution_tasks']}")
+            command.append(f"numlevel1={tasks}")
 
     if script is not None:
         command += [
