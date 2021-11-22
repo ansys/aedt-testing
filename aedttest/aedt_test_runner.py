@@ -7,7 +7,6 @@ import re
 import subprocess
 import tempfile
 import threading
-from contextlib import AbstractContextManager
 from contextlib import contextmanager
 from distutils.dir_util import copy_tree
 from distutils.dir_util import mkpath
@@ -718,9 +717,7 @@ def copy_path_to(src: str, dst: str) -> Union[str, List[str]]:
         return copy_tree(str(src_path), dst)
 
 
-def mkdtemp_persistent(
-    *args: Any, persistent: bool = True, **kwargs: Any
-) -> Union[AbstractContextManager[str], tempfile.TemporaryDirectory[str]]:
+def mkdtemp_persistent(*args: Any, persistent: bool = True, **kwargs: Any) -> Any:
     """
     Provides a context manager to create a temporary/permanent directory depending on 'persistent' argument
 
