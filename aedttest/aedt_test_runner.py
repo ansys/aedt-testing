@@ -17,8 +17,10 @@ from time import sleep
 from typing import Any
 from typing import Dict
 from typing import Iterable
+from typing import Iterator
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 from django import setup as django_setup
@@ -85,8 +87,8 @@ class ElectronicsDesktopTester:
     def __init__(
         self,
         version: str,
-        max_cores: Optional[int],
-        max_tasks: Optional[int],
+        max_cores: int,
+        max_tasks: int,
         config_file: Union[str, Path],
         out_dir: Optional[str],
         save_projects: Optional[bool],
@@ -110,14 +112,14 @@ class ElectronicsDesktopTester:
         self.script = str(MODULE_DIR / "simulation_data.py")
         self.script_args = f"--pyaedt-path={Path(_py_aedt_path).parent.parent}"
 
-        self.report_data = {}
+        self.report_data: Dict[str, Any] = {}
 
         self.machines_dict = {machine.hostname: machine.cores for machine in get_job_machines()}
 
         with open(config_file) as file:
             self.project_tests_config = json.load(file)
 
-    def validate_config(self):
+    def validate_config(self) -> None:
         """
         Make quick validation of --config-file [and --reference-file if present]
         Checks that distribution is specified correctly and that projects in
@@ -195,7 +197,9 @@ class ElectronicsDesktopTester:
                 thread.start()
                 threads_list.append(thread)
 
-            [th.join() for th in threads_list]  # wait for all threads to finish before delete folder
+            for th in threads_list:
+                # wait for all threads to finish before delete folder
+                th.join()
 
             self.render_main_html(finished=True)  # make thread-safe render
             combined_report_path = self.create_combined_report()
@@ -207,8 +211,13 @@ class ElectronicsDesktopTester:
             logger.info(msg)
 
     def create_combined_report(self) -> Path:
+        """
+        Reads all .json files in 'reference_folder' and dumps it to single file 'reference_results.json'
+        Returns:
+            (Path) path to the combined .json file
+        """
         combined_report_path = self.results_path / "reference_results.json"
-        combined_data = {"error_exception": [], "aedt_version": self.version, "projects": {}}
+        combined_data: Dict[str, Any] = {"error_exception": [], "aedt_version": self.version, "projects": {}}
 
         reference_folder = self.results_path / "reference_folder"
         if not reference_folder.exists():
@@ -245,7 +254,7 @@ class ElectronicsDesktopTester:
     def initialize_results(self) -> None:
         """
         Copy static web parts (HTML, CSS, JS).
-        Set all projects status to be 'Queued'
+        Mutate self.report_data. Set all projects status to be 'Queued', default link and delta
 
         Returns:
             None
@@ -290,7 +299,7 @@ class ElectronicsDesktopTester:
         with open(self.results_path / "main.html", "w") as file:
             file.write(data)
 
-    def render_project_html(self, project_name: str, project_report: dict):
+    def render_project_html(self, project_name: str, project_report: Dict[str, Union[List[Any], int]]) -> None:
         """
         Renders project report page. Creates new page if none exists
         Updates django template with XY plots, mesh, etc data.
@@ -314,10 +323,13 @@ class ElectronicsDesktopTester:
         with open(self.results_path / f"{project_name}.html", "w") as file:
             file.write(data)
 
-    def task_runner(self, project_name: str, project_path: str, project_config: dict, allocated_machines: dict) -> None:
+    def task_runner(
+        self, project_name: str, project_path: str, project_config: Dict[str, Any], allocated_machines: Dict[str, Any]
+    ) -> None:
         """
         Task runner that is called by each thread.
-        Calls update of HTML pages status, starts AEDT process
+        Mutates self.report_data["projects"] and self.machines_dict
+        Calls update of HTML pages status, starts AEDT process, calls render of project_name.html
 
         Args:
             project_name: (str) name of the project to start
@@ -360,9 +372,25 @@ class ElectronicsDesktopTester:
         self.render_main_html()
         self.active_tasks -= 1
 
-    def prepare_project_report(self, project_name, project_path):
+    def prepare_project_report(self, project_name: str, project_path: str) -> Dict[str, Union[List[Any], int]]:
+        """
+        Prepare project report dictionary that is required by 'render_project_html()'
+        Args:
+            project_name: (str) name of the project
+            project_path: (str) path to the project
+
+        Returns:
+            (dict)
+        """
+
         report_file = Path(project_path).parent / f"{project_name}.json"
-        project_report = {"plots": [], "error_exception": [], "mesh": [], "simulation_time": [], "slider_limit": 0}
+        project_report: Dict[str, Union[List[Any], Any]] = {
+            "plots": [],
+            "error_exception": [],
+            "mesh": [],
+            "simulation_time": [],
+            "slider_limit": 0,
+        }
         if not report_file.exists():
             project_report["error_exception"].append(f"Project report for {project_name} does not exist")
         else:
@@ -387,7 +415,26 @@ class ElectronicsDesktopTester:
 
         return project_report
 
-    def extract_curve_data(self, design_data, design_name, project_name, project_report):
+    def extract_curve_data(
+        self,
+        design_data: Dict[str, Any],
+        design_name: str,
+        project_name: str,
+        project_report: Dict[str, Union[List[Any], Any]],
+    ) -> None:
+        """
+        Extract all XY curves for a particular design.
+        Mutate project_report
+
+        Args:
+            design_data: (dict) all the data related to a single design in project_name
+            design_name: (str) name of the design
+            project_name: (str) name of the project
+            project_report: (dict) project report dictionary that is required by 'render_project_html()'
+
+        Returns:
+            None
+        """
         for report_name, report_data in design_data["report"].items():
             for trace_name, trace_data in report_data.items():
                 for curve_name, curve_data in trace_data["curves"].items():
@@ -431,7 +478,27 @@ class ElectronicsDesktopTester:
                         }
                     )
 
-    def extract_mesh_or_time_data(self, key_name, design_data, design_name, project_name, project_report):
+    def extract_mesh_or_time_data(
+        self,
+        key_name: str,
+        design_data: Dict[str, Any],
+        design_name: str,
+        project_name: str,
+        project_report: Dict[str, Union[List[Any], Any]],
+    ) -> None:
+        """
+        Extract mesh or simulation time information
+        Mutate project_report
+        Args:
+            key_name: (str) mesh or simulation_time, depending on what to extract
+            design_data: (dict) all the data related to a single design in project_name
+            design_name: (str) name of the design
+            project_name: (str) name of the project
+            project_report: (dict) project report dictionary that is required by 'render_project_html()'
+
+        Returns:
+            None
+        """
         for variation_name, variation_data in design_data[key_name].items():
             for setup_name, current_stat in variation_data.items():
                 reference_dict = self.reference_data["projects"][project_name]["designs"][design_name][key_name]
@@ -450,7 +517,7 @@ class ElectronicsDesktopTester:
                     }
                 )
 
-    def allocator(self) -> Iterable:
+    def allocator(self) -> Iterable[Tuple[str, Dict[str, Dict[str, int]]]]:
         """
         Generator that yields resources. Waits until resources are available
 
@@ -519,7 +586,7 @@ def allocate_task(
     """
 
     if distribution_config.get("single_node", False):
-        return
+        return None
 
     allocated_machines = {}
     tasks = distribution_config.get("parametric_tasks", 1)
@@ -551,14 +618,14 @@ def allocate_task(
     if to_fill > 0:
         # not enough resources
         logger.debug("Not enough resources to split job")
-        return
+        return None
 
     return allocated_machines
 
 
 def allocate_task_within_node(
     distribution_config: Dict[str, int], machines_dict: Dict[str, int]
-) -> Dict[str, Dict[str, str]]:
+) -> Dict[str, Dict[str, int]]:
     """
     Try to fit a task in a node without splitting
     Args:
@@ -577,9 +644,10 @@ def allocate_task_within_node(
                     "tasks": distribution_config.get("parametric_tasks", 1),
                 }
             }
+    return {}
 
 
-def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> str:
+def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> Union[str, List[str]]:
     """
     Copy project to run location, temp by default
     Args:
@@ -625,31 +693,31 @@ def copy_path_to(src: str, dst: str) -> Union[str, List[str]]:
         (str) path to copied file or (list) with paths if folder is copied
 
     """
-    src = Path(src.replace("\\", "/"))
-    if not src.is_absolute() and len(src.parents) > 1:
-        unpack_dst = Path(dst) / src.parents[0]
-        if not src.is_file():
-            unpack_dst /= src.name
-    elif not src.is_file():
-        unpack_dst = Path(dst) / src.name
+    src_path = Path(src.replace("\\", "/"))
+    if not src_path.is_absolute() and len(src_path.parents) > 1:
+        unpack_dst = Path(dst) / src_path.parents[0]
+        if not src_path.is_file():
+            unpack_dst /= src_path.name
+    elif not src_path.is_file():
+        unpack_dst = Path(dst) / src_path.name
     else:
         unpack_dst = Path(dst)
 
-    unpack_dst = str(unpack_dst)
-    mkpath(unpack_dst)
-    src = src.expanduser().resolve()
+    dst = str(unpack_dst)
+    mkpath(dst)
+    src_path = src_path.expanduser().resolve()
 
-    if not src.exists():
-        raise FileExistsError(f"File {src} doesn't exist")
+    if not src_path.exists():
+        raise FileExistsError(f"File {src_path} doesn't exist")
 
-    if src.is_file():
-        file_path = copy_file(str(src), unpack_dst)
+    if src_path.is_file():
+        file_path = copy_file(str(src_path), dst)
         return file_path[0]
     else:
-        return copy_tree(str(src), unpack_dst)
+        return copy_tree(str(src_path), dst)
 
 
-def mkdtemp_persistent(*args, persistent=True, **kwargs):
+def mkdtemp_persistent(*args: Any, persistent: bool = True, **kwargs: Any) -> Any:
     """
     Provides a context manager to create a temporary/permanent directory depending on 'persistent' argument
 
@@ -664,7 +732,7 @@ def mkdtemp_persistent(*args, persistent=True, **kwargs):
     if persistent:
 
         @contextmanager
-        def normal_mkdtemp():
+        def normal_mkdtemp() -> Iterator[str]:
             yield tempfile.mkdtemp(*args, **kwargs)
 
         return normal_mkdtemp()
@@ -672,7 +740,12 @@ def mkdtemp_persistent(*args, persistent=True, **kwargs):
         return tempfile.TemporaryDirectory(*args, **kwargs)
 
 
-def generator_unique_id():
+def generator_unique_id() -> Iterator[str]:
+    """
+    Generator that incrementally yields new IDs
+    Yields:
+        (str) new unique ID
+    """
     i = 1
     while True:
         yield f"a{i}"
@@ -682,17 +755,22 @@ def generator_unique_id():
 id_generator = generator_unique_id()
 
 
-def unique_id():
+def unique_id() -> str:
+    """
+    When called runs generator to pick new unique ID
+    Returns:
+        (str) new ID
+    """
     return next(id_generator)
 
 
 def execute_aedt(
     version: str,
-    script: str = None,
-    script_args: str = None,
-    project_path: str = None,
-    machines: dict = None,
-    distribution_config: dict = None,
+    script: Optional[str] = None,
+    script_args: Optional[str] = None,
+    project_path: Optional[str] = None,
+    machines: Optional[Dict[str, Any]] = None,
+    distribution_config: Optional[Dict[str, Any]] = None,
 ) -> None:
     """
     Execute single instance of Electronics Desktop
@@ -721,14 +799,15 @@ def execute_aedt(
         )
         command.append(host_list)
 
-    if distribution_config.get("distribution_types", None):
+    if distribution_config and distribution_config.get("distribution_types", None):
         command.append("-distributed")
         dist_type_str = ",".join([dist_type for dist_type in distribution_config["distribution_types"]])
         command.append(f"includetypes={dist_type_str}")
 
-        if distribution_config.get("multilevel_distribution_tasks", 0) > 0:
+        tasks = distribution_config.get("multilevel_distribution_tasks", 0)
+        if tasks > 0:
             command.append("maxlevels=2")
-            command.append(f"numlevel1={distribution_config['multilevel_distribution_tasks']}")
+            command.append(f"numlevel1={tasks}")
 
     if script is not None:
         command += [
@@ -778,7 +857,7 @@ def get_aedt_executable_path(version: str) -> str:
     return aedt_path
 
 
-def time_now():
+def time_now() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 

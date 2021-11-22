@@ -30,4 +30,6 @@ jobs:
       run: |
         pytest tests/unittests -v
 
-
+    - name: MyPy
+      run: |
+        mypy --config-file=./mypy.ini aedttest/aedt_test_runner.py
