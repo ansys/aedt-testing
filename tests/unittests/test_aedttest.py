@@ -1,5 +1,6 @@
 import json
 import os
+from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import mock
@@ -7,12 +8,10 @@ from unittest import mock
 import pytest
 
 from aedttest import aedt_test_runner
-from aedttest.aedt_test_runner import ElectronicsDesktopTester
-from aedttest.clusters.job_hosts import get_job_machines
 
 
 def test_allocate_task_single():
-    job_machines = get_job_machines("host1:15,host2:10")
+    job_machines = aedt_test_runner.get_job_machines("host1:15,host2:10")
     machines_dict = {machine.hostname: machine.cores for machine in job_machines}
 
     allocated_machines = aedt_test_runner.allocate_task({"cores": 17}, machines_dict)
@@ -37,7 +36,7 @@ def test_allocate_task_multiple():
     Returns:
 
     """
-    job_machines = get_job_machines("host1:20,host2:10")
+    job_machines = aedt_test_runner.get_job_machines("host1:20,host2:10")
     machines_dict = {machine.hostname: machine.cores for machine in job_machines}
 
     allocated_machines = aedt_test_runner.allocate_task({"cores": 16, "parametric_tasks": 2}, machines_dict)
@@ -52,7 +51,7 @@ def test_allocate_task_multiple():
     allocated_machines = aedt_test_runner.allocate_task({"cores": 25, "parametric_tasks": 5}, machines_dict)
     assert allocated_machines == {"host1": {"cores": 20, "tasks": 4}, "host2": {"cores": 5, "tasks": 1}}
 
-    job_machines = get_job_machines("host1:10,host2:15")
+    job_machines = aedt_test_runner.get_job_machines("host1:10,host2:15")
     machines_dict.clear()
     for machine in job_machines:
         machines_dict[machine.hostname] = machine.cores
@@ -68,7 +67,7 @@ def test_allocate_task_multiple():
 
 
 def test_allocate_task_within_node():
-    job_machines = get_job_machines("host1:15,host2:10")
+    job_machines = aedt_test_runner.get_job_machines("host1:15,host2:10")
     machines_dict = {machine.hostname: machine.cores for machine in job_machines}
 
     allocated_machines = aedt_test_runner.allocate_task_within_node({"cores": 17}, machines_dict)
@@ -81,71 +80,69 @@ def test_allocate_task_within_node():
     assert allocated_machines == {"host1": {"cores": 2, "tasks": 1}}
 
 
-def test_copy_path_file_absolute():
-    with TemporaryDirectory(prefix="src_") as src_tmp_dir:
-        file = Path(src_tmp_dir, "tmp_file.txt")
-        file_no = Path(src_tmp_dir, "not_copy.txt")
+class TestCopyPathTo:
+    def test_copy_path_file_absolute(self):
+        with TemporaryDirectory(prefix="src_") as src_tmp_dir:
+            file = Path(src_tmp_dir, "tmp_file.txt")
+            file_no = Path(src_tmp_dir, "not_copy.txt")
 
-        file.touch()
-        file_no.touch()
-        with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
-            aedt_test_runner.copy_path_to(str(file), dst_tmp_dir)
+            file.touch()
+            file_no.touch()
+            with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
+                aedt_test_runner.copy_path_to(str(file), dst_tmp_dir)
 
-            assert Path(dst_tmp_dir, file.name).is_file()
-            assert Path(dst_tmp_dir, file.name).exists()
-            assert not Path(dst_tmp_dir, file_no.name).exists()
+                assert Path(dst_tmp_dir, file.name).is_file()
+                assert Path(dst_tmp_dir, file.name).exists()
+                assert not Path(dst_tmp_dir, file_no.name).exists()
 
+    def test_copy_path_file_relative(self):
+        with TemporaryDirectory(prefix="src_", dir=Path.cwd()) as src_tmp_dir:
+            # test relative file
+            folder_name = Path(src_tmp_dir).name
+            file = Path(folder_name) / "tmp_file.txt"
+            file_no = Path(folder_name) / "not_copy.txt"
 
-def test_copy_path_file_relative():
-    with TemporaryDirectory(prefix="src_", dir=Path.cwd()) as src_tmp_dir:
-        # test relative file
-        folder_name = Path(src_tmp_dir).name
-        file = Path(folder_name) / "tmp_file.txt"
-        file_no = Path(folder_name) / "not_copy.txt"
+            file.touch()
+            file_no.touch()
+            with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
+                aedt_test_runner.copy_path_to(str(file), dst_tmp_dir)
 
-        file.touch()
-        file_no.touch()
-        with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
-            aedt_test_runner.copy_path_to(str(file), dst_tmp_dir)
+                assert (Path(dst_tmp_dir) / file).is_file()
+                assert (Path(dst_tmp_dir) / file).exists()
+                assert not (Path(dst_tmp_dir) / file_no).exists()
 
-            assert (Path(dst_tmp_dir) / file).is_file()
-            assert (Path(dst_tmp_dir) / file).exists()
-            assert not (Path(dst_tmp_dir) / file_no).exists()
+    def test_copy_path_folder_absolute(self):
+        with TemporaryDirectory(prefix="src_") as src_tmp_dir:
+            folder = Path(src_tmp_dir, "tmp_folder")
 
+            folder.mkdir()
+            file = folder / "tmp_file.txt"
+            file2 = folder / "tmp_file2.txt"
+            file.touch()
+            file2.touch()
+            with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
+                aedt_test_runner.copy_path_to(str(folder), dst_tmp_dir)
 
-def test_copy_path_folder_absolute():
-    with TemporaryDirectory(prefix="src_") as src_tmp_dir:
-        folder = Path(src_tmp_dir, "tmp_folder")
+                assert Path(dst_tmp_dir, "tmp_folder", file.name).is_file()
+                assert Path(dst_tmp_dir, "tmp_folder", file.name).exists()
+                assert Path(dst_tmp_dir, "tmp_folder", file2.name).exists()
 
-        folder.mkdir()
-        file = folder / "tmp_file.txt"
-        file2 = folder / "tmp_file2.txt"
-        file.touch()
-        file2.touch()
-        with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
-            aedt_test_runner.copy_path_to(str(folder), dst_tmp_dir)
+    def test_copy_path_folder_relative(self):
+        with TemporaryDirectory(prefix="src_", dir=Path.cwd()) as src_tmp_dir:
+            folder_name = Path(src_tmp_dir).name
+            folder = Path(folder_name) / "tmp_folder"
 
-            assert Path(dst_tmp_dir, "tmp_folder", file.name).is_file()
-            assert Path(dst_tmp_dir, "tmp_folder", file.name).exists()
-            assert Path(dst_tmp_dir, "tmp_folder", file2.name).exists()
+            folder.mkdir()
+            file = folder / "tmp_file.txt"
+            file2 = folder / "tmp_file2.txt"
+            file.touch()
+            file2.touch()
+            with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
+                aedt_test_runner.copy_path_to(str(folder), dst_tmp_dir)
 
-
-def test_copy_path_folder_relative():
-    with TemporaryDirectory(prefix="src_", dir=Path.cwd()) as src_tmp_dir:
-        folder_name = Path(src_tmp_dir).name
-        folder = Path(folder_name) / "tmp_folder"
-
-        folder.mkdir()
-        file = folder / "tmp_file.txt"
-        file2 = folder / "tmp_file2.txt"
-        file.touch()
-        file2.touch()
-        with TemporaryDirectory(prefix="dst_") as dst_tmp_dir:
-            aedt_test_runner.copy_path_to(str(folder), dst_tmp_dir)
-
-            assert (Path(dst_tmp_dir) / file).is_file()
-            assert (Path(dst_tmp_dir) / file).exists()
-            assert (Path(dst_tmp_dir) / file2).exists()
+                assert (Path(dst_tmp_dir) / file).is_file()
+                assert (Path(dst_tmp_dir) / file).exists()
+                assert (Path(dst_tmp_dir) / file2).exists()
 
 
 def test_get_aedt_executable_path():
@@ -269,7 +266,7 @@ class BaseElectronicsDesktopTester:
             with open(ref_file, "w") as file:
                 json.dump(self.reference_sample, file)
 
-            self.aedt_tester = ElectronicsDesktopTester(
+            self.aedt_tester = aedt_test_runner.ElectronicsDesktopTester(
                 version="212",
                 max_cores=9999,
                 max_tasks=9999,
@@ -327,3 +324,66 @@ class TestValidateConfig(BaseElectronicsDesktopTester):
         with pytest.raises(KeyError) as exc:
             self.aedt_tester.validate_config()
         assert "'parametric_tasks' key must be >= 1" in str(exc.value)
+
+
+class TestCLIArgs:
+    def setup(self):
+        self.default_argv = ["aedt_test_runner.py", "--aedt-version=212", r"--config-file=file/path"]
+
+    @mock.patch("sys.stderr", new_callable=StringIO)
+    def test_version(self, mock_stderr):
+        self.default_argv.pop(1)
+        with mock.patch("sys.argv", self.default_argv):
+            with pytest.raises(SystemExit):
+                aedt_test_runner.parse_arguments()
+            assert "the following arguments are required: --aedt-version" in mock_stderr.getvalue()
+
+    def test_version_regex(self):
+        self.default_argv[1] = "--aedt-version=2021R2"
+        self.default_argv += ["--only-reference", "--suppress-validation"]
+        with mock.patch("sys.argv", self.default_argv):
+            with pytest.raises(ValueError) as exc:
+                aedt_test_runner.parse_arguments()
+            assert "Electronics Desktop version value is invalid. Valid format example: 221" in str(exc.value)
+
+    @mock.patch("sys.stderr", new_callable=StringIO)
+    def test_config_file(self, mock_stderr):
+        self.default_argv.pop(2)
+        with mock.patch("sys.argv", ["aedt_test_runner.py", "--aedt-version=212"]):
+            with pytest.raises(SystemExit):
+                aedt_test_runner.parse_arguments()
+            assert "the following arguments are required: --config-file" in mock_stderr.getvalue()
+
+    def test_reference(self):
+        with mock.patch("sys.argv", self.default_argv):
+            with pytest.raises(ValueError) as exc:
+                aedt_test_runner.parse_arguments()
+            assert "set --only-reference flag or provide path via --reference-file" in str(exc.value)
+
+    def test_validation(self):
+        self.default_argv += ["--only-reference", "--only-validate", "--suppress-validation"]
+        with mock.patch("sys.argv", self.default_argv):
+            with pytest.raises(ValueError) as exc:
+                aedt_test_runner.parse_arguments()
+            assert "--only-validate and --suppress-validation are mutually exclusive" in str(exc.value)
+
+    def test_config_file_existence(self):
+        self.default_argv += ["--only-reference", "--suppress-validation"]
+        with mock.patch("sys.argv", self.default_argv):
+            with pytest.raises(ValueError) as exc:
+                aedt_test_runner.parse_arguments()
+            assert "Configuration file does not exist" in str(exc.value)
+
+    def test_sim_data(self):
+        self.default_argv += ["--only-reference", "--suppress-validation", "-s"]
+        with mock.patch("sys.argv", self.default_argv):
+            with mock.patch("aedttest.aedt_test_runner.os.path.isfile", return_value=True):
+                with pytest.raises(ValueError) as exc:
+                    aedt_test_runner.parse_arguments()
+                assert "Saving of simulation data was requested but output directory is not provided" in str(exc.value)
+
+
+def test_unique_id():
+    assert aedt_test_runner.unique_id() == "a1"
+    assert aedt_test_runner.unique_id() == "a2"
+    assert aedt_test_runner.unique_id() == "a3"
