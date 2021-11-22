@@ -117,7 +117,7 @@ class ElectronicsDesktopTester:
         with open(config_file) as file:
             self.project_tests_config = json.load(file)
 
-    def validate_config(self):
+    def validate_config(self) -> None:
         """
         Make quick validation of --config-file [and --reference-file if present]
         Checks that distribution is specified correctly and that projects in
@@ -207,6 +207,11 @@ class ElectronicsDesktopTester:
             logger.info(msg)
 
     def create_combined_report(self) -> Path:
+        """
+        Reads all .json files in 'reference_folder' and dumps it to single file 'reference_results.json'
+        Returns:
+            (Path) path to the combined .json file
+        """
         combined_report_path = self.results_path / "reference_results.json"
         combined_data = {"error_exception": [], "aedt_version": self.version, "projects": {}}
 
@@ -245,7 +250,7 @@ class ElectronicsDesktopTester:
     def initialize_results(self) -> None:
         """
         Copy static web parts (HTML, CSS, JS).
-        Set all projects status to be 'Queued'
+        Mutate self.report_data. Set all projects status to be 'Queued', default link and delta
 
         Returns:
             None
@@ -290,7 +295,7 @@ class ElectronicsDesktopTester:
         with open(self.results_path / "main.html", "w") as file:
             file.write(data)
 
-    def render_project_html(self, project_name: str, project_report: dict):
+    def render_project_html(self, project_name: str, project_report: dict) -> None:
         """
         Renders project report page. Creates new page if none exists
         Updates django template with XY plots, mesh, etc data.
@@ -317,7 +322,8 @@ class ElectronicsDesktopTester:
     def task_runner(self, project_name: str, project_path: str, project_config: dict, allocated_machines: dict) -> None:
         """
         Task runner that is called by each thread.
-        Calls update of HTML pages status, starts AEDT process
+        Mutates self.report_data["projects"] and self.machines_dict
+        Calls update of HTML pages status, starts AEDT process, calls render of project_name.html
 
         Args:
             project_name: (str) name of the project to start
@@ -360,7 +366,17 @@ class ElectronicsDesktopTester:
         self.render_main_html()
         self.active_tasks -= 1
 
-    def prepare_project_report(self, project_name, project_path):
+    def prepare_project_report(self, project_name: str, project_path: str) -> Dict[str, Union[List[Any], int]]:
+        """
+        Prepare project report dictionary that is required by 'render_project_html()'
+        Args:
+            project_name: (str) name of the project
+            project_path: (str) path to the project
+
+        Returns:
+            (dict)
+        """
+
         report_file = Path(project_path).parent / f"{project_name}.json"
         project_report = {"plots": [], "error_exception": [], "mesh": [], "simulation_time": [], "slider_limit": 0}
         if not report_file.exists():
