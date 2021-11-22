@@ -9,13 +9,10 @@ function create_line_chart(
 	y_data_now,
 	diff
 ) {
-	return new Chart(ctx, {
-		type: 'line',
-		data: {
-			labels: x_data,
-			type: 'line',
-			defaultFontFamily: 'Montserrat',
-			datasets: [{
+	let datasets = [];
+	// push reference and difference only if the exist
+	if (y_data_ref && y_data_ref.length) {
+		datasets.push({
 				label: version_ref,
 				data: y_data_ref,
 				backgroundColor: 'transparent',
@@ -25,7 +22,10 @@ function create_line_chart(
 				pointRadius: 5,
 				pointBorderColor: 'transparent',
 				pointBackgroundColor: 'rgba(220,53,69,0.75)',
-			}, {
+			})
+	}
+
+	datasets.push({
 				label: version_now,
 				data: y_data_now,
 				backgroundColor: 'transparent',
@@ -35,7 +35,10 @@ function create_line_chart(
 				pointRadius: 5,
 				pointBorderColor: 'transparent',
 				pointBackgroundColor: 'rgba(40,167,69,0.75)',
-			}, {
+			})
+
+	if (diff && diff.length) {
+		datasets.push({
 				label: "Difference",
 				data: diff,
 				backgroundColor: 'transparent',
@@ -46,7 +49,16 @@ function create_line_chart(
 				pointBorderColor: 'transparent',
 				pointBackgroundColor: 'rgba(148,40,167,0.75)',
 				hidden: true,
-			}]
+			})
+	}
+
+	return new Chart(ctx, {
+		type: 'line',
+		data: {
+			labels: x_data,
+			type: 'line',
+			defaultFontFamily: 'Montserrat',
+			datasets: datasets
 		},
 		options: {
 			responsive: true,

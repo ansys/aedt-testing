@@ -294,6 +294,7 @@ class ElectronicsDesktopTester:
             "projects": self.report_data["projects"],
             "finished": finished,
             "all_delta": self.report_data["all_delta"],
+            "has_reference": not self.only_reference,
         }
         data = MAIN_PAGE_TEMPLATE.render(context=ctx)
         with open(self.results_path / "main.html", "w") as file:
@@ -318,6 +319,7 @@ class ElectronicsDesktopTester:
             "mesh": project_report["mesh"],
             "sim_time": project_report["simulation_time"],
             "slider_limit": project_report["slider_limit"],
+            "has_reference": not self.only_reference,
         }
         data = PROJECT_PAGE_TEMPLATE.render(context=page_ctx)
         with open(self.results_path / f"{project_name}.html", "w") as file:
@@ -360,14 +362,17 @@ class ElectronicsDesktopTester:
 
         project_report = self.prepare_project_report(project_name, project_path)
 
-        status = "success" if not project_report["error_exception"] else "fail"
-        if not self.only_reference:
-            self.render_project_html(project_name, project_report)
-            self.report_data["projects"][project_name]["link"] = f"{project_name}.html"
-            self.report_data["projects"][project_name]["delta"] = project_report["slider_limit"]
+        self.render_project_html(project_name, project_report)
 
-        self.report_data["projects"][project_name]["time"] = time_now()
-        self.report_data["projects"][project_name]["status"] = status
+        status = "success" if not project_report["error_exception"] else "fail"
+        self.report_data["projects"][project_name].update(
+            {
+                "link": f"{project_name}.html",
+                "delta": project_report["slider_limit"],
+                "time": time_now(),
+                "status": status,
+            }
+        )
 
         self.render_main_html()
         self.active_tasks -= 1
@@ -395,8 +400,6 @@ class ElectronicsDesktopTester:
             project_report["error_exception"].append(f"Project report for {project_name} does not exist")
         else:
             copy_path_to(str(report_file), str(self.results_path / "reference_folder"))
-            if self.only_reference:
-                return project_report
             with open(report_file) as file:
                 project_data = json.load(file)
 
@@ -438,45 +441,54 @@ class ElectronicsDesktopTester:
         for report_name, report_data in design_data["report"].items():
             for trace_name, trace_data in report_data.items():
                 for curve_name, curve_data in trace_data["curves"].items():
-                    y_ref_data = self.reference_data["projects"][project_name]["designs"][design_name]["report"][
-                        report_name
-                    ][trace_name]["curves"][curve_name]["y_data"]
+                    plot_data = {
+                        "name": f"{design_name}:{report_name}:{trace_name}:{curve_name}",
+                        "id": unique_id(),
+                        "x_label": f'"{trace_data["x_name"]} [{trace_data["x_unit"]}]"',
+                        "y_label": f'"[{trace_data["y_unit"]}]"',
+                        "x_axis": curve_data["x_data"],
+                        "version_ref": -1,
+                        "y_axis_ref": [],
+                        "version_now": str(self.version),
+                        "y_axis_now": curve_data["y_data"],
+                        "diff": [],
+                        "delta": -1,
+                    }
 
-                    if len(y_ref_data) != len(curve_data["y_data"]):
-                        msg = (
-                            f"Number of trace points in reference data [{len(y_ref_data)}] isn't equal to "
-                            f"number in current data [{len(curve_data['y_data'])}]"
+                    if not self.only_reference:
+                        y_ref_data = self.reference_data["projects"][project_name]["designs"][design_name]["report"][
+                            report_name
+                        ][trace_name]["curves"][curve_name]["y_data"]
+
+                        if len(y_ref_data) != len(curve_data["y_data"]):
+                            msg = (
+                                f"Number of trace points in reference data [{len(y_ref_data)}] isn't equal to "
+                                f"number in current data [{len(curve_data['y_data'])}]"
+                            )
+                            project_report["error_exception"].append(msg)
+                            continue
+
+                        max_delta = 0
+                        difference = []
+                        for ref, actual in zip(y_ref_data, curve_data["y_data"]):
+                            difference.append(ref - actual)
+                            if actual != 0:
+                                # if 0, just skip, no sense for 'infinite' delta
+                                max_delta = max(max_delta, abs(1 - ref / actual))
+                        max_delta_perc = round(max_delta * 100, 3)
+
+                        # take always integer since ticks are integers, and +1 to allow to slide
+                        project_report["slider_limit"] = max(project_report["slider_limit"], int(max_delta_perc) + 1)
+                        plot_data.update(
+                            {
+                                "version_ref": self.reference_data["aedt_version"],
+                                "y_axis_ref": y_ref_data,
+                                "diff": difference,
+                                "delta": max_delta_perc,
+                            }
                         )
-                        project_report["error_exception"].append(msg)
-                        continue
 
-                    max_delta = 0
-                    difference = []
-                    for ref, actual in zip(y_ref_data, curve_data["y_data"]):
-                        difference.append(ref - actual)
-                        if actual != 0:
-                            # if 0, just skip, no sense for 'infinite' delta
-                            max_delta = max(max_delta, abs(1 - ref / actual))
-                    max_delta_perc = round(max_delta * 100, 3)
-
-                    # take always integer since ticks are integers, and +1 to allow to slide
-                    project_report["slider_limit"] = max(project_report["slider_limit"], int(max_delta_perc) + 1)
-
-                    project_report["plots"].append(
-                        {
-                            "name": f"{design_name}:{report_name}:{trace_name}:{curve_name}",
-                            "id": unique_id(),
-                            "x_label": f'"{trace_data["x_name"]} [{trace_data["x_unit"]}]"',
-                            "y_label": f'"[{trace_data["y_unit"]}]"',
-                            "x_axis": curve_data["x_data"],
-                            "version_ref": self.reference_data["aedt_version"],
-                            "y_axis_ref": y_ref_data,
-                            "version_now": str(self.version),
-                            "y_axis_now": curve_data["y_data"],
-                            "diff": difference,
-                            "delta": max_delta_perc,
-                        }
-                    )
+                    project_report["plots"].append(plot_data)
 
     def extract_mesh_or_time_data(
         self,
@@ -501,21 +513,21 @@ class ElectronicsDesktopTester:
         """
         for variation_name, variation_data in design_data[key_name].items():
             for setup_name, current_stat in variation_data.items():
-                reference_dict = self.reference_data["projects"][project_name]["designs"][design_name][key_name]
-                if variation_name not in reference_dict:
-                    project_report["error_exception"].append(
-                        f"Variation ({variation_name}) was not found in reference results for design: {design_name}"
-                    )
-                    continue
+                stat_dict = {
+                    "name": f"{design_name}:{setup_name}:{variation_name}",
+                    "current": current_stat,
+                }
+                if not self.only_reference:
+                    reference_dict = self.reference_data["projects"][project_name]["designs"][design_name][key_name]
+                    if variation_name not in reference_dict:
+                        project_report["error_exception"].append(
+                            f"Variation ({variation_name}) was not found in reference results for design: {design_name}"
+                        )
+                        continue
 
-                reference = reference_dict[variation_name][setup_name]
-                project_report[key_name].append(
-                    {
-                        "name": f"{design_name}:{setup_name}:{variation_name}",
-                        "ref": reference,
-                        "current": current_stat,
-                    }
-                )
+                    stat_dict["ref"] = reference_dict[variation_name][setup_name]
+
+                project_report[key_name].append(stat_dict)
 
     def allocator(self) -> Iterable[Tuple[str, Dict[str, Dict[str, int]]]]:
         """
