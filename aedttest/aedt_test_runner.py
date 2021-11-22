@@ -294,6 +294,7 @@ class ElectronicsDesktopTester:
             "projects": self.report_data["projects"],
             "finished": finished,
             "all_delta": self.report_data["all_delta"],
+            "has_reference": not self.only_reference,
         }
         data = MAIN_PAGE_TEMPLATE.render(context=ctx)
         with open(self.results_path / "main.html", "w") as file:
@@ -318,6 +319,7 @@ class ElectronicsDesktopTester:
             "mesh": project_report["mesh"],
             "sim_time": project_report["simulation_time"],
             "slider_limit": project_report["slider_limit"],
+            "has_reference": not self.only_reference,
         }
         data = PROJECT_PAGE_TEMPLATE.render(context=page_ctx)
         with open(self.results_path / f"{project_name}.html", "w") as file:

@@ -45,7 +45,7 @@
                 </div>
                 <!-- /# row -->
                 <section id="main-content">
-                    {% if all_delta is not None %}
+                    {% if has_reference %}
                         <div class="row">
                             <div class="col-lg-8">
                                 <div class="card-title pr">
@@ -75,7 +75,7 @@
                                                     <th>Project name</th>
                                                     <th>Cores</th>
                                                     <th>Date</th>
-                                                    {% if all_delta is not None %}
+                                                    {% if has_reference %}
                                                         <th>max&#916; [%]</th>
                                                     {% endif %}
                                                     <th>Status</th>
@@ -97,7 +97,7 @@
                                                     <td>
                                                         {{ project.time }}
                                                     </td>
-                                                    {% if all_delta is not None %}
+                                                    {% if has_reference %}
                                                         <td>
                                                             <span class="thresh-elem badge"
                                                                   data-delta="{{ project.delta }}">

@@ -39,7 +39,7 @@
                 </div>
             </div>
             <section id="main-content">
-                {% if slider_limit %}
+                {% if has_reference %}
                     <div class="row">
                         <div class="col-lg-8">
                             <div class="card-title pr">
@@ -94,7 +94,7 @@
                                         <thead>
                                         <tr>
                                             <th>Source</th>
-                                            {% if slider_limit %}
+                                            {% if has_reference %}
                                                 <th>Reference Time</th>
                                             {% endif %}
                                             <th>Current Time</th>
@@ -106,7 +106,7 @@
                                             <td>
                                                 {{ time.name }}
                                             </td>
-                                            {% if slider_limit %}
+                                            {% if has_reference %}
                                                 <td>
                                                     {{ time.ref }}
                                                 </td>
@@ -137,7 +137,7 @@
                                         <thead>
                                         <tr>
                                             <th>Source</th>
-                                            {% if slider_limit %}
+                                            {% if has_reference %}
                                                 <th>Reference Elements Count</th>
                                             {% endif %}
                                             <th>Current Elements Count</th>
@@ -149,7 +149,7 @@
                                             <td>
                                                 {{ mesh_data.name }}
                                             </td>
-                                            {% if slider_limit %}
+                                            {% if has_reference %}
                                                 <td>
                                                     {{ mesh_data.ref }}
                                                 </td>
@@ -177,7 +177,7 @@
                                     data-target="#col{{ plot.id }}"
                                     data-delta="{{ plot.delta }}"
                                     onclick="draw_{{ plot.id }}()">
-                                {% if slider_limit %}
+                                {% if has_reference %}
                                     {{ plot.name }} [max&#916; {{ plot.delta }}%]
                                 {% else %}
                                     {{ plot.name }}
