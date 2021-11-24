@@ -170,6 +170,7 @@ def compose_variation_string(variation_string):
     for string in strings:
         var, val = string.split("=")
         val = val.replace("'", "")
+        val = val.replace('"', "")
         val, unit = parse_variation_string(val)
         variation_name += "{}={}{} ".format(var, val, unit)
     variation_name = variation_name.strip()
@@ -186,10 +187,21 @@ def extract_reports_data(app, design_name, project_dir, report_names):
                 output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
             )
             data_dict = parse_rdat_file(report_file)
+            data_dict = compose_curve_keys(data_dict)
             data_dict = check_nan(data_dict)
             report_dict.update(data_dict)
 
     return report_dict
+
+
+def compose_curve_keys(data_dict):
+    for plot_name in data_dict.keys():
+        for trace_name in data_dict[plot_name].keys():
+            curves_dict = data_dict[plot_name][trace_name]["curves"]
+            for curve_name in list(curves_dict.keys()):
+                curve_name_composed = compose_variation_string(curve_name)
+                curves_dict[curve_name_composed] = curves_dict.pop(curve_name)
+    return data_dict
 
 
 def check_nan(data_dict):
