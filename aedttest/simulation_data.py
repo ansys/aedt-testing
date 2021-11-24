@@ -1,4 +1,5 @@
 import argparse
+import decimal
 import json
 import os
 import re
@@ -72,6 +73,27 @@ def parse_profile_file(profile_file, design, variation, setup):
         )
 
 
+def parse_variation_string(string):
+    units = ""
+    precision = -9
+    origin_string = string
+    while string:
+        try:
+            number = float(string)
+            d = decimal.Decimal(string)
+            decimal_places = d.as_tuple().exponent
+            if decimal_places < precision:
+                return f"{number:0.9e}", units.strip()
+            else:
+                return string, units.strip()
+
+        except ValueError:
+            units = string[-1:] + units
+            string = string[:-1]
+            if not string:
+                return origin_string, ""
+
+
 def extract_data(desktop, project_dir, design_names):
     designs_dict = {}
 
@@ -95,6 +117,7 @@ def extract_data(desktop, project_dir, design_names):
             design_dict=design_dict,
         )
 
+        # todo only report when analyze all successful
         report_names = app.post.all_report_names
         reports_dict = extract_reports_data(
             app=app, design_name=design_name, project_dir=project_dir, report_names=report_names
@@ -111,9 +134,10 @@ def extract_design_data(desktop, app, design_name, setup_dict, project_dir, desi
     success = desktop.analyze_all(design=design_name)
     if success:
         for setup, sweep in setup_dict.items():
+
             variation_strings = app.available_variations.get_variation_strings(sweep)
             for variation_string in variation_strings:
-                variation_name = "nominal" if not variation_string else variation_string
+                variation_name = "nominal" if not variation_string else compose_variation_string(variation_string)
 
                 if variation_name not in design_dict[design_name]["mesh"]:
                     design_dict[design_name]["mesh"][variation_name] = {}
@@ -135,6 +159,19 @@ def extract_design_data(desktop, app, design_name, setup_dict, project_dir, desi
         PROJECT_DICT["error_exception"].append("{} analyze_all failed".format(design_name))
 
 
+def compose_variation_string(variation_string):
+    strings = variation_string.split(" ")
+    variation_name = ""
+    for string in strings:
+        var, val = string.split("=")
+        val = val.replace("'", "")
+        val = val.replace('"', "")
+        val, unit = parse_variation_string(val)
+        variation_name += "{}={}{} ".format(var, val, unit)
+    variation_name = variation_name.strip()
+    return variation_name
+
+
 def extract_reports_data(app, design_name, project_dir, report_names):
     report_dict = {}
     if not report_names:
@@ -145,10 +182,21 @@ def extract_reports_data(app, design_name, project_dir, report_names):
                 output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
             )
             data_dict = parse_rdat_file(report_file)
+            data_dict = compose_curve_keys(data_dict)
             data_dict = check_nan(data_dict)
             report_dict.update(data_dict)
 
     return report_dict
+
+
+def compose_curve_keys(data_dict):
+    for plot_name in data_dict.keys():
+        for trace_name in data_dict[plot_name].keys():
+            curves_dict = data_dict[plot_name][trace_name]["curves"]
+            for curve_name in list(curves_dict.keys()):
+                curve_name_composed = compose_variation_string(curve_name)
+                curves_dict[curve_name_composed] = curves_dict.pop(curve_name)
+    return data_dict
 
 
 def check_nan(data_dict):
