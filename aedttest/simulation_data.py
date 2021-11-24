@@ -137,12 +137,7 @@ def extract_design_data(desktop, app, design_name, setup_dict, project_dir, desi
 
             variation_strings = app.available_variations.get_variation_strings(sweep)
             for variation_string in variation_strings:
-                # variation_name = "nominal" if not variation_string else variation_string
-
-                if not variation_string:
-                    variation_name = "nominal"
-                else:
-                    variation_name = compose_variation_string(variation_string)
+                variation_name = "nominal" if not variation_string else compose_variation_string(variation_string)
 
                 if variation_name not in design_dict[design_name]["mesh"]:
                     design_dict[design_name]["mesh"][variation_name] = {}
