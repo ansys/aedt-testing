@@ -108,7 +108,7 @@ def extract_data(desktop, project_dir, design_names):
 
         sweeps = app.existing_analysis_sweeps
         setup_dict = dict(zip(setups_names, sweeps))
-        design_dict = extract_design_data(
+        design_dict, analyze_success = extract_design_data(
             desktop=desktop,
             app=app,
             design_name=design_name,
@@ -117,10 +117,13 @@ def extract_data(desktop, project_dir, design_names):
             design_dict=design_dict,
         )
 
-        # todo only report when analyze all successful
         report_names = app.post.all_report_names
         reports_dict = extract_reports_data(
-            app=app, design_name=design_name, project_dir=project_dir, report_names=report_names
+            app=app,
+            design_name=design_name,
+            project_dir=project_dir,
+            report_names=report_names,
+            analyze_success=analyze_success,
         )
         design_dict[design_name]["report"] = reports_dict
 
@@ -153,10 +156,10 @@ def extract_design_data(desktop, app, design_name, setup_dict, project_dir, desi
                 app.export_profile(setup, variation_string, profile_file)
                 simulation_time = parse_profile_file(profile_file, design_name, variation_string, setup)
                 design_dict[design_name]["simulation_time"][variation_name][setup] = simulation_time
-
-        return design_dict
     else:
         PROJECT_DICT["error_exception"].append("{} analyze_all failed".format(design_name))
+
+    return design_dict, success
 
 
 def compose_variation_string(variation_string):
@@ -172,19 +175,21 @@ def compose_variation_string(variation_string):
     return variation_name
 
 
-def extract_reports_data(app, design_name, project_dir, report_names):
+def extract_reports_data(app, design_name, project_dir, report_names, analyze_success):
     report_dict = {}
+
     if not report_names:
         PROJECT_DICT["error_exception"].append("{} has no report".format(design_name))
     else:
-        for report in report_names:
-            report_file = app.post.export_report_to_file(
-                output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
-            )
-            data_dict = parse_rdat_file(report_file)
-            data_dict = compose_curve_keys(data_dict)
-            data_dict = check_nan(data_dict)
-            report_dict.update(data_dict)
+        if analyze_success:
+            for report in report_names:
+                report_file = app.post.export_report_to_file(
+                    output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
+                )
+                data_dict = parse_rdat_file(report_file)
+                data_dict = compose_curve_keys(data_dict)
+                data_dict = check_nan(data_dict)
+                report_dict.update(data_dict)
 
     return report_dict
 
