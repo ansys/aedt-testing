@@ -196,7 +196,11 @@ def compose_curve_keys(data_dict):
         for trace_name in data_dict[plot_name].keys():
             curves_dict = data_dict[plot_name][trace_name]["curves"]
             for curve_name in list(curves_dict.keys()):
-                curve_name_composed = compose_variation_string(curve_name)
+                if not curve_name:
+                    curve_name_composed = "nominal"
+                else:
+                    curve_name_composed = compose_variation_string(curve_name)
+
                 curves_dict[curve_name_composed] = curves_dict.pop(curve_name)
     return data_dict
 
