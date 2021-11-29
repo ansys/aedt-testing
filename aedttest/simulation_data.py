@@ -117,6 +117,9 @@ def extract_data(desktop, project_dir, design_names):
             design_dict=design_dict,
         )
 
+        if not analyze_success:
+            continue
+
         report_names = app.post.all_report_names
         reports_dict = extract_reports_data(
             app=app,
@@ -125,6 +128,7 @@ def extract_data(desktop, project_dir, design_names):
             report_names=report_names,
             analyze_success=analyze_success,
         )
+
         design_dict[design_name]["report"] = reports_dict
 
         designs_dict.update(design_dict)
