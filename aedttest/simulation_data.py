@@ -108,8 +108,14 @@ def extract_data(desktop, project_dir, design_names):
 
         sweeps = app.existing_analysis_sweeps
         setup_dict = dict(zip(setups_names, sweeps))
-        design_dict, analyze_success = extract_design_data(
-            desktop=desktop,
+
+        analyze_success = desktop.analyze_all(design=design_name)
+
+        if not analyze_success:
+            PROJECT_DICT["error_exception"].append("{} analyze_all failed".format(design_name))
+            continue
+
+        design_dict = extract_design_data(
             app=app,
             design_name=design_name,
             setup_dict=setup_dict,
@@ -117,16 +123,9 @@ def extract_data(desktop, project_dir, design_names):
             design_dict=design_dict,
         )
 
-        if not analyze_success:
-            continue
-
         report_names = app.post.all_report_names
         reports_dict = extract_reports_data(
-            app=app,
-            design_name=design_name,
-            project_dir=project_dir,
-            report_names=report_names,
-            analyze_success=analyze_success,
+            app=app, design_name=design_name, project_dir=project_dir, report_names=report_names
         )
 
         design_dict[design_name]["report"] = reports_dict
@@ -136,34 +135,29 @@ def extract_data(desktop, project_dir, design_names):
     return designs_dict
 
 
-def extract_design_data(desktop, app, design_name, setup_dict, project_dir, design_dict):
+def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
 
-    success = desktop.analyze_all(design=design_name)
-    if success:
-        for setup, sweep in setup_dict.items():
+    for setup, sweep in setup_dict.items():
+        variation_strings = app.available_variations.get_variation_strings(sweep)
+        for variation_string in variation_strings:
+            variation_name = "nominal" if not variation_string else compose_variation_string(variation_string)
 
-            variation_strings = app.available_variations.get_variation_strings(sweep)
-            for variation_string in variation_strings:
-                variation_name = "nominal" if not variation_string else compose_variation_string(variation_string)
+            if variation_name not in design_dict[design_name]["mesh"]:
+                design_dict[design_name]["mesh"][variation_name] = {}
+            if variation_name not in design_dict[design_name]["simulation_time"]:
+                design_dict[design_name]["simulation_time"][variation_name] = {}
 
-                if variation_name not in design_dict[design_name]["mesh"]:
-                    design_dict[design_name]["mesh"][variation_name] = {}
-                if variation_name not in design_dict[design_name]["simulation_time"]:
-                    design_dict[design_name]["simulation_time"][variation_name] = {}
+            mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
+            app.export_mesh_stats(setup, variation_string, mesh_stats_file)
+            mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_string, setup)
+            design_dict[design_name]["mesh"][variation_name][setup] = mesh_data
 
-                mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
-                app.export_mesh_stats(setup, variation_string, mesh_stats_file)
-                mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_string, setup)
-                design_dict[design_name]["mesh"][variation_name][setup] = mesh_data
+            profile_file = generate_unique_file_path(project_dir, ".prof")
+            app.export_profile(setup, variation_string, profile_file)
+            simulation_time = parse_profile_file(profile_file, design_name, variation_string, setup)
+            design_dict[design_name]["simulation_time"][variation_name][setup] = simulation_time
 
-                profile_file = generate_unique_file_path(project_dir, ".prof")
-                app.export_profile(setup, variation_string, profile_file)
-                simulation_time = parse_profile_file(profile_file, design_name, variation_string, setup)
-                design_dict[design_name]["simulation_time"][variation_name][setup] = simulation_time
-    else:
-        PROJECT_DICT["error_exception"].append("{} analyze_all failed".format(design_name))
-
-    return design_dict, success
+    return design_dict
 
 
 def compose_variation_string(variation_string):
@@ -179,21 +173,20 @@ def compose_variation_string(variation_string):
     return variation_name
 
 
-def extract_reports_data(app, design_name, project_dir, report_names, analyze_success):
+def extract_reports_data(app, design_name, project_dir, report_names):
     report_dict = {}
 
     if not report_names:
         PROJECT_DICT["error_exception"].append("{} has no report".format(design_name))
     else:
-        if analyze_success:
-            for report in report_names:
-                report_file = app.post.export_report_to_file(
-                    output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
-                )
-                data_dict = parse_rdat_file(report_file)
-                data_dict = compose_curve_keys(data_dict)
-                data_dict = check_nan(data_dict)
-                report_dict.update(data_dict)
+        for report in report_names:
+            report_file = app.post.export_report_to_file(
+                output_dir=project_dir, plot_name=report, extension=".rdat", unique_file=True
+            )
+            data_dict = parse_rdat_file(report_file)
+            data_dict = compose_curve_keys(data_dict)
+            data_dict = check_nan(data_dict)
+            report_dict.update(data_dict)
 
     return report_dict
 
