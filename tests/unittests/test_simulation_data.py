@@ -6,6 +6,9 @@ with mock.patch("argparse.ArgumentParser.parse_args", return_value=Namespace(des
 
 
 def test_parse_variation_string():
+    result = simulation_data.parse_variation_string("")
+    assert result == ("", "")
+
     result = simulation_data.parse_variation_string("3m2")
     assert result == ("3", "m2")
 

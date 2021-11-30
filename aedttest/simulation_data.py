@@ -77,6 +77,10 @@ def parse_variation_string(string):
     units = ""
     precision = -9
     origin_string = string
+
+    if not string:
+        return origin_string, ""
+
     while string:
         try:
             number = float(string)
