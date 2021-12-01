@@ -23,8 +23,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -m pip install .[sim_data_test]
+        python -m pip install -r tests/reqs_test_sim_data_py27.txt
         
     - name: Unittests
       run: |
-        pytest -v tests/unittests/test_simulation_data.py
+        pytest -v tests/unittests/test_simulation_data.py --disable-pytest-warnings

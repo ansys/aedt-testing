@@ -28,7 +28,7 @@ jobs:
         
     - name: Unittests
       run: |
-        pytest -v tests/unittests --ignore-glob=**/test_simulation_data.py
+        pytest -v tests/unittests
 
     - name: MyPy
       run: |
