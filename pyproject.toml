@@ -18,7 +18,7 @@ classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
 
 dependencies = [
-    "pyaedt==0.4.7",
+    "pyaedt==0.4.12",
     "Django==3.2.8",
 ]
 

@@ -77,13 +77,17 @@ def parse_variation_string(string):
     units = ""
     precision = -9
     origin_string = string
+
+    if not string:
+        return origin_string, ""
+
     while string:
         try:
             number = float(string)
             d = decimal.Decimal(string)
             decimal_places = d.as_tuple().exponent
             if decimal_places < precision:
-                return f"{number:0.9e}", units.strip()
+                return "{:0.9e}".format(number), units.strip()
             else:
                 return string, units.strip()
 
