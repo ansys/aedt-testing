@@ -3,4 +3,4 @@ pytest-cov==2.12.1
 mock==3.0.5
 pyaedt
 Django
-pywin32
+pywin32==228
