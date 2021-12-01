@@ -1,8 +1,7 @@
 # description if packaging system requirements
 [build-system]
 requires = [
-    "flit_core >=3.2,<4; python_version >= '3.7'",
-    "flit_core ==2.0.2; python_version < '3'",
+    "flit_core >=3.2,<4",
 ]
 build-backend = "flit_core.buildapi"
 
@@ -35,11 +34,6 @@ test = [
 
 deploy = [
     "flit==3.4.0",
-]
-
-sim_data_test = [
-    "pytest==6.2.5",
-    "pytest-cov==3.0.0",
 ]
 
 [project.urls]
