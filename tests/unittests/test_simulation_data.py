@@ -1,5 +1,10 @@
 from argparse import Namespace
-from unittest import mock
+
+try:
+    from unittest import mock
+except ImportError:
+    # py27
+    import mock
 
 with mock.patch("argparse.ArgumentParser.parse_args", return_value=Namespace(desktop_version="2021.1")):
     from aedttest import simulation_data
