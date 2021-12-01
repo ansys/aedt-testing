@@ -19,7 +19,7 @@ jobs:
 
     - uses: actions/setup-python@v2
       with:
-        python-version: 3.7
+        python-version: 2.7
 
     - name: Install dependencies
       run: |
@@ -28,8 +28,4 @@ jobs:
         
     - name: Unittests
       run: |
-        pytest -v tests/unittests --ignore-glob=**/test_simulation_data.py
-
-    - name: MyPy
-      run: |
-        mypy --config-file=./mypy.ini aedttest/aedt_test_runner.py
+        pytest -v tests/unittests/test_simulation_data.py
