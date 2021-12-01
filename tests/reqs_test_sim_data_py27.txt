@@ -1,0 +1,6 @@
+pytest==4.6.11
+pytest-cov==2.12.1
+mock==3.0.5
+pyaedt
+Django
+pywin32==228

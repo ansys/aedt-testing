@@ -7,8 +7,8 @@ on:
   pull_request:
 
 jobs:
-  tests:
-    runs-on: ubuntu-latest
+  sim-data-tests:
+    runs-on: windows-latest
     strategy:
       fail-fast: false
 
@@ -19,17 +19,12 @@ jobs:
 
     - uses: actions/setup-python@v2
       with:
-        python-version: 3.7
+        python-version: 2.7
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install .[test]
+        python -m pip install -r tests/reqs_test_sim_data_py27.txt
         
     - name: Unittests
       run: |
-        pytest -v tests/unittests
-
-    - name: MyPy
-      run: |
-        mypy --config-file=./mypy.ini aedttest/aedt_test_runner.py
+        pytest -v tests/unittests/test_simulation_data.py --disable-pytest-warnings

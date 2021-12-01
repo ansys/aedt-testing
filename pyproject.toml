@@ -5,7 +5,7 @@ requires = [
 ]
 build-backend = "flit_core.buildapi"
 
-# desciption of current module
+# description of current module
 [project]
 name = "aedttest"
 authors = [
