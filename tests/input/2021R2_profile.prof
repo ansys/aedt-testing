@@ -1,0 +1,60 @@
+Maxwell 2D Profile
+  Project:           Project1231231312
+  Design:            only_winding2
+  Solution setup:    Setup1
+  Design variation:  n_parallel='1' winding_current='10mA'
+
+  Task                           Real Time  CPU Time  Memory  Information
+  ----                           ---------  --------  ------  -----------
+
+  Start                                                       Time:  11/11/2021 12:31:29; Host: KISBOYANG; Processor: 6; OS: NT 10.0; Maxwell2D 2021.2.0
+                                                              Executing from C:\Program Files\AnsysEM\AnsysEM21.2\Win64\MAXWELL2DCOMENGINE.exe
+                                                              HPC Enabled
+                                                              Desired RAM limit not set.
+  Design Validation                                           Elapsed time : 00:00:00 , Maxwell2D ComEngine Memory : 58.3 M
+                                                              Perform full validations
+                                                              
+    TAU_2D(Surface init)         00:00:00   00:00:00  30.3 M  44 triangles
+                                                              
+  Pass 1                                                      
+      Solver DRS4                00:00:00   00:00:00  1.05 M  566 matrix,    0KB disk
+    SolvingForPass               00:00:00   00:00:00  28 M    150 triangles
+                                                              
+  Pass 2                                                      
+      Solver DRS4                00:00:00   00:00:00  485 K   750 matrix,    0KB disk
+    SolvingForPass               00:00:00   00:00:00  29.3 M  196 triangles
+                                                              
+  Pass 3                                                      
+      Solver DRS4                00:00:00   00:00:00  688 K   990 matrix,    0KB disk
+    SolvingForPass               00:00:00   00:00:00  30.4 M  256 triangles
+                                                              
+  Pass 4                                                      
+      Solver DRS4                00:00:00   00:00:00  883 K   1326 matrix,    0KB disk
+    SolvingForPass               00:00:00   00:00:00  31.3 M  340 triangles
+                                                              
+  Pass 5                                                      
+      Solver DRS4                00:00:00   00:00:00  1.14 M  1734 matrix,    0KB disk
+    SolvingForPass               00:00:00   00:00:00  32.9 M  442 triangles
+                                                              
+  Pass 6                                                      
+      Solver DRS4                00:00:00   00:00:00  1.53 M  2270 matrix,    0KB disk
+      Solver DRS4                00:00:00   00:00:00  1.69 M  2270 matrix,    0KB disk
+    SolvingForPass               00:00:00   00:00:00  35.2 M  576 triangles
+                                                              Adaptive Passes converged
+                                                              
+  Solution Sweep                                              From 10 to 1000, 30 Steps
+                                                              
+  Frequency: 10Hz                                             
+      Solver DRS4                00:00:00   00:00:00  1.86 M  2270 matrix,    0KB disk
+      Solver DRS4                00:00:00   00:00:00  1.54 M  2270 matrix,    0KB disk
+    SolveForFrequency            00:00:00   00:00:00  33.7 M  
+                                                              
+  Frequency: 44.1379310344828Hz                               
+      Solver DRS4                00:00:00   00:00:00  2.2 M   2270 matrix,    0KB disk
+      Solver DRS4                00:00:00   00:00:00  2.46 M  2270 matrix,    0KB disk
+    SolveForFrequency            00:00:00   00:00:00  34.3 M  
+                                                              
+    FrequencySweepLoop           00:00:00   00:00:00  37.5 M
+                                                              Time:  11/11/2021 12:31:35, Status: Normal Completion
+  Total                          00:00:01   00:00:04          Elapsed time : 00:00:05 , ComEngine Memory : 81.8 M
+                                                              

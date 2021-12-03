@@ -1,0 +1,39 @@
+Maxwell 2D Profile
+  Project:           expression_excitation
+  Design:            Maxwell2DDesign1
+  Solution setup:    Setup1
+  Design variation:  Ip='4A'
+
+Task                    Real Time  CPU Time  Memory  Information
+----                    ---------  --------  ------  -----------
+
+Start                                                Time:  11/16/2021 18:10:19; Host: KISBOYANG; Processor: 6; OS: NT 10.0; Maxwell 2D 2019.1.0
+                                                     Executing from C:\Program Files\AnsysEM\AnsysEM19.3\Win64\MAXWELL2DCOMENGINE.exe
+                                                     HPC Enabled
+                                                     Desired RAM limit not set.
+  TAU_2D(Surface init)  00:00:00   00:00:00  29.3 M  94 triangles
+                                                     
+    Solver DRA2         00:00:00   00:00:00  221 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  26.5 M  T=0 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  26.9 M  T=0.0002 [s] 
+    Solver DRS2         00:00:00   00:00:00  139 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.1 M  T=0.0004 [s]
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.5 M  T=0.019 [s] 
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.6 M  T=0.0192 [s] 
+    Solver DRS2         00:00:00   00:00:00  138 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.6 M  T=0.0194 [s] 
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.6 M  T=0.0196 [s] 
+    Solver DRS2         00:00:00   00:00:00  136 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.6 M  T=0.0198 [s] 
+    Solver DRS2         00:00:00   00:00:00  140 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.6 M  T=0.02 [s] 
+  Solution for step     00:00:00   00:00:00  28.7 M  
+  Transient Solution    00:00:00   00:00:00  28.7 M  
+                                                     
+Solution Process                                     Elapsed time : 00:00:02 , Maxwell2D ComEngine Memory : 68.7 M
+Total                   00:00:00   00:00:00          Time:  11/16/2021 18:10:21, Status: Normal Completion
+                                                     
