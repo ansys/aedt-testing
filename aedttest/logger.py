@@ -1,7 +1,5 @@
 import logging
 import warnings
-from pathlib import Path
-from typing import Union
 
 # set logger to be configurable from external
 logger = logging.getLogger("aedt-test-framework")
@@ -13,7 +11,7 @@ logger.addHandler(logging.NullHandler())
 warnings.filterwarnings("ignore")
 
 
-def set_logger(logging_file: Union[str, Path], level: int = logging.DEBUG) -> None:
+def set_logger(logging_file, level=logging.DEBUG):
     """
     Function to setup default logging output to stream and log file.
 
