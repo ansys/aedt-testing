@@ -1,0 +1,13 @@
+Maxwell 2D Mesh Statistics
+  Project:           Project1
+  Design:            only_winding2
+  Solution setup:    Setup1
+  Design variation:  n_parallel='1' winding_current='5.1234567891234601e-06mA'
+
+Total number of mesh elements: 44
+             | Num Elements  | Min edge length  | Max edge length  | RMS edge length  |   Min elem area  |   Max elem area  |  Mean elem area  | Std Devn (area)  |
+  Rectangle1 |            3  |         0.00055  |          0.0011  |     0.000685971  |      1.5125e-07  |       3.025e-07  |     2.01667e-07  |     7.12999e-08  |
+      Region |           39  |         0.00045  |         0.00165  |     0.000990059  |      1.2375e-07  |     5.56533e-07  |     3.62436e-07  |     1.11027e-07  |
+Rectangle1_1 |            2  |         0.00055  |      0.00122984  |          0.0011  |       3.025e-07  |       3.025e-07  |       3.025e-07  |               0  |
+
+ |

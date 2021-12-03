@@ -1,0 +1,223 @@
+Maxwell 2D Profile
+  Project:           expression_excitation
+  Design:            Maxwell2DDesign1
+  Solution setup:    Setup1
+  Design variation:  Ip='4A'
+
+Task                    Real Time  CPU Time  Memory  Information
+----                    ---------  --------  ------  -----------
+
+Start                                                Time:  11/16/2021 18:10:19; Host: KISBOYANG; Processor: 6; OS: NT 10.0; Maxwell 2D 2019.1.0
+                                                     Executing from C:\Program Files\AnsysEM\AnsysEM19.3\Win64\MAXWELL2DCOMENGINE.exe
+                                                     HPC Enabled
+                                                     Desired RAM limit not set.
+  TAU_2D(Surface init)  00:00:00   00:00:00  29.3 M  94 triangles
+                                                     
+    Solver DRA2         00:00:00   00:00:00  221 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  26.5 M  T=0 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  26.9 M  T=0.0002 [s] 
+    Solver DRS2         00:00:00   00:00:00  139 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.1 M  T=0.0004 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.1 M  T=0.0006 [s] 
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.1 M  T=0.0008 [s] 
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.2 M  T=0.001 [s] 
+    Solver DRS2         00:00:00   00:00:00  142 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.3 M  T=0.0012 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.3 M  T=0.0014 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.4 M  T=0.0016 [s] 
+    Solver DRS2         00:00:00   00:00:00  135 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.4 M  T=0.0018 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.4 M  T=0.002 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.4 M  T=0.0022 [s] 
+    Solver DRS2         00:00:00   00:00:00  135 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.5 M  T=0.0024 [s] 
+    Solver DRS2         00:00:00   00:00:00  135 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.5 M  T=0.0026 [s] 
+    Solver DRS2         00:00:00   00:00:00  135 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.5 M  T=0.0028 [s] 
+    Solver DRS2         00:00:00   00:00:00  141 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.6 M  T=0.003 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.6 M  T=0.0032 [s] 
+    Solver DRS2         00:00:00   00:00:00  140 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.7 M  T=0.0034 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.7 M  T=0.0036 [s] 
+    Solver DRS2         00:00:00   00:00:00  135 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.9 M  T=0.0038 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.9 M  T=0.004 [s] 
+    Solver DRS2         00:00:00   00:00:00  140 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.9 M  T=0.0042 [s] 
+    Solver DRS2         00:00:00   00:00:00  140 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.9 M  T=0.0044 [s] 
+    Solver DRS2         00:00:00   00:00:00  141 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.9 M  T=0.0046 [s] 
+    Solver DRS2         00:00:00   00:00:00  133 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.9 M  T=0.0048 [s] 
+    Solver DRS2         00:00:00   00:00:00  133 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.9 M  T=0.005 [s] 
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.9 M  T=0.0052 [s] 
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  27.9 M  T=0.0054 [s] 
+    Solver DRS2         00:00:00   00:00:00  138 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0056 [s] 
+    Solver DRS2         00:00:00   00:00:00  137 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0058 [s] 
+    Solver DRS2         00:00:00   00:00:00  135 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.006 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0062 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0064 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0066 [s] 
+    Solver DRS2         00:00:00   00:00:00  142 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0068 [s] 
+    Solver DRS2         00:00:00   00:00:00  146 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.007 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0072 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0074 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0076 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0078 [s] 
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.008 [s] 
+    Solver DRS2         00:00:00   00:00:00  139 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0082 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0084 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0086 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28 M    T=0.0088 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.009 [s] 
+    Solver DRS2         00:00:00   00:00:00  142 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0092 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0094 [s] 
+    Solver DRS2         00:00:00   00:00:00  133 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0096 [s] 
+    Solver DRS2         00:00:00   00:00:00  136 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0098 [s] 
+    Solver DRS2         00:00:00   00:00:00  138 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.01 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0102 [s] 
+    Solver DRS2         00:00:00   00:00:00  139 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0104 [s] 
+    Solver DRS2         00:00:00   00:00:00  146 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0106 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0108 [s] 
+    Solver DRS2         00:00:00   00:00:00  133 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.011 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0112 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0114 [s] 
+    Solver DRS2         00:00:00   00:00:00  138 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0116 [s] 
+    Solver DRS2         00:00:00   00:00:00  140 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0118 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.012 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0122 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0124 [s] 
+    Solver DRS2         00:00:00   00:00:00  141 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.1 M  T=0.0126 [s] 
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.2 M  T=0.0128 [s] 
+    Solver DRS2         00:00:00   00:00:00  139 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.2 M  T=0.013 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.2 M  T=0.0132 [s] 
+    Solver DRS2         00:00:00   00:00:00  139 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.2 M  T=0.0134 [s] 
+    Solver DRS2         00:00:00   00:00:00  138 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.2 M  T=0.0136 [s] 
+    Solver DRS2         00:00:00   00:00:00  135 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.2 M  T=0.0138 [s] 
+    Solver DRS2         00:00:00   00:00:00  138 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.2 M  T=0.014 [s] 
+    Solver DRS2         00:00:00   00:00:00  138 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.0142 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.0144 [s] 
+    Solver DRS2         00:00:00   00:00:00  139 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.0146 [s] 
+    Solver DRS2         00:00:00   00:00:00  139 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.0148 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.015 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.0152 [s] 
+    Solver DRS2         00:00:00   00:00:00  132 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.0154 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.0156 [s] 
+    Solver DRS2         00:00:00   00:00:00  146 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.0158 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.016 [s] 
+    Solver DRS2         00:00:00   00:00:00  139 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.0162 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.0164 [s] 
+    Solver DRS2         00:00:00   00:00:00  139 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.0166 [s] 
+    Solver DRS2         00:00:00   00:00:00  140 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.0168 [s] 
+    Solver DRS2         00:00:00   00:00:00  147 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.017 [s] 
+    Solver DRS2         00:00:00   00:00:00  135 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.3 M  T=0.0172 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.4 M  T=0.0174 [s] 
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.5 M  T=0.0176 [s] 
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.5 M  T=0.0178 [s] 
+    Solver DRS2         00:00:00   00:00:00  130 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.5 M  T=0.018 [s] 
+    Solver DRS2         00:00:00   00:00:00  136 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.5 M  T=0.0182 [s] 
+    Solver DRS2         00:00:00   00:00:00  139 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.5 M  T=0.0184 [s] 
+    Solver DRS2         00:00:00   00:00:00  135 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.5 M  T=0.0186 [s] 
+    Solver DRS2         00:00:00   00:00:00  135 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.5 M  T=0.0188 [s] 
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.5 M  T=0.019 [s] 
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.6 M  T=0.0192 [s] 
+    Solver DRS2         00:00:00   00:00:00  138 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.6 M  T=0.0194 [s] 
+    Solver DRS2         00:00:00   00:00:00  134 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.6 M  T=0.0196 [s] 
+    Solver DRS2         00:00:00   00:00:00  136 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.6 M  T=0.0198 [s] 
+    Solver DRS2         00:00:00   00:00:00  140 K   385 matrix,    0KB disk
+  Solution for step     00:00:00   00:00:00  28.6 M  T=0.02 [s] 
+  Solution for step     00:00:00   00:00:00  28.7 M  
+  Transient Solution    00:00:00   00:00:00  28.7 M  
+                                                     
+Solution Process                                     Elapsed time : 00:00:02 , Maxwell2D ComEngine Memory : 68.7 M
+Total                   00:00:00   00:00:00          Time:  11/16/2021 18:10:21, Status: Normal Completion
+                                                     
