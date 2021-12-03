@@ -12,7 +12,11 @@ suite of tests to validate stability/regression of results between different ver
 - [Usage](#usage)
   * [Configuration file](#configuration-file)
   * [Local machine](#local-machine)
+    + [Generate only reference results](#generate-only-reference-results)
+    + [Run comparison between versions](#run-comparison-between-versions)
   * [Slurm](#slurm)
+    + [Generate only reference results](#generate-only-reference-results-1)
+    + [Run comparison between versions](#run-comparison-between-versions-1)
 - [Limitations](#limitations)
 
 <!-- tocstop -->
@@ -44,12 +48,19 @@ to create a file.
 
 ### Local machine
 To start test on local machine use following command line
+
+#### Generate only reference results
 ```bash
-python aedttest/aedt_test_runner.py --aedt-version=212 --config-file=C:\git\aedt-testing\examples\example_config.json
+aedt_test_runner --config-file=config.json --aedt-version=193 --only-reference
+```
+
+#### Run comparison between versions
+```bash
+aedt_test_runner --config-file=config.json --aedt-version=222 --reference-file=input/reference_results.json
 ```
 
 ### Slurm
-Example to generate only reference results
+#### Generate only reference results
 ```bash
 sbatch \
   --job-name aedttest \
@@ -59,7 +70,7 @@ sbatch \
   --wrap "aedt_test_runner --config-file=config.json --aedt-version=193 --only-reference"
 ```
 
-Example to run a comparison between versions:
+#### Run comparison between versions
 ```bash
 sbatch \
   --job-name aedttest \
