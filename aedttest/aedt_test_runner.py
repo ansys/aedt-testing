@@ -715,12 +715,12 @@ def copy_path_to(src: str, dst: str) -> Union[str, List[str]]:
     else:
         unpack_dst = Path(dst)
 
-    dst = str(unpack_dst)
-    mkpath(dst)
     src_path = src_path.expanduser().resolve()
-
     if not src_path.exists():
         raise FileExistsError(f"File {src_path} doesn't exist")
+
+    dst = str(unpack_dst)
+    mkpath(dst)
 
     if src_path.is_file():
         file_path = copy_file(str(src_path), dst)
