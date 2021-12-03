@@ -1,6 +1,6 @@
 ## Description
 Current project aims to provide an Automated Framework to test Ansys Electronics Desktop (AEDT). User can set up a 
-sweet of tests to validate stability/regression of results between different versions of Electronics Desktop 
+suite of tests to validate stability/regression of results between different versions of Electronics Desktop 
 
 
 ## Table of Contents
@@ -12,7 +12,11 @@ sweet of tests to validate stability/regression of results between different ver
 - [Usage](#usage)
   * [Configuration file](#configuration-file)
   * [Local machine](#local-machine)
+    + [Generate only reference results](#generate-only-reference-results)
+    + [Run comparison between versions](#run-comparison-between-versions)
   * [Slurm](#slurm)
+    + [Generate only reference results](#generate-only-reference-results-1)
+    + [Run comparison between versions](#run-comparison-between-versions-1)
 - [Limitations](#limitations)
 
 <!-- tocstop -->
@@ -44,18 +48,36 @@ to create a file.
 
 ### Local machine
 To start test on local machine use following command line
+
+#### Generate only reference results
 ```bash
-python aedttest/aedt_test_runner.py --aedt-version=212 --config-file=C:\git\aedt-testing\examples\example_config.json
+aedt_test_runner --config-file=config.json --aedt-version=193 --only-reference
+```
+
+#### Run comparison between versions
+```bash
+aedt_test_runner --config-file=config.json --aedt-version=222 --reference-file=input/reference_results.json
 ```
 
 ### Slurm
+#### Generate only reference results
 ```bash
 sbatch \
-    --job-name aedttest \
-    --partition ottc02 \
-    --export "ALL,ANSYSEM_ROOT212=/ott/apps/software/ANSYS_EM_2021R2/AnsysEM21.2/Linux64,ANS_NODEPCHECK=1" \
-    --nodes 12-12 \
-    --wrap "python3 aedttest/aedt_test_runner.py -cf=/lus01/mbeliaev/aedt-test/examples/example_config.json -av=212"
+  --job-name aedttest \
+  --partition ottc01 \
+  --export "ALL,ANSYSEM_ROOT193=/apps/software/ANSYS_EM_2019R1/AnsysEM19.3/Linux64,ANS_NODEPCHECK=1" \
+  --nodes 2-2 --ntasks 56 \
+  --wrap "aedt_test_runner --config-file=config.json --aedt-version=193 --only-reference"
+```
+
+#### Run comparison between versions
+```bash
+sbatch \
+  --job-name aedttest \
+  --partition ottc01 \
+  --export "ALL,ANSYSEM_ROOT222=/ott/apps/software/ANSYS_EM_2022R2_211129/v222/Linux64,ANS_NODEPCHECK=1" \
+  --nodes 2-2 --ntasks 56 \
+  --wrap "aedt_test_runner --config-file=config.json --aedt-version=222 --reference-file=~/reference_results.json"
 ```
 
 ## Limitations
