@@ -27,14 +27,15 @@ def test_allocate_task_single():
     assert allocated_machines == {"host1": {"cores": 15, "tasks": 1}, "host2": {"cores": 10, "tasks": 1}}
 
     allocated_machines = aedt_test_runner.allocate_task({"cores": 26}, machines_dict)
-    assert not allocated_machines
+    assert allocated_machines is None
+
+    allocated_machines = aedt_test_runner.allocate_task({"cores": 10, "single_node": True}, machines_dict)
+    assert allocated_machines is None
 
 
 def test_allocate_task_multiple():
     """
     Test all possible scenarios of job splitting. Every test is critical
-    Returns:
-
     """
     job_machines = aedt_test_runner.get_job_machines("host1:20,host2:10")
     machines_dict = {machine.hostname: machine.cores for machine in job_machines}
@@ -52,9 +53,7 @@ def test_allocate_task_multiple():
     assert allocated_machines == {"host1": {"cores": 20, "tasks": 4}, "host2": {"cores": 5, "tasks": 1}}
 
     job_machines = aedt_test_runner.get_job_machines("host1:10,host2:15")
-    machines_dict.clear()
-    for machine in job_machines:
-        machines_dict[machine.hostname] = machine.cores
+    machines_dict = {machine.hostname: machine.cores for machine in job_machines}
 
     allocated_machines = aedt_test_runner.allocate_task({"cores": 26, "parametric_tasks": 2}, machines_dict)
     assert not allocated_machines
@@ -143,6 +142,10 @@ class TestCopyPathTo:
                 assert (Path(dst_tmp_dir) / file).is_file()
                 assert (Path(dst_tmp_dir) / file).exists()
                 assert (Path(dst_tmp_dir) / file2).exists()
+
+    def test_no_source(self):
+        with pytest.raises(FileExistsError):
+            aedt_test_runner.copy_path_to("/no/path/exists", "/tmp")
 
 
 def test_get_aedt_executable_path():
