@@ -88,6 +88,7 @@ def test_parse_profile():
 
 
 def test_parse_mesh_stats():
+
     result = simulation_data.parse_mesh_stats(
         mesh_stats_file=r"../input/no_mesh.mstat",
         design="only_winding2",
@@ -101,6 +102,7 @@ def test_parse_mesh_stats():
         ],
         "designs": {},
     }
+    simulation_data.PROJECT_DICT = {"error_exception": [], "designs": {}}
 
     result = simulation_data.parse_mesh_stats(
         mesh_stats_file=r"../input/mesh.mstat", design="test_design", variation="test_variation", setup="test_setup"
