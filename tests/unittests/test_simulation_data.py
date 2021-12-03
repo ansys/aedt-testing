@@ -1,3 +1,4 @@
+import os
 from argparse import Namespace
 
 try:
@@ -8,6 +9,8 @@ except ImportError:
 
 with mock.patch("argparse.ArgumentParser.parse_args", return_value=Namespace(desktop_version="2021.1")):
     from aedttest import simulation_data
+
+TESTS_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
 def test_parse_variation_string():
@@ -62,8 +65,9 @@ def test_extract_design_data(mock_parse_mesh, mock_parse_profile_file):
 
 
 def test_parse_profile():
+
     result = simulation_data.parse_profile_file(
-        profile_file=r"../input/2020R2_profile.prof",
+        profile_file=os.path.join(TESTS_DIR, "input", "2020R2_profile.prof"),
         design="test_design",
         variation="test_variation",
         setup="test_setup",
@@ -71,7 +75,7 @@ def test_parse_profile():
     assert result == "00:00:09"
 
     result = simulation_data.parse_profile_file(
-        profile_file=r"../input/2021R2_profile.prof",
+        profile_file=os.path.join(TESTS_DIR, "input", "2021R2_profile.prof"),
         design="test_design",
         variation="test_variation",
         setup="test_setup",
@@ -79,7 +83,7 @@ def test_parse_profile():
     assert result == "00:00:05"
 
     result = simulation_data.parse_profile_file(
-        profile_file=r"../input/R2019R1_profile.prof",
+        profile_file=os.path.join(TESTS_DIR, "input", "R2019R1_profile.prof"),
         design="test_design",
         variation="test_variation",
         setup="test_setup",
@@ -90,7 +94,7 @@ def test_parse_profile():
 def test_parse_mesh_stats():
 
     result = simulation_data.parse_mesh_stats(
-        mesh_stats_file=r"../input/no_mesh.mstat",
+        mesh_stats_file=os.path.join(TESTS_DIR, "input", "no_mesh.mstat"),
         design="only_winding2",
         variation="n_parallel='2' winding_current='15mA'",
         setup="Setup1",
@@ -105,6 +109,9 @@ def test_parse_mesh_stats():
     simulation_data.PROJECT_DICT = {"error_exception": [], "designs": {}}
 
     result = simulation_data.parse_mesh_stats(
-        mesh_stats_file=r"../input/mesh.mstat", design="test_design", variation="test_variation", setup="test_setup"
+        mesh_stats_file=os.path.join(TESTS_DIR, "input", "mesh.mstat"),
+        design="test_design",
+        variation="test_variation",
+        setup="test_setup",
     )
     assert result == 44
