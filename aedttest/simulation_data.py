@@ -78,9 +78,6 @@ def parse_variation_string(string):
     precision = -9
     origin_string = string
 
-    if not string:
-        return origin_string, ""
-
     while string:
         try:
             number = float(string)
@@ -94,8 +91,8 @@ def parse_variation_string(string):
         except ValueError:
             units = string[-1:] + units
             string = string[:-1]
-            if not string:
-                return origin_string, ""
+    else:
+        return origin_string, ""
 
 
 def extract_data(desktop, project_dir, design_names):
