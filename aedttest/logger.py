@@ -11,13 +11,14 @@ logger.addHandler(logging.NullHandler())
 warnings.filterwarnings("ignore")
 
 
-def set_logger(logging_file, level=logging.DEBUG):
+def set_logger(logging_file, level=logging.DEBUG, pyaedt_module=None):
     """
     Function to setup default logging output to stream and log file.
 
     Args:
         logging_file: (str/Path) path to log file
         level: (int) level of logging to emit
+        pyaedt_module: (pyaedt) pyaedt module to disable logging
 
     Returns:
         None
@@ -37,3 +38,11 @@ def set_logger(logging_file, level=logging.DEBUG):
 
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
+
+    if pyaedt_module is not None:
+        if level > logging.DEBUG:
+            pyaedt_module.aedt_logger.ENABLE_LOGGER = False
+        else:
+            # debug is requested
+            pyaedt_module.aedt_logger.FORMATTER = formatter
+            pyaedt_module.aedt_logger.DEFAULT_LOGGER_FILE = logging_file
