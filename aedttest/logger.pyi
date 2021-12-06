@@ -1,6 +1,8 @@
 from logging import Logger
 from pathlib import Path
-from typing import Union, Optional, Any
+from typing import Any
+from typing import Optional
+from typing import Union
 
 logger: Logger
 

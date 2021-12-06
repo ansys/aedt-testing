@@ -18,7 +18,7 @@ def set_logger(logging_file, level=logging.DEBUG, pyaedt_module=None):
     Args:
         logging_file: (str/Path) path to log file
         level: (int) level of logging to emit
-        pyaedt_module: (pyaedt) pyaedt module to disable logging
+        pyaedt_module: (pyaedt) pyaedt module to disable/configure logging
 
     Returns:
         None
