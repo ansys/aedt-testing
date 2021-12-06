@@ -396,15 +396,13 @@ class ElectronicsDesktopTester:
             "simulation_time": [],
             "slider_limit": 0,
         }
-        if not report_file.exists():
-            project_report["error_exception"].append(f"Project report for {project_name} does not exist")
-        else:
-            copy_path_to(str(report_file), str(self.results_path / "reference_folder"))
-            with open(report_file) as file:
-                project_data = json.load(file)
+        project_data = self.check_all_results_present(project_report["error_exception"], report_file, project_name)
+        if project_report["error_exception"]:
+            # some keys are missing
+            return project_report
 
-            # todo handle if some reference data does not exist
-            # todo handle if current report misses something from reference data
+        try:
+            copy_path_to(str(report_file), str(self.results_path / "reference_folder"))
             project_report["error_exception"] += project_data["error_exception"]
             for design_name, design_data in project_data["designs"].items():
                 # get mesh data
@@ -415,8 +413,56 @@ class ElectronicsDesktopTester:
                 )
                 # extract XY curve data
                 self.extract_curve_data(design_data, design_name, project_name, project_report)
+        except Exception as exc:
+            project_report["error_exception"].append(str(exc))
 
         return project_report
+
+    def check_all_results_present(
+        self, project_exceptions: List[str], report_file: Path, project_name: str
+    ) -> Dict[str, Any]:
+        """
+        Check that report file exists
+        Check that project report exists in reference data
+        Check that all keys present in reference date are in current run data
+        Check that all keys present in current run data are in reference data
+        Args:
+            project_exceptions: (list) list to append with errors
+            report_file: (Path) JSON file path with results
+            project_name: (str) name of the project
+
+        Returns:
+            (dict) Project data for current run
+        Mutates:
+            (list) project_exceptions: Project exceptions
+
+        """
+        project_data: Dict[str, Any] = {}
+        if not report_file.exists():
+            project_exceptions.append(f"Project report for {project_name} does not exist")
+            return project_data
+
+        with open(report_file) as file:
+            project_data = json.load(file)
+
+        if not self.only_reference:
+            if project_name not in self.reference_data["projects"]:
+                project_exceptions.append(f"Project report for {project_name} does not exist in reference file")
+            else:
+                compare_keys(
+                    self.reference_data["projects"][project_name],
+                    project_data,
+                    exceptions_list=project_exceptions,
+                    results_type="reference",
+                )
+                compare_keys(
+                    project_data,
+                    self.reference_data["projects"][project_name],
+                    exceptions_list=project_exceptions,
+                    results_type="current",
+                )
+
+        return project_data
 
     def extract_curve_data(
         self,
@@ -438,6 +484,7 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
+
         for report_name, report_data in design_data["report"].items():
             for trace_name, trace_data in report_data.items():
                 for curve_name, curve_data in trace_data["curves"].items():
@@ -521,7 +568,7 @@ class ElectronicsDesktopTester:
                     reference_dict = self.reference_data["projects"][project_name]["designs"][design_name][key_name]
                     if variation_name not in reference_dict:
                         project_report["error_exception"].append(
-                            f"Variation ({variation_name}) was not found in reference results for design: {design_name}"
+                            f"Variation ({variation_name}) wasn't found in reference results for design: {design_name}"
                         )
                         continue
 
@@ -871,6 +918,31 @@ def get_aedt_executable_path(version: str) -> str:
 
 def time_now() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def compare_keys(
+    dict_1: Dict[Any, Any],
+    dict_2: Dict[Any, Any],
+    exceptions_list: List[str],
+    *,
+    dict_path: str = "",
+    results_type: str = "reference",
+) -> None:
+    """
+    Compare that keys from dict_1 are present in dict_2 recursively.
+    Mutates exceptions_list and appends errors if key is not present
+    Returns:
+        None
+    """
+    if dict_path:
+        dict_path += "->"
+
+    for key, val in dict_1.items():
+        if key not in dict_2:
+            exceptions_list.append(f"Key '{dict_path}{key}' does not exist in {results_type} results")
+            continue
+        if isinstance(val, dict):
+            compare_keys(val, dict_2[key], exceptions_list, dict_path=f"{dict_path}{key}", results_type="reference")
 
 
 def parse_arguments() -> argparse.Namespace:
