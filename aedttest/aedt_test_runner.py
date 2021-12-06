@@ -447,7 +447,7 @@ class ElectronicsDesktopTester:
 
         if not self.only_reference:
             if project_name not in self.reference_data["projects"]:
-                project_exceptions.append(f"Project report for {project_name} does not exist")
+                project_exceptions.append(f"Project report for {project_name} does not exist in reference file")
             else:
                 compare_keys(
                     self.reference_data["projects"][project_name],
