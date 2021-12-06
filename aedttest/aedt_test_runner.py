@@ -396,8 +396,9 @@ class ElectronicsDesktopTester:
             "simulation_time": [],
             "slider_limit": 0,
         }
-        valid, project_report, project_data = self.check_all_results_present(project_report, report_file, project_name)
-        if not valid:
+        project_data = self.check_all_results_present(project_report["error_exception"], report_file, project_name)
+        if project_report["error_exception"]:
+            # some keys are missing
             return project_report
 
         try:
@@ -417,49 +418,51 @@ class ElectronicsDesktopTester:
 
         return project_report
 
-    def check_all_results_present(self, project_report=None, report_file=None, project_name=None):
+    def check_all_results_present(
+        self, project_exceptions: List[str], report_file: Path, project_name: str
+    ) -> Dict[str, Any]:
         """
         Check that report file exists
         Check that project report exists in reference data
-        Check that all designs present in reference are in current run
-        Check that all designs present in current run are in reference
+        Check that all keys present in reference date are in current run data
+        Check that all keys present in current run data are in reference data
         Args:
-            project_report:
-            report_file:
-            project_name:
+            project_exceptions: (list) list to append with errors
+            report_file: (Path) JSON file path with results
+            project_name: (str) name of the project
 
         Returns:
+            (dict) Project data for current run
+        Mutates:
+            (list) project_exceptions: Project exceptions
 
         """
-        project_data = {}
+        project_data: Dict[str, Any] = {}
         if not report_file.exists():
-            project_report["error_exception"].append(f"Project report for {project_name} does not exist")
-            return False, project_report, project_data
+            project_exceptions.append(f"Project report for {project_name} does not exist")
+            return project_data
 
         with open(report_file) as file:
             project_data = json.load(file)
 
-        if self.only_reference:
-            # if only reference we do not need to compare
-            return True, project_report, project_data
+        if not self.only_reference:
+            if project_name not in self.reference_data["projects"]:
+                project_exceptions.append(f"Project report for {project_name} does not exist")
+            else:
+                compare_keys(
+                    self.reference_data["projects"][project_name],
+                    project_data,
+                    exceptions_list=project_exceptions,
+                    results_type="reference",
+                )
+                compare_keys(
+                    project_data,
+                    self.reference_data["projects"][project_name],
+                    exceptions_list=project_exceptions,
+                    results_type="current",
+                )
 
-        if project_name not in self.reference_data["projects"]:
-            project_report["error_exception"].append(f"Project report for {project_name} does not exist")
-            return False, project_report, project_data
-
-        not_found_in_ref = set(self.reference_data["projects"][project_name]["designs"]) - set(project_data["designs"])
-        if not_found_in_ref:
-            project_report["error_exception"].append(
-                f"Data for designs {', '.join(not_found_in_ref)} is missing in reference data"
-            )
-            return False, project_report, project_data
-
-        not_found_in_new = set(project_data["designs"]) - set(self.reference_data["projects"][project_name]["designs"])
-        if not_found_in_new:
-            project_report["error_exception"].append(
-                f"Data for designs {', '.join(not_found_in_new)} is missing in current version"
-            )
-            return False, project_report, project_data
+        return project_data
 
     def extract_curve_data(
         self,
@@ -470,7 +473,6 @@ class ElectronicsDesktopTester:
     ) -> None:
         """
         Extract all XY curves for a particular design.
-        Validates that all results present in reference and in current report
         Mutate project_report
 
         Args:
@@ -484,31 +486,8 @@ class ElectronicsDesktopTester:
         """
 
         for report_name, report_data in design_data["report"].items():
-
-            if not self.only_reference:
-                ref_report = self.reference_data["projects"][project_name]["designs"][design_name]["report"]
-                if report_name not in ref_report:
-                    project_report["error_exception"].append(f"Report {report_name} is missing from {design_name}")
-                    continue
-
             for trace_name, trace_data in report_data.items():
-
-                if not self.only_reference:
-                    ref_trace = ref_report[report_name]
-                    if trace_name not in ref_trace:
-                        project_report["error_exception"].append(f"Trace {trace_name} is missing from {design_name}")
-                        continue
-
                 for curve_name, curve_data in trace_data["curves"].items():
-
-                    if not self.only_reference:
-                        ref_curve = ref_trace[trace_name]["curves"]
-                        if curve_name not in ref_curve:
-                            project_report["error_exception"].append(
-                                f"Curve {curve_name} is missing from {design_name}"
-                            )
-                            continue
-
                     plot_data = {
                         "name": f"{design_name}:{report_name}:{trace_name}:{curve_name}",
                         "id": unique_id(),
@@ -524,7 +503,9 @@ class ElectronicsDesktopTester:
                     }
 
                     if not self.only_reference:
-                        y_ref_data = ref_curve[curve_name]["y_data"]
+                        y_ref_data = self.reference_data["projects"][project_name]["designs"][design_name]["report"][
+                            report_name
+                        ][trace_name]["curves"][curve_name]["y_data"]
 
                         if len(y_ref_data) != len(curve_data["y_data"]):
                             msg = (
@@ -577,15 +558,6 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
-        if not self.only_reference:
-            reference_dict = self.reference_data["projects"][project_name]["designs"][design_name][key_name]
-            not_in_current = set(design_data[key_name]) - set(reference_dict)
-            if not_in_current:
-                project_report["error_exception"].append(
-                    f"Variations ({', '.join(not_in_current)}) were not found in results for design: {design_name}"
-                )
-                return
-
         for variation_name, variation_data in design_data[key_name].items():
             for setup_name, current_stat in variation_data.items():
                 stat_dict = {
@@ -593,6 +565,7 @@ class ElectronicsDesktopTester:
                     "current": current_stat,
                 }
                 if not self.only_reference:
+                    reference_dict = self.reference_data["projects"][project_name]["designs"][design_name][key_name]
                     if variation_name not in reference_dict:
                         project_report["error_exception"].append(
                             f"Variation ({variation_name}) wasn't found in reference results for design: {design_name}"
@@ -945,6 +918,31 @@ def get_aedt_executable_path(version: str) -> str:
 
 def time_now() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def compare_keys(
+    dict_1: Dict[Any, Any],
+    dict_2: Dict[Any, Any],
+    exceptions_list: List[str],
+    *,
+    dict_path: str = "",
+    results_type: str = "reference",
+) -> None:
+    """
+    Compare that keys from dict_1 are present in dict_2 recursively.
+    Mutates exceptions_list and appends errors if key is not present
+    Returns:
+        None
+    """
+    if dict_path:
+        dict_path += "->"
+
+    for key, val in dict_1.items():
+        if key not in dict_2:
+            exceptions_list.append(f"Key '{dict_path}{key}' does not exist in {results_type} results")
+            continue
+        if isinstance(val, dict):
+            compare_keys(val, dict_2[key], exceptions_list, dict_path=f"{dict_path}{key}", results_type="reference")
 
 
 def parse_arguments() -> argparse.Namespace:

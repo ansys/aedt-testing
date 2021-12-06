@@ -390,3 +390,27 @@ def test_unique_id():
     assert aedt_test_runner.unique_id() == "a1"
     assert aedt_test_runner.unique_id() == "a2"
     assert aedt_test_runner.unique_id() == "a3"
+
+
+def test_compare_keys():
+    dict_ref = {
+        "1": 1,
+        "2": 2,
+        "3": {
+            "4nest": 4,
+            "5nest": {"6nn": 6},
+        },
+    }
+    dict_now = {
+        "1": 1,
+        "3": {
+            "5nest": {},
+        },
+    }
+    report = []
+    aedt_test_runner.compare_keys(dict_ref, dict_now, report, results_type="reference")
+    assert report == [
+        "Key '2' does not exist in reference results",
+        "Key '3->4nest' does not exist in reference results",
+        "Key '3->5nest->6nn' does not exist in reference results",
+    ]
