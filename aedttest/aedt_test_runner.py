@@ -396,15 +396,12 @@ class ElectronicsDesktopTester:
             "simulation_time": [],
             "slider_limit": 0,
         }
-        if not report_file.exists():
-            project_report["error_exception"].append(f"Project report for {project_name} does not exist")
-        else:
-            copy_path_to(str(report_file), str(self.results_path / "reference_folder"))
-            with open(report_file) as file:
-                project_data = json.load(file)
+        valid, project_report, project_data = self.check_all_results_present(project_report, report_file, project_name)
+        if not valid:
+            return project_report
 
-            # todo handle if some reference data does not exist
-            # todo handle if current report misses something from reference data
+        try:
+            copy_path_to(str(report_file), str(self.results_path / "reference_folder"))
             project_report["error_exception"] += project_data["error_exception"]
             for design_name, design_data in project_data["designs"].items():
                 # get mesh data
@@ -415,8 +412,54 @@ class ElectronicsDesktopTester:
                 )
                 # extract XY curve data
                 self.extract_curve_data(design_data, design_name, project_name, project_report)
+        except Exception as exc:
+            project_report["error_exception"].append(str(exc))
 
         return project_report
+
+    def check_all_results_present(self, project_report=None, report_file=None, project_name=None):
+        """
+        Check that report file exists
+        Check that project report exists in reference data
+        Check that all designs present in reference are in current run
+        Check that all designs present in current run are in reference
+        Args:
+            project_report:
+            report_file:
+            project_name:
+
+        Returns:
+
+        """
+        project_data = {}
+        if not report_file.exists():
+            project_report["error_exception"].append(f"Project report for {project_name} does not exist")
+            return False, project_report, project_data
+
+        with open(report_file) as file:
+            project_data = json.load(file)
+
+        if self.only_reference:
+            # if only reference we do not need to compare
+            return True, project_report, project_data
+
+        if project_name not in self.reference_data["projects"]:
+            project_report["error_exception"].append(f"Project report for {project_name} does not exist")
+            return False, project_report, project_data
+
+        not_found_in_ref = set(self.reference_data["projects"][project_name]["designs"]) - set(project_data["designs"])
+        if not_found_in_ref:
+            project_report["error_exception"].append(
+                f"Data for designs {', '.join(not_found_in_ref)} is missing in reference data"
+            )
+            return False, project_report, project_data
+
+        not_found_in_new = set(project_data["designs"]) - set(self.reference_data["projects"][project_name]["designs"])
+        if not_found_in_new:
+            project_report["error_exception"].append(
+                f"Data for designs {', '.join(not_found_in_new)} is missing in current version"
+            )
+            return False, project_report, project_data
 
     def extract_curve_data(
         self,
@@ -427,6 +470,7 @@ class ElectronicsDesktopTester:
     ) -> None:
         """
         Extract all XY curves for a particular design.
+        Validates that all results present in reference and in current report
         Mutate project_report
 
         Args:
@@ -438,9 +482,33 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
+
         for report_name, report_data in design_data["report"].items():
+
+            if not self.only_reference:
+                ref_report = self.reference_data["projects"][project_name]["designs"][design_name]["report"]
+                if report_name not in ref_report:
+                    project_report["error_exception"].append(f"Report {report_name} is missing from {design_name}")
+                    continue
+
             for trace_name, trace_data in report_data.items():
+
+                if not self.only_reference:
+                    ref_trace = ref_report[report_name]
+                    if trace_name not in ref_trace:
+                        project_report["error_exception"].append(f"Trace {trace_name} is missing from {design_name}")
+                        continue
+
                 for curve_name, curve_data in trace_data["curves"].items():
+
+                    if not self.only_reference:
+                        ref_curve = ref_trace[trace_name]["curves"]
+                        if curve_name not in ref_curve:
+                            project_report["error_exception"].append(
+                                f"Curve {curve_name} is missing from {design_name}"
+                            )
+                            continue
+
                     plot_data = {
                         "name": f"{design_name}:{report_name}:{trace_name}:{curve_name}",
                         "id": unique_id(),
@@ -456,9 +524,7 @@ class ElectronicsDesktopTester:
                     }
 
                     if not self.only_reference:
-                        y_ref_data = self.reference_data["projects"][project_name]["designs"][design_name]["report"][
-                            report_name
-                        ][trace_name]["curves"][curve_name]["y_data"]
+                        y_ref_data = ref_curve[curve_name]["y_data"]
 
                         if len(y_ref_data) != len(curve_data["y_data"]):
                             msg = (
@@ -511,6 +577,15 @@ class ElectronicsDesktopTester:
         Returns:
             None
         """
+        if not self.only_reference:
+            reference_dict = self.reference_data["projects"][project_name]["designs"][design_name][key_name]
+            not_in_current = set(design_data[key_name]) - set(reference_dict)
+            if not_in_current:
+                project_report["error_exception"].append(
+                    f"Variations ({', '.join(not_in_current)}) were not found in results for design: {design_name}"
+                )
+                return
+
         for variation_name, variation_data in design_data[key_name].items():
             for setup_name, current_stat in variation_data.items():
                 stat_dict = {
@@ -518,10 +593,9 @@ class ElectronicsDesktopTester:
                     "current": current_stat,
                 }
                 if not self.only_reference:
-                    reference_dict = self.reference_data["projects"][project_name]["designs"][design_name][key_name]
                     if variation_name not in reference_dict:
                         project_report["error_exception"].append(
-                            f"Variation ({variation_name}) was not found in reference results for design: {design_name}"
+                            f"Variation ({variation_name}) wasn't found in reference results for design: {design_name}"
                         )
                         continue
 
