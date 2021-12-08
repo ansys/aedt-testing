@@ -904,6 +904,7 @@ def execute_aedt(
 
     logger.debug(f"Execute {subprocess.list2cmdline(command)}")
     env = {}
+    filtered = []
     for key, val in os.environ.items():
         if (
             "sge" not in key.lower()
@@ -915,7 +916,10 @@ def execute_aedt(
         ):
             env[key] = val
         else:
-            logger.debug(f"Variable filtered: {key}")
+            filtered.append(key)
+
+    logger.debug(f"Variables filtered: {','.join(filtered)}")
+    logger.debug(f"Variables applied: {env}")
 
     p = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
 
