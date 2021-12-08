@@ -903,7 +903,27 @@ def execute_aedt(
         command.append(project_path)
 
     logger.debug(f"Execute {subprocess.list2cmdline(command)}")
-    subprocess.call(command)
+    env = {}
+    for key, val in os.environ.items():
+        if (
+            "sge" not in key.lower()
+            and "slurm" not in key.lower()
+            and "lsf" not in key.lower()
+            and "lsb" not in key.lower()
+            and "pbs" not in key.lower()
+            and "PE_HOSTFILE" not in key.lower()
+        ):
+            env[key] = val
+        else:
+            logger.debug(f"Variable filtered: {key}")
+
+    p = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+
+    byte_output = p.stdout.read()
+    output = byte_output.decode("utf-8").rstrip()
+    p.communicate()
+
+    logger.debug(output)
 
 
 def get_aedt_executable_path(version: str) -> str:
