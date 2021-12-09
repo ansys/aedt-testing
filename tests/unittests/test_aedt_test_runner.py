@@ -171,7 +171,7 @@ def test_get_aedt_executable_path():
         assert "Environment variable ANSYSEM_ROOT212" in str(exc.value)
 
 
-@mock.patch("aedttest.aedt_test_runner.subprocess.call", wraps=lambda x: x)
+@mock.patch("aedttest.aedt_test_runner.subprocess.check_output", wraps=lambda *a, **kw: b"output")
 @mock.patch("aedttest.aedt_test_runner.get_aedt_executable_path", return_value="aedt/install/path")
 def test_execute_aedt(mock_aedt_path, mock_call):
 

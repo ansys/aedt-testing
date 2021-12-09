@@ -62,6 +62,7 @@ def main() -> None:
     except ValueError as exc:
         logger.error(str(exc))
         raise SystemExit(1)
+
     aedt_tester = ElectronicsDesktopTester(
         version=cli_args.aedt_version,
         max_cores=cli_args.max_cores,
@@ -78,7 +79,24 @@ def main() -> None:
             if cli_args.only_validate:
                 return
 
-        aedt_tester.run()
+        if len(aedt_tester.machines_dict) > 1 and not cli_args.rsm_is_started:
+            if not cli_args.rsm_path or not os.path.isfile(cli_args.rsm_path):
+                raise ValueError("Path to RSM service is not provided or wrong")
+            if platform.system() == "Windows":
+                raise ValueError("You must start RSM service on Windows manually and enable flag --rsm-is-started")
+
+            for machine in aedt_tester.machines_dict:
+                out = subprocess.check_output(["ssh", machine, f"{cli_args.rsm_path} start"])
+                logger.debug(f"{machine}: {out.decode().strip()}")
+
+        try:
+            aedt_tester.run()
+        finally:
+            if len(aedt_tester.machines_dict) > 1 and not cli_args.rsm_is_started:
+                for machine in aedt_tester.machines_dict:
+                    out = subprocess.check_output(["ssh", machine, f"{cli_args.rsm_path} stop"])
+                    logger.debug(f"{machine}: {out.decode().strip()}")
+
     except Exception as exc:
         logger.exception(str(exc))
 
@@ -885,7 +903,27 @@ def execute_aedt(
         command.append(project_path)
 
     logger.debug(f"Execute {subprocess.list2cmdline(command)}")
-    subprocess.call(command)
+    # filter variable to avoid AEDT thinking it was submitted by scheduler
+    env = {}
+    filtered = []
+    for key, val in os.environ.items():
+        if (
+            "sge" not in key.lower()
+            and "slurm" not in key.lower()
+            and "lsf" not in key.lower()
+            and "lsb" not in key.lower()
+            and "pbs" not in key.lower()
+            and "PE_HOSTFILE" not in key.lower()
+        ):
+            env[key] = val
+        else:
+            filtered.append(key)
+
+    logger.debug(f"Variables filtered: {','.join(filtered)}")
+    logger.debug(f"Variables applied: {env}")
+
+    output = subprocess.check_output(command, env=env)
+    logger.debug(output.decode())
 
 
 def get_aedt_executable_path(version: str) -> str:
@@ -967,6 +1005,17 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--rsm-is-started",
+        action="store_true",
+        help="When job uses multiple nodes and user started RSM service on each node manually",
+    )
+
+    parser.add_argument(
+        "--rsm-path",
+        help="When job uses multiple nodes tool requires RSM, RSM will be auto-started from provided path",
+    )
+
+    parser.add_argument(
         "--out-dir", "-o", help="Output directory for reports and project files (if --save-sim-data set)"
     )
     parser.add_argument(
@@ -983,6 +1032,9 @@ def parse_arguments() -> argparse.Namespace:
 
     if not cli_args.only_reference and not cli_args.reference_file:
         raise ValueError("Either set --only-reference flag or provide path via --reference-file")
+
+    if cli_args.rsm_path and cli_args.rsm_is_started:
+        raise ValueError("--rsm-is-started and --rsm-path are mutually exclusive")
 
     if cli_args.suppress_validation and cli_args.only_validate:
         raise ValueError("--only-validate and --suppress-validation are mutually exclusive")
