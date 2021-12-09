@@ -903,6 +903,7 @@ def execute_aedt(
         command.append(project_path)
 
     logger.debug(f"Execute {subprocess.list2cmdline(command)}")
+    # filter variable to avoid AEDT thinking it was submitted by scheduler
     env = {}
     filtered = []
     for key, val in os.environ.items():
