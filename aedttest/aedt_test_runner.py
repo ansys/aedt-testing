@@ -922,13 +922,8 @@ def execute_aedt(
     logger.debug(f"Variables filtered: {','.join(filtered)}")
     logger.debug(f"Variables applied: {env}")
 
-    p = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-
-    byte_output = p.stdout.read()
-    output = byte_output.decode("utf-8").rstrip()
-    p.communicate()
-
-    logger.debug(output)
+    output = subprocess.check_output(command, env=env)
+    logger.debug(output.decode())
 
 
 def get_aedt_executable_path(version: str) -> str:
