@@ -18,14 +18,13 @@ classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
 
 dependencies = [
-    "pyaedt==0.4.12",
+    "pyaedt==0.4.16",
     "Django==3.2.8",
 ]
 
 # development dependencies
 [project.optional-dependencies]
 test = [
-    "black==21.9b0",
     "pre-commit==2.15.0",
     "mypy==0.910",
     "pytest==6.2.5",

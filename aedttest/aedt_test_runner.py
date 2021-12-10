@@ -1028,7 +1028,7 @@ def parse_arguments() -> argparse.Namespace:
     cli_args = parser.parse_args()
 
     log_level = 10 if cli_args.debug else 20
-    set_logger(logging_file=CWD_DIR / "aedt_test_framework.log", level=log_level)
+    set_logger(logging_file=CWD_DIR / "aedt_test_framework.log", level=log_level, pyaedt_module=None)
 
     if not cli_args.only_reference and not cli_args.reference_file:
         raise ValueError("Either set --only-reference flag or provide path via --reference-file")
