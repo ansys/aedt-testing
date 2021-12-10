@@ -199,3 +199,9 @@ class TestCheck(BaseTest):
         result = simulation_data.check_nan(self.input_dat_dict)
         assert result is not ref_dict
         assert result == ref_dict
+
+    def test_compse_curve_key(self):
+        ref_key = "n_parallel=1 winding_current=5.123456789e-06mA"
+        result = simulation_data.compose_curve_keys(self.input_dat_dict)
+        result_key = result["L Plot 1"]["Matrix1.L(Winding1,Winding1)"]["curves"].keys()
+        assert ref_key in result_key
