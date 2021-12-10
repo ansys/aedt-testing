@@ -14,10 +14,12 @@ with mock.patch("argparse.ArgumentParser.parse_args", return_value=Namespace(des
 TESTS_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
-class TestParse:
+class BaseTest:
     def teardown(self):
         simulation_data.PROJECT_DICT = {"error_exception": [], "designs": {}}
 
+
+class TestParse(BaseTest):
     def test_parse_variation_string(self):
         result = simulation_data.parse_variation_string("abc")
         assert result == ("abc", "")
@@ -120,8 +122,10 @@ class TestParse:
         )
         assert result == 44
 
-    def test_check_without_nan(self):
-        input_dat_dict = {
+
+class TestCheck(BaseTest):
+    def setup(self):
+        self.input_dat_dict = {
             "L Plot 1": {
                 "Matrix1.L(Winding1,Winding1)": {
                     "x_name": "Freq",
@@ -172,68 +176,23 @@ class TestParse:
             }
         }
 
-        ref_dict = copy.deepcopy(input_dat_dict)
-        result = simulation_data.check_nan(input_dat_dict)
+    def test_check_without_nan(self):
+
+        ref_dict = copy.deepcopy(self.input_dat_dict)
+        result = simulation_data.check_nan(self.input_dat_dict)
         assert result is not ref_dict
         assert result == ref_dict
 
     def test_check_with_nan(self):
-        input_dat_dict_nan = {
-            "L Plot 1": {
-                "Matrix1.L(Winding1,Winding1)": {
-                    "x_name": "Freq",
-                    "x_unit": "Hz",
-                    "y_unit": "H",
-                    "curves": {
-                        "n_parallel=1 winding_current=5.123456789e-06mA": {
-                            "x_data": [10, 60, 62.1052631578947, 1000, 250750, 500500, 750250, 1000000],
-                            "y_data": [
-                                4.11363150893661e-07,
-                                4.11363150893661e-07,
-                                4.11363150893661e-07,
-                                "nan",
-                                4.11363150900861e-07,
-                                4.11363150922348e-07,
-                                4.11363150958121e-07,
-                                4.11363151008181e-07,
-                            ],
-                        },
-                        "n_parallel=1 winding_current=10mA": {
-                            "x_data": [10, 60, 62.1052631578947, 1000, 250750, 500500, 750250, 1000000],
-                            "y_data": [
-                                4.11363150893661e-07,
-                                4.11363150893661e-07,
-                                4.11363150893661e-07,
-                                4.11363150893661e-07,
-                                4.11363150900861e-07,
-                                4.11363150922348e-07,
-                                4.11363150958121e-07,
-                                4.11363151008181e-07,
-                            ],
-                        },
-                        "n_parallel=2 winding_current=15mA": {
-                            "x_data": [10, 60, 62.1052631578947, 1000, 250750, 500500, 750250, 1000000],
-                            "y_data": [
-                                1.02840787723415e-07,
-                                1.02840787723415e-07,
-                                1.02840787723415e-07,
-                                1.02840787723415e-07,
-                                1.02840787725215e-07,
-                                1.02840787730587e-07,
-                                1.0284078773953e-07,
-                                1.02840787752045e-07,
-                            ],
-                        },
-                    },
-                }
-            }
-        }
+        self.input_dat_dict["L Plot 1"]["Matrix1.L(Winding1,Winding1)"]["curves"][
+            "n_parallel=1 winding_current=5.123456789e-06mA"
+        ]["y_data"][3] = "nan"
 
-        ref_dict = copy.deepcopy(input_dat_dict_nan)
+        ref_dict = copy.deepcopy(self.input_dat_dict)
         ref_dict["L Plot 1"]["Matrix1.L(Winding1,Winding1)"]["curves"].pop(
             "n_parallel=1 winding_current=5.123456789e-06mA"
         )
 
-        result = simulation_data.check_nan(input_dat_dict_nan)
+        result = simulation_data.check_nan(self.input_dat_dict)
         assert result is not ref_dict
         assert result == ref_dict
