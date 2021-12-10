@@ -125,6 +125,7 @@ class TestParse(BaseTest):
 
 class TestCheck(BaseTest):
     def setup(self):
+        # output of pyaedt parse_rdat_file
         self.input_dat_dict = {
             "L Plot 1": {
                 "Matrix1.L(Winding1,Winding1)": {
@@ -177,13 +178,15 @@ class TestCheck(BaseTest):
         }
 
     def test_check_without_nan(self):
-
         ref_dict = copy.deepcopy(self.input_dat_dict)
         result = simulation_data.check_nan(self.input_dat_dict)
         assert result is not ref_dict
         assert result == ref_dict
 
     def test_check_with_nan(self):
+        """
+        insert nan in one curve, check the curve with nan is removed
+        """
         self.input_dat_dict["L Plot 1"]["Matrix1.L(Winding1,Winding1)"]["curves"][
             "n_parallel=1 winding_current=5.123456789e-06mA"
         ]["y_data"][3] = "nan"
