@@ -41,7 +41,7 @@ class AedtTestException(Exception):
     """Base class for exceptions in this module."""
 
 
-def parse_mesh_stats(mesh_stats_file, design, variation, setup):
+def parse_mesh_stats(mesh_stats_file, design_name, variation, setup_name):
 
     with open(mesh_stats_file) as fid:
         lines = fid.readlines()
@@ -51,11 +51,11 @@ def parse_mesh_stats(mesh_stats_file, design, variation, setup):
             return int(line.strip().split(":")[1])
     else:
         PROJECT_DICT["error_exception"].append(
-            "Design:{} Variation: {} Setup: {} has no mesh stats".format(design, variation, setup)
+            "Design:{} Variation: {} Setup: {} has no mesh stats".format(design_name, variation, setup_name)
         )
 
 
-def parse_profile_file(profile_file, design, variation, setup):
+def parse_profile_file(profile_file, design_name, variation, setup_name):
     elapsed_time = ""
     with open(profile_file) as file:
         for line in file:
@@ -69,7 +69,7 @@ def parse_profile_file(profile_file, design, variation, setup):
         return simulation_time
     else:
         PROJECT_DICT["error_exception"].append(
-            ("Design:{} Variation:{} Setup:{} no elapsed time in file".format(design, variation, setup))
+            ("Design:{} Variation:{} Setup:{} no elapsed time in file".format(design_name, variation, setup_name))
         )
 
 

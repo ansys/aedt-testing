@@ -73,27 +73,27 @@ class TestParse(BaseTest):
 
         result = simulation_data.parse_profile_file(
             profile_file=os.path.join(TESTS_DIR, "input", "2020R2_profile.prof"),
-            design="test_design",
+            design_name="test_design",
             variation="test_variation",
-            setup="test_setup",
+            setup_name="test_setup",
         )
         assert result == "00:00:09"
 
     def test_parse_profile_2021r2(self):
         result = simulation_data.parse_profile_file(
             profile_file=os.path.join(TESTS_DIR, "input", "2021R2_profile.prof"),
-            design="test_design",
+            design_name="test_design",
             variation="test_variation",
-            setup="test_setup",
+            setup_name="test_setup",
         )
         assert result == "00:00:05"
 
     def test_parse_profile_2019r1(self):
         result = simulation_data.parse_profile_file(
             profile_file=os.path.join(TESTS_DIR, "input", "R2019R1_profile.prof"),
-            design="test_design",
+            design_name="test_design",
             variation="test_variation",
-            setup="test_setup",
+            setup_name="test_setup",
         )
         assert result == "00:00:02"
 
@@ -101,9 +101,9 @@ class TestParse(BaseTest):
 
         result = simulation_data.parse_mesh_stats(
             mesh_stats_file=os.path.join(TESTS_DIR, "input", "no_mesh.mstat"),
-            design="only_winding2",
+            design_name="only_winding2",
             variation="n_parallel='2' winding_current='15mA'",
-            setup="Setup1",
+            setup_name="Setup1",
         )
         assert result is None
         assert simulation_data.PROJECT_DICT == {
@@ -116,9 +116,9 @@ class TestParse(BaseTest):
     def test_parse_mesh_stats(self):
         result = simulation_data.parse_mesh_stats(
             mesh_stats_file=os.path.join(TESTS_DIR, "input", "mesh.mstat"),
-            design="test_design",
+            design_name="test_design",
             variation="test_variation",
-            setup="test_setup",
+            setup_name="test_setup",
         )
         assert result == 44
 
