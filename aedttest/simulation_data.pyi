@@ -1,16 +1,14 @@
 from typing import Any, Dict, List, Optional
 
-from pyaedt.desktop import Desktop
-
-DEBUG: Any
+DEBUG: bool
 
 def parse_args() -> str: ...
 
-pyaedt_path: Any
-specified_version: Any
+pyaedt_path: str
+specified_version: Optional[str]
 parser: Any
 args: Any
-PROJECT_DICT: Any
+PROJECT_DICT: Dict[str, Any]
 
 class AedtTestException(Exception): ...
 
