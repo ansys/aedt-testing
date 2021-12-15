@@ -32,4 +32,4 @@ jobs:
 
     - name: MyPy
       run: |
-        mypy --config-file=./mypy.ini aedttest/aedt_test_runner.py
+        mypy --config-file=./mypy.ini aedttest
