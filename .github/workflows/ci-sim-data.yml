@@ -1,4 +1,4 @@
-name: CI-sim-data
+name: CI
 
 on:
   push:
