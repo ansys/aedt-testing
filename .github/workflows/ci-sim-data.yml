@@ -27,4 +27,4 @@ jobs:
         
     - name: Unittests
       run: |
-        pytest -v tests/unittests/test_simulation_data.py --disable-pytest-warnings
+        pytest -v tests/unittests/test_simulation_data.py --disable-pytest-warnings --cov-report term-missing --cov

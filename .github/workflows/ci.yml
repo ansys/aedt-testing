@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         fetch-depth: 1
 
@@ -28,7 +28,7 @@ jobs:
         
     - name: Unittests
       run: |
-        pytest -v tests/unittests
+        pytest -v tests/unittests --cov-report term-missing --cov
 
     - name: MyPy
       run: |
