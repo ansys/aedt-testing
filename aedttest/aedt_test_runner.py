@@ -54,10 +54,6 @@ PROJECT_PAGE_TEMPLATE = get_template("project-report.html")
 def main() -> None:
     """Main function that is executed by 'flit' CLI script and by executing this python file
 
-    Returns
-    -------
-        None
-
     """
     try:
         cli_args = parse_arguments()
