@@ -12,16 +12,17 @@ warnings.filterwarnings("ignore")
 
 
 def set_logger(logging_file, level=logging.DEBUG, pyaedt_module=None):
-    """
-    Function to setup default logging output to stream and log file.
+    """Function to setup default logging output to stream and log file.
 
-    Args:
-        logging_file: (str/Path) path to log file
-        level: (int) level of logging to emit
-        pyaedt_module: (pyaedt) pyaedt module to disable/configure logging
+    Parameters
+    ----------
+    logging_file : str or Path
+        Path to log file.
+    level : int, default=logging.DEBUG
+        Level of logging to emit.
+    pyaedt_module : pyaedt, optional
+        ``pyaedt`` module to disable/configure logging.
 
-    Returns:
-        None
     """
 
     logger.setLevel(level)

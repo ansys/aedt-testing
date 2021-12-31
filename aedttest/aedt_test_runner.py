@@ -52,11 +52,7 @@ PROJECT_PAGE_TEMPLATE = get_template("project-report.html")
 
 
 def main() -> None:
-    """
-    Main function that is executed by 'flit' CLI script and by executing this python file
-    Returns:
-        None
-    """
+    """Main function that is executed by ``flit`` CLI script and by executing this python file."""
     try:
         cli_args = parse_arguments()
     except ValueError as exc:
@@ -138,13 +134,11 @@ class ElectronicsDesktopTester:
             self.project_tests_config = json.load(file)
 
     def validate_config(self) -> None:
-        """
-        Make quick validation of --config-file [and --reference-file if present]
-        Checks that distribution is specified correctly and that projects in
-        reference identical to configuration
+        """Make quick validation of --config-file [and --reference-file if present].
 
-        Returns:
-            None
+        Checks that distribution is specified correctly and that projects in
+        reference identical to configuration.
+
         """
         for project_name, config in self.project_tests_config.items():
             distribution_config = config["distribution"]
@@ -187,10 +181,7 @@ class ElectronicsDesktopTester:
         logger.info("Configuration validation is successful")
 
     def run(self) -> None:
-        """
-        Main function to start test sweet
-        Returns: None
-        """
+        """Main function to start test suite."""
         self.validate_hardware()
         self.initialize_results()
 
@@ -229,10 +220,13 @@ class ElectronicsDesktopTester:
             logger.info(msg)
 
     def create_combined_report(self) -> Path:
-        """
-        Reads all .json files in 'reference_folder' and dumps it to single file 'reference_results.json'
-        Returns:
-            (Path) path to the combined .json file
+        """Reads all .json files in ``reference_folder`` and dumps it to single file ``'reference_results.json'``.
+
+        Returns
+        -------
+        Path
+            Path to the combined .json file.
+
         """
         combined_report_path = self.results_path / "reference_results.json"
         combined_data: Dict[str, Any] = {"error_exception": [], "aedt_version": self.version, "projects": {}}
@@ -252,12 +246,7 @@ class ElectronicsDesktopTester:
         return combined_report_path
 
     def validate_hardware(self) -> None:
-        """
-        Validate that we have enough hardware resources to run requested configuration
-        Returns:
-            None
-        """
-
+        """Validate that we have enough hardware resources to run requested configuration."""
         all_cores = [val for val in self.machines_dict.values()]
         total_available_cores = sum(all_cores)
         max_machine_cores = max(all_cores)
@@ -270,12 +259,10 @@ class ElectronicsDesktopTester:
                 raise ValueError(f"{proj} requires {proj_cores} cores. Not enough resources to run")
 
     def initialize_results(self) -> None:
-        """
-        Copy static web parts (HTML, CSS, JS).
-        Mutate self.report_data. Set all projects status to be 'Queued', default link and delta
+        """Copy static web parts (HTML, CSS, JS).
 
-        Returns:
-            None
+        Mutate ``self.report_data``. Set all projects status to be ``'Queued'``, default link and delta.
+
         """
         if self.results_path.exists():
             remove_tree(str(self.results_path))
@@ -301,12 +288,15 @@ class ElectronicsDesktopTester:
         self.render_main_html()
 
     def render_main_html(self, finished: bool = False) -> None:
-        """
-        Renders main report page.
-        Using self.report_data updates django template with the data.
+        """Renders main report page.
 
-        Returns:
-            None
+        Using ``self.report_data`` updates django template with the data.
+
+        Parameters
+        ----------
+        finished : bool, default=False
+             When True send a context to stop refreshing the HTML page.
+
         """
         ctx = {
             "projects": self.report_data["projects"],
@@ -319,16 +309,18 @@ class ElectronicsDesktopTester:
             file.write(data)
 
     def render_project_html(self, project_name: str, project_report: Dict[str, Union[List[Any], int]]) -> None:
-        """
-        Renders project report page. Creates new page if none exists
+        """Renders project report page.
+
+        Creates new page if none exists.
         Updates django template with XY plots, mesh, etc data.
 
-        Args:
-            project_name: name of the project to render
-            project_report: (dict) data to render on plots
+        Parameters
+        ----------
+        project_name : str
+            Name of the project to render.
+        project_report : dict
+            Data to render on plots.
 
-        Returns:
-            None
         """
         page_ctx = {
             "plots": project_report["plots"],
@@ -346,19 +338,21 @@ class ElectronicsDesktopTester:
     def task_runner(
         self, project_name: str, project_path: str, project_config: Dict[str, Any], allocated_machines: Dict[str, Any]
     ) -> None:
-        """
-        Task runner that is called by each thread.
-        Mutates self.report_data["projects"] and self.machines_dict
+        """Task runner that is called by each thread.
+
+        Mutates ``self.report_data["projects"]`` and ``self.machines_dict``
         Calls update of HTML pages status, starts AEDT process, calls render of project_name.html
 
-        Args:
-            project_name: (str) name of the project to start
-            project_path: (str) path to the project
-            project_config: (dict) configuration of project, distribution, etc
-            allocated_machines: (dict) machines and cores that were allocated for this task
-
-        Returns:
-            None
+        Parameters
+        ----------
+        project_name : str
+            Name of the project to start.
+        project_path : str
+            Path to the project.
+        project_config : dict
+            Configuration of project, distribution, etc.
+        allocated_machines : dict
+            Machines and cores that were allocated for this task.
         """
         self.report_data["projects"][project_name]["time"] = time_now()
         self.report_data["projects"][project_name]["status"] = "running"
@@ -396,16 +390,21 @@ class ElectronicsDesktopTester:
         self.active_tasks -= 1
 
     def prepare_project_report(self, project_name: str, project_path: str) -> Dict[str, Union[List[Any], int]]:
-        """
-        Prepare project report dictionary that is required by 'render_project_html()'
-        Args:
-            project_name: (str) name of the project
-            project_path: (str) path to the project
+        """Prepare project report dictionary that is required by ``render_project_html()``.
 
-        Returns:
-            (dict)
-        """
+        Parameters
+        ----------
+        project_name : str
+            Name of the project.
+        project_path : str
+            Path to the project.
 
+        Returns
+        -------
+        project_report : dict
+            project report dictionary that is required by ``render_project_html()``.
+
+        """
         report_file = Path(project_path).parent / f"{project_name}.json"
         project_report: Dict[str, Union[List[Any], Any]] = {
             "plots": [],
@@ -439,20 +438,25 @@ class ElectronicsDesktopTester:
     def check_all_results_present(
         self, project_exceptions: List[str], report_file: Path, project_name: str
     ) -> Dict[str, Any]:
-        """
-        Check that report file exists
-        Check that project report exists in reference data
-        Check that all keys present in reference date are in current run data
-        Check that all keys present in current run data are in reference data
-        Args:
-            project_exceptions: (list) list to append with errors
-            report_file: (Path) JSON file path with results
-            project_name: (str) name of the project
+        """Check that report file exists.
 
-        Returns:
-            (dict) Project data for current run
-        Mutates:
-            (list) project_exceptions: Project exceptions
+        Check that project report exists in reference data.
+        Check that all keys present in reference date are in current run data.
+        Check that all keys present in current run data are in reference data.
+
+        Parameters
+        ----------
+        project_exceptions : list
+            List to append with errors.
+        report_file : Path
+            JSON file path with results.
+        project_name : str
+            Name of the project.
+
+        Returns
+        -------
+        project_data : dict
+            Dictionary loaded from .json file.
 
         """
         project_data: Dict[str, Any] = {}
@@ -489,20 +493,22 @@ class ElectronicsDesktopTester:
         project_name: str,
         project_report: Dict[str, Union[List[Any], Any]],
     ) -> None:
+        """Extract all XY curves for a particular design.
+
+        Mutate ``project_report``.
+
+        Parameters
+        ----------
+        design_data : dict
+            All the data related to a single design in project_name.
+        design_name : str
+            Name of the design.
+        project_name : str
+            Name of the project.
+        project_report : dict
+            Project report dictionary that is required by 'render_project_html()'.
+
         """
-        Extract all XY curves for a particular design.
-        Mutate project_report
-
-        Args:
-            design_data: (dict) all the data related to a single design in project_name
-            design_name: (str) name of the design
-            project_name: (str) name of the project
-            project_report: (dict) project report dictionary that is required by 'render_project_html()'
-
-        Returns:
-            None
-        """
-
         for report_name, report_data in design_data["report"].items():
             for trace_name, trace_data in report_data.items():
                 for curve_name, curve_data in trace_data["curves"].items():
@@ -563,18 +569,23 @@ class ElectronicsDesktopTester:
         project_name: str,
         project_report: Dict[str, Union[List[Any], Any]],
     ) -> None:
-        """
-        Extract mesh or simulation time information
-        Mutate project_report
-        Args:
-            key_name: (str) mesh or simulation_time, depending on what to extract
-            design_data: (dict) all the data related to a single design in project_name
-            design_name: (str) name of the design
-            project_name: (str) name of the project
-            project_report: (dict) project report dictionary that is required by 'render_project_html()'
+        """Extract mesh or simulation time information.
 
-        Returns:
-            None
+        Mutate project_report.
+
+        Parameters
+        ----------
+        key_name : str
+            Mesh or simulation_time, depending on what to extract.
+        design_data : dict
+            All the data related to a single design in ``project_name``.
+        design_name : str
+            Name of the design.
+        project_name : str
+            Name of the project.
+        project_report : dict
+            Project report dictionary that is required by ``render_project_html()``.
+
         """
         for variation_name, variation_data in design_data[key_name].items():
             for setup_name, current_stat in variation_data.items():
@@ -595,13 +606,17 @@ class ElectronicsDesktopTester:
                 project_report[key_name].append(stat_dict)
 
     def allocator(self) -> Iterable[Tuple[str, Dict[str, Dict[str, int]]]]:
-        """
-        Generator that yields resources. Waits until resources are available
+        """Generator that yields resources.
 
-        Yields:
-            (str, dict) (project name to run, allocated machines)
-        """
+        Waits until resources are available.
 
+        Yields
+        ------
+        proj_name : str
+            Name of the project.
+        allocated_machines : Dict
+            Allocated machines.
+        """
         sorted_by_cores_desc = sorted(
             self.project_tests_config.keys(),
             key=lambda x: self.project_tests_config[x]["distribution"]["cores"],
@@ -651,17 +666,24 @@ class ElectronicsDesktopTester:
 def allocate_task(
     distribution_config: Dict[str, int], machines_dict: Dict[str, int]
 ) -> Optional[Dict[str, Dict[str, int]]]:
-    """
-    Allocate task on one or more nodes. Will use MPI and split the job
-    If multiple parametric tasks are defined, distribute uniform
-    Args:
-        distribution_config: (dict) data about required distribution for the project
-        machines_dict: (dict) all available machines in pool
+    """Allocate task on one or more nodes.
 
-    Returns:
-        (dict) allocated machines for the project or None if not allocated
-    """
+    Will use MPI and split the job.
+    If multiple parametric tasks are defined, distribute uniformly.
 
+    Parameters
+    ----------
+    distribution_config : dict
+        Data about required distribution for the project.
+    machines_dict : dict
+        All available machines in pool.
+
+    Returns
+    -------
+    dict
+        Allocated machines for the project or ``None`` if not allocated.
+
+    """
     if distribution_config.get("single_node", False):
         return None
 
@@ -703,16 +725,21 @@ def allocate_task(
 def allocate_task_within_node(
     distribution_config: Dict[str, int], machines_dict: Dict[str, int]
 ) -> Dict[str, Dict[str, int]]:
-    """
-    Try to fit a task in a node without splitting
-    Args:
-        distribution_config: (dict) data about required distribution for the project
-        machines_dict: (dict) all available machines in pool
+    """Try to fit a task in a node without splitting.
 
-    Returns:
-        (dict) allocated machines for the project or None if not allocated
-    """
+    Parameters
+    ----------
+    distribution_config : dict
+        Data about required distribution for the project.
+    machines_dict : dict
+        All available machines in pool.
 
+    Returns
+    -------
+    machines : dict
+        Allocated machines for the project or ``None`` if not allocated.
+
+    """
     for machine, cores in machines_dict.items():
         if cores - distribution_config["cores"] >= 0:
             return {
@@ -725,29 +752,37 @@ def allocate_task_within_node(
 
 
 def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> Union[str, List[str]]:
-    """
-    Copy project to run location, temp by default
-    Args:
-        project_name: (str) name of the project to start
-        project_config: (dict) configuration of project, distribution, etc
-        dst: (str) path where to copy
+    """Copy project to run location, temp by default.
 
-    Returns:
-        (str) location where it was copied
+    Parameters
+    ----------
+    project_name : str
+        Name of the project to start.
+    project_config : dict
+        Configuration of project, distribution, etc.
+    dst : str
+        Path where to copy.
+
+    Returns
+    -------
+    path : str
+        Location where it was copied.
+
     """
     src = project_config.get("path", project_name + ".aedt")
     return copy_path_to(src, dst)
 
 
 def copy_dependencies(project_config: Dict[str, Any], dst: str) -> None:
-    """
-    Copies project dependencies to run location
-    Args:
-        project_config: (dict) configuration of project, distribution, etc
-        dst: (str) path where to copy
+    """Copies project dependencies to run location.
 
-    Returns:
-        None
+    Parameters
+    ----------
+    project_config : dict
+        Configuration of project, distribution, etc.
+    dst : str
+        Path where to copy.
+
     """
     deps = project_config.get("dependencies", None)
 
@@ -759,15 +794,21 @@ def copy_dependencies(project_config: Dict[str, Any], dst: str) -> None:
 
 
 def copy_path_to(src: str, dst: str) -> Union[str, List[str]]:
-    """
-    Copy path from src to dst
-    If src is a relative path, preserves relative folder tree
-    Args:
-        src: (str) path with copy target, relative or absolute
-        dst: (str) path where to copy
+    """Copy path from src to dst.
 
-    Returns:
-        (str) path to copied file or (list) with paths if folder is copied
+    If ``src`` is a relative path, preserves relative folder tree.
+
+    Parameters
+    ----------
+    src : str
+        Path with copy target, relative or absolute.
+    dst : str
+        Path where to copy.
+
+    Returns
+    -------
+    path: str or list
+        Path to copied file or list with paths if folder is copied.
 
     """
     src_path = Path(src.replace("\\", "/"))
@@ -795,16 +836,22 @@ def copy_path_to(src: str, dst: str) -> Union[str, List[str]]:
 
 
 def mkdtemp_persistent(*args: Any, persistent: bool = True, **kwargs: Any) -> Any:
-    """
-    Provides a context manager to create a temporary/permanent directory depending on 'persistent' argument
+    """Provides a context manager to create a temporary/permanent directory depending on 'persistent' argument
 
-    Args:
-        *args: TemporaryDirectory args
-        persistent: (bool) if True, create permanent directory
-        **kwargs: TemporaryDirectory kwargs
+    Parameters
+    ----------
+    *args: Any
+        TemporaryDirectory args
+    persistent : bool, default=True
+         If ``True``, create a permanent directory.
+    **kwargs: Any
+        TemporaryDirectory keyword arguments.
 
-    Returns:
-        Context manager with temp directory from 'tempfile' module
+    Returns
+    -------
+    tempfile.TemporaryDirectory
+        Context manager with temp directory from ``tempfile`` module.
+
     """
     if persistent:
 
@@ -818,11 +865,7 @@ def mkdtemp_persistent(*args: Any, persistent: bool = True, **kwargs: Any) -> An
 
 
 def generator_unique_id() -> Iterator[str]:
-    """
-    Generator that incrementally yields new IDs
-    Yields:
-        (str) new unique ID
-    """
+    """Generator that incrementally yields new IDs."""
     i = 1
     while True:
         yield f"a{i}"
@@ -833,10 +876,13 @@ id_generator = generator_unique_id()
 
 
 def unique_id() -> str:
-    """
-    When called runs generator to pick new unique ID
-    Returns:
-        (str) new ID
+    """When called runs generator to pick new unique ID.
+
+    Returns
+    -------
+    id : str
+        New ID.
+
     """
     return next(id_generator)
 
@@ -849,20 +895,24 @@ def execute_aedt(
     machines: Optional[Dict[str, Any]] = None,
     distribution_config: Optional[Dict[str, Any]] = None,
 ) -> None:
+    """Execute single instance of Electronics Desktop.
+
+    Parameters
+    ----------
+    version : str
+        Version to run.
+    script : str, optional
+        Path to the script.
+    script_args : str, optional
+        Arguments to the script.
+    project_path : str, optional
+        Path to the project.
+    machines : dict, optional
+        Machine specification for current job.
+    distribution_config : dict, optional
+        Distribution configuration for the job.
+
     """
-    Execute single instance of Electronics Desktop
-
-    Args:
-        version: version to run
-        script: path to the script
-        script_args: arguments to the script
-        project_path: path to the project
-        machines: (dict) machine specification for current job
-        distribution_config: (dict) distribution configuration for the job
-
-    Returns: None
-    """
-
     aedt_path = get_aedt_executable_path(version)
 
     command = [
@@ -927,16 +977,19 @@ def execute_aedt(
 
 
 def get_aedt_executable_path(version: str) -> str:
+    """Get platform specific Electronics Desktop executable path.
+
+    Parameters
+    ----------
+    version : str
+        Version of Electronics Desktop.
+
+    Returns
+    -------
+    path : str
+        Path to Electronics Desktop executable.
+
     """
-    Get platform specific Electronics Desktop executable path
-
-    Args:
-        version: (str) version of Electronics Desktop
-
-    Returns:
-        (str) path to Electronics Desktop executable
-    """
-
     aedt_env = f"ANSYSEM_ROOT{version}"
     aedt_path = os.environ.get(aedt_env, None)
     if not aedt_path:
@@ -966,11 +1019,10 @@ def compare_keys(
     dict_path: str = "",
     results_type: str = "reference",
 ) -> None:
-    """
-    Compare that keys from dict_1 are present in dict_2 recursively.
-    Mutates exceptions_list and appends errors if key is not present
-    Returns:
-        None
+    """Compare that keys from ``dict_1`` are present in ``dict_2`` recursively.
+
+    Mutates ``exceptions_list`` and appends errors if key is not present.
+
     """
     if dict_path:
         dict_path += "->"
@@ -984,11 +1036,13 @@ def compare_keys(
 
 
 def parse_arguments() -> argparse.Namespace:
-    """
-    Parse CLI arguments
+    """Parse CLI arguments.
 
-    Returns:
-        (argparse.Namespace) validated arguments
+    Returns
+    -------
+    args : argparse.Namespace
+        Validated arguments.
+
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--aedt-version", required=True, help="Electronics Desktop version to test, e.g. 221")
