@@ -52,9 +52,7 @@ PROJECT_PAGE_TEMPLATE = get_template("project-report.html")
 
 
 def main() -> None:
-    """Main function that is executed by 'flit' CLI script and by executing this python file
-
-    """
+    """Main function that is executed by 'flit' CLI script and by executing this python file."""
     try:
         cli_args = parse_arguments()
     except ValueError as exc:
@@ -136,9 +134,10 @@ class ElectronicsDesktopTester:
             self.project_tests_config = json.load(file)
 
     def validate_config(self) -> None:
-        """Make quick validation of --config-file [and --reference-file if present]
+        """Make quick validation of --config-file [and --reference-file if present].
+
         Checks that distribution is specified correctly and that projects in
-        reference identical to configuration
+        reference identical to configuration.
 
         """
         for project_name, config in self.project_tests_config.items():
@@ -221,11 +220,12 @@ class ElectronicsDesktopTester:
             logger.info(msg)
 
     def create_combined_report(self) -> Path:
-        """Reads all .json files in 'reference_folder' and dumps it to single file 'reference_results.json'
+        """Reads all .json files in 'reference_folder' and dumps it to single file 'reference_results.json'.
 
         Returns
         -------
-            (Path) path to the combined .json file
+            Path
+                path to the combined .json file.
 
         """
         combined_report_path = self.results_path / "reference_results.json"
@@ -246,13 +246,7 @@ class ElectronicsDesktopTester:
         return combined_report_path
 
     def validate_hardware(self) -> None:
-        """Validate that we have enough hardware resources to run requested configuration
-
-        Returns
-        -------
-            None
-
-        """
+        """Validate that we have enough hardware resources to run requested configuration."""
         all_cores = [val for val in self.machines_dict.values()]
         total_available_cores = sum(all_cores)
         max_machine_cores = max(all_cores)
@@ -267,11 +261,7 @@ class ElectronicsDesktopTester:
     def initialize_results(self) -> None:
         """Copy static web parts (HTML, CSS, JS).
 
-        Mutate ``self.report_data``. Set all projects status to be ``'Queued'``, default link and delta
-
-        Returns
-        -------
-            None
+        Mutate ``self.report_data``. Set all projects status to be ``'Queued'``, default link and delta.
 
         """
         if self.results_path.exists():
@@ -304,12 +294,8 @@ class ElectronicsDesktopTester:
 
         Parameters
         ----------
-        finished : bool
-             (Default value = False)
-
-        Returns
-        -------
-            None
+        finished : bool, default=False
+             when True send a context to stop refreshing the HTML page.
 
         """
         ctx = {
@@ -323,15 +309,17 @@ class ElectronicsDesktopTester:
             file.write(data)
 
     def render_project_html(self, project_name: str, project_report: Dict[str, Union[List[Any], int]]) -> None:
-        """Renders project report page. Creates new page if none exists
+        """Renders project report page.
+
+        Creates new page if none exists.
         Updates django template with XY plots, mesh, etc data.
 
         Parameters
         ----------
         project_name : str
-            name of the project to render
+            Name of the project to render.
         project_report : dict
-            data to render on plots
+            Data to render on plots.
 
         """
         page_ctx = {
@@ -358,13 +346,13 @@ class ElectronicsDesktopTester:
         Parameters
         ----------
         project_name : str
-            name of the project to start
+            Name of the project to start.
         project_path : str
-            path to the project
+            Path to the project.
         project_config : dict
-            configuration of project, distribution, etc
+            Configuration of project, distribution, etc.
         allocated_machines : dict
-            machines and cores that were allocated for this task
+            Machines and cores that were allocated for this task.
         """
         self.report_data["projects"][project_name]["time"] = time_now()
         self.report_data["projects"][project_name]["status"] = "running"
@@ -452,22 +440,23 @@ class ElectronicsDesktopTester:
     ) -> Dict[str, Any]:
         """Check that report file exists.
 
-        Check that project report exists in reference data
-        Check that all keys present in reference date are in current run data
-        Check that all keys present in current run data are in reference data
+        Check that project report exists in reference data.
+        Check that all keys present in reference date are in current run data.
+        Check that all keys present in current run data are in reference data.
 
         Parameters
         ----------
         project_exceptions : list
-            list to append with errors
+            list to append with errors.
         report_file : Path
-            JSON file path with results
+            JSON file path with results.
         project_name : str
-            name of the project
+            name of the project.
 
         Returns
         -------
-        project_data: list
+        project_data : dict
+            dictionary loaded from .json file.
 
         """
         project_data: Dict[str, Any] = {}
@@ -511,17 +500,13 @@ class ElectronicsDesktopTester:
         Parameters
         ----------
         design_data : dict
-            all the data related to a single design in project_name
+            All the data related to a single design in project_name.
         design_name : str
-            name of the design
+            Name of the design.
         project_name : str
-            name of the project
+            Name of the project.
         project_report : dict
-            project report dictionary that is required by 'render_project_html()'
-
-        Returns
-        -------
-            None
+            Project report dictionary that is required by 'render_project_html()'.
 
         """
 
@@ -585,21 +570,22 @@ class ElectronicsDesktopTester:
         project_name: str,
         project_report: Dict[str, Union[List[Any], Any]],
     ) -> None:
-        """Extract mesh or simulation time information
-        Mutate project_report
+        """Extract mesh or simulation time information.
+
+        Mutate project_report.
 
         Parameters
         ----------
         key_name : str
-            mesh or simulation_time, depending on what to extract
+            Mesh or simulation_time, depending on what to extract.
         design_data : dict
-            all the data related to a single design in project_name
+            All the data related to a single design in project_name.
         design_name : str
-            name of the design
+            Name of the design.
         project_name : str
-            name of the project
+            Name of the project.
         project_report : dict
-            project report dictionary that is required by 'render_project_html()'
+            Project report dictionary that is required by 'render_project_html()'.
 
         """
         for variation_name, variation_data in design_data[key_name].items():
@@ -624,6 +610,13 @@ class ElectronicsDesktopTester:
         """Generator that yields resources.
 
         Waits until resources are available.
+
+        Yields
+        ------
+        proj_name : str
+            Name of the project.
+        allocated_machines : Dict
+            Allocated machines.
         """
 
         sorted_by_cores_desc = sorted(
@@ -675,15 +668,17 @@ class ElectronicsDesktopTester:
 def allocate_task(
     distribution_config: Dict[str, int], machines_dict: Dict[str, int]
 ) -> Optional[Dict[str, Dict[str, int]]]:
-    """Allocate task on one or more nodes. Will use MPI and split the job
-    If multiple parametric tasks are defined, distribute uniform
+    """Allocate task on one or more nodes.
+
+    Will use MPI and split the job.
+    If multiple parametric tasks are defined, distribute uniform.
 
     Parameters
     ----------
     distribution_config : dict
-        data about required distribution for the project
+        Data about required distribution for the project.
     machines_dict : dict
-        all available machines in pool
+        All available machines in pool.
 
     Returns
     -------
@@ -733,14 +728,14 @@ def allocate_task(
 def allocate_task_within_node(
     distribution_config: Dict[str, int], machines_dict: Dict[str, int]
 ) -> Dict[str, Dict[str, int]]:
-    """Try to fit a task in a node without splitting
+    """Try to fit a task in a node without splitting.
 
     Parameters
     ----------
     distribution_config : dict
-        data about required distribution for the project
+        Data about required distribution for the project.
     machines_dict : dict
-        all available machines in pool
+        All available machines in pool.
 
     Returns
     -------
