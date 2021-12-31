@@ -224,8 +224,8 @@ class ElectronicsDesktopTester:
 
         Returns
         -------
-            Path
-                path to the combined .json file.
+        Path
+            Path to the combined .json file.
 
         """
         combined_report_path = self.results_path / "reference_results.json"
@@ -295,7 +295,7 @@ class ElectronicsDesktopTester:
         Parameters
         ----------
         finished : bool, default=False
-             when True send a context to stop refreshing the HTML page.
+             When True send a context to stop refreshing the HTML page.
 
         """
         ctx = {
@@ -401,7 +401,8 @@ class ElectronicsDesktopTester:
 
         Returns
         -------
-            project_report : dict
+        project_report : dict
+            project report dictionary that is required by ``render_project_html()``.
 
         """
 
@@ -447,16 +448,16 @@ class ElectronicsDesktopTester:
         Parameters
         ----------
         project_exceptions : list
-            list to append with errors.
+            List to append with errors.
         report_file : Path
             JSON file path with results.
         project_name : str
-            name of the project.
+            Name of the project.
 
         Returns
         -------
         project_data : dict
-            dictionary loaded from .json file.
+            Dictionary loaded from .json file.
 
         """
         project_data: Dict[str, Any] = {}
@@ -740,7 +741,7 @@ def allocate_task_within_node(
     Returns
     -------
     machines : dict
-        allocated machines for the project or None if not allocated
+        Allocated machines for the project or None if not allocated.
 
     """
 
@@ -770,7 +771,7 @@ def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> Un
     Returns
     -------
     path : str
-        location where it was copied
+        Location where it was copied.
 
     """
     src = project_config.get("path", project_name + ".aedt")
@@ -812,7 +813,7 @@ def copy_path_to(src: str, dst: str) -> Union[str, List[str]]:
     Returns
     -------
     path: str or list
-        path to copied file or list with paths if folder is copied
+        Path to copied file or list with paths if folder is copied.
 
     """
     src_path = Path(src.replace("\\", "/"))
@@ -853,6 +854,7 @@ def mkdtemp_persistent(*args: Any, persistent: bool = True, **kwargs: Any) -> An
 
     Returns
     -------
+    tempfile.TemporaryDirectory
         Context manager with temp directory from 'tempfile' module
 
     """
@@ -884,7 +886,7 @@ def unique_id() -> str:
     Returns
     -------
     id : str
-        new ID
+        New ID.
 
     """
     return next(id_generator)
@@ -986,12 +988,12 @@ def get_aedt_executable_path(version: str) -> str:
     Parameters
     ----------
     version : str
-        version of Electronics Desktop.
+        Version of Electronics Desktop.
 
     Returns
     -------
     path : str
-        path to Electronics Desktop executable.
+        Path to Electronics Desktop executable.
 
     """
 
@@ -1046,7 +1048,7 @@ def parse_arguments() -> argparse.Namespace:
     Returns
     -------
     args : argparse.Namespace
-        validated arguments
+        Validated arguments.
 
     """
     parser = argparse.ArgumentParser()
