@@ -182,12 +182,7 @@ class ElectronicsDesktopTester:
         logger.info("Configuration validation is successful")
 
     def run(self) -> None:
-        """Main function to start test suite
-
-        Returns
-        -------
-            None
-        """
+        """Main function to start test suite."""
         self.validate_hardware()
         self.initialize_results()
 
@@ -271,7 +266,8 @@ class ElectronicsDesktopTester:
 
     def initialize_results(self) -> None:
         """Copy static web parts (HTML, CSS, JS).
-        Mutate self.report_data. Set all projects status to be 'Queued', default link and delta
+
+        Mutate ``self.report_data``. Set all projects status to be ``'Queued'``, default link and delta
 
         Returns
         -------
@@ -303,11 +299,12 @@ class ElectronicsDesktopTester:
 
     def render_main_html(self, finished: bool = False) -> None:
         """Renders main report page.
-        Using self.report_data updates django template with the data.
+
+        Using ``self.report_data`` updates django template with the data.
 
         Parameters
         ----------
-        finished: bool :
+        finished : bool
              (Default value = False)
 
         Returns
@@ -336,10 +333,6 @@ class ElectronicsDesktopTester:
         project_report : dict
             data to render on plots
 
-        Returns
-        -------
-            None
-
         """
         page_ctx = {
             "plots": project_report["plots"],
@@ -358,6 +351,7 @@ class ElectronicsDesktopTester:
         self, project_name: str, project_path: str, project_config: Dict[str, Any], allocated_machines: Dict[str, Any]
     ) -> None:
         """Task runner that is called by each thread.
+
         Mutates self.report_data["projects"] and self.machines_dict
         Calls update of HTML pages status, starts AEDT process, calls render of project_name.html
 
@@ -371,11 +365,6 @@ class ElectronicsDesktopTester:
             configuration of project, distribution, etc
         allocated_machines : dict
             machines and cores that were allocated for this task
-
-        Returns
-        -------
-            None
-
         """
         self.report_data["projects"][project_name]["time"] = time_now()
         self.report_data["projects"][project_name]["status"] = "running"
@@ -413,14 +402,14 @@ class ElectronicsDesktopTester:
         self.active_tasks -= 1
 
     def prepare_project_report(self, project_name: str, project_path: str) -> Dict[str, Union[List[Any], int]]:
-        """Prepare project report dictionary that is required by 'render_project_html()'
+        """Prepare project report dictionary that is required by ``render_project_html()``.
 
         Parameters
         ----------
         project_name : str
-            name of the project
+            Name of the project.
         project_path : str
-            path to the project
+            Path to the project.
 
         Returns
         -------
@@ -461,7 +450,8 @@ class ElectronicsDesktopTester:
     def check_all_results_present(
         self, project_exceptions: List[str], report_file: Path, project_name: str
     ) -> Dict[str, Any]:
-        """Check that report file exists
+        """Check that report file exists.
+
         Check that project report exists in reference data
         Check that all keys present in reference date are in current run data
         Check that all keys present in current run data are in reference data
@@ -515,7 +505,8 @@ class ElectronicsDesktopTester:
         project_report: Dict[str, Union[List[Any], Any]],
     ) -> None:
         """Extract all XY curves for a particular design.
-        Mutate project_report
+
+        Mutate ``project_report``.
 
         Parameters
         ----------
@@ -610,10 +601,6 @@ class ElectronicsDesktopTester:
         project_report : dict
             project report dictionary that is required by 'render_project_html()'
 
-        Returns
-        -------
-            None
-
         """
         for variation_name, variation_data in design_data[key_name].items():
             for setup_name, current_stat in variation_data.items():
@@ -634,7 +621,10 @@ class ElectronicsDesktopTester:
                 project_report[key_name].append(stat_dict)
 
     def allocator(self) -> Iterable[Tuple[str, Dict[str, Dict[str, int]]]]:
-        """Generator that yields resources. Waits until resources are available"""
+        """Generator that yields resources.
+
+        Waits until resources are available.
+        """
 
         sorted_by_cores_desc = sorted(
             self.project_tests_config.keys(),
@@ -697,8 +687,8 @@ def allocate_task(
 
     Returns
     -------
-        allocated_machines : dict
-            allocated machines for the project or None if not allocated
+    dict
+        Allocated machines for the project or ``None`` if not allocated.
 
     """
 
