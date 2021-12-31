@@ -329,6 +329,15 @@ class TestValidateConfig(BaseElectronicsDesktopTester):
         assert "'parametric_tasks' key must be >= 1" in str(exc.value)
 
 
+class TestElectronicsDesktopTester(BaseElectronicsDesktopTester):
+    def test_validate_hardware(self):
+        self.aedt_tester.machines_dict = {"host1": 1}
+        with pytest.raises(ValueError) as exc:
+            self.aedt_tester.validate_hardware()
+
+        assert "just_winding requires 2 cores. Not enough resources to run" in str(exc.value)
+
+
 class TestCLIArgs:
     def setup(self):
         self.default_argv = ["aedt_test_runner.py", "--aedt-version=212", r"--config-file=file/path"]
