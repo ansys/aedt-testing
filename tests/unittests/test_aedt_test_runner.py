@@ -337,6 +337,25 @@ class TestElectronicsDesktopTester(BaseElectronicsDesktopTester):
 
         assert "just_winding requires 2 cores. Not enough resources to run" in str(exc.value)
 
+    @mock.patch("aedttest.aedt_test_runner.time_now", wraps=lambda *a, **kw: "2021-12-31 20:16:04")
+    def test_initialize_results(self, time_mock):
+        with TemporaryDirectory() as tmp_dir:
+            self.aedt_tester.results_path = Path(tmp_dir)
+            self.aedt_tester.initialize_results()
+
+            assert self.aedt_tester.report_data == {
+                "all_delta": 1,
+                "projects": {
+                    "just_winding": {
+                        "cores": 2,
+                        "status": "queued",
+                        "link": None,
+                        "delta": 0,
+                        "time": "2021-12-31 20:16:04",
+                    }
+                },
+            }
+
 
 class TestCLIArgs:
     def setup(self):
