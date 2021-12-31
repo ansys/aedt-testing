@@ -9,7 +9,7 @@ hostinfo = namedtuple("hostinfo", ("hostname", "cores"))
 
 
 def get_job_machines(custom_input=None):
-    """Function to get all available hostnames and cores for the submitted job
+    """Function to get all available hostnames and cores for the submitted job.
 
     Schedulers use different  environment variables to share available hosts for the job:
         UGE (SGE): PE_HOSTFILE
@@ -26,8 +26,8 @@ def get_job_machines(custom_input=None):
 
     Returns
     -------
-        machines : tuple[hostinfo]
-            all available machines
+    machines : tuple[hostinfo]
+        All available machines.
 
     """
     if custom_input is not None:
@@ -57,6 +57,7 @@ def get_job_machines(custom_input=None):
 
 def parse_custom_input(custom_input: str):
     """
+    Parse custom input string.
 
     Parameters
     ----------
@@ -65,8 +66,8 @@ def parse_custom_input(custom_input: str):
 
     Returns
     -------
-        machines : tuple
-            all machines parsed from string
+    machines : tuple
+        All machines parsed from string.
 
     """
 
@@ -85,12 +86,12 @@ def parse_hosts_sge(host_file_name):
     Parameters
     ----------
     host_file_name : str
-        path to the host file
+        Path to the host file.
 
     Returns
     -------
-        machines : tuple
-            all machines parsed from string
+    machines : tuple
+        All machines parsed from string.
 
     """
     csv.register_dialect("pemachines", delimiter=" ", skipinitialspace=True)
@@ -112,12 +113,12 @@ def parse_hosts_lsf(host_list_str):
     Parameters
     ----------
     host_list_str : str
-        format from env var host_nameA num_processors1 host_nameB num_processors2
+        format from env var ``host_nameA num_processors1 host_nameB num_processors2``
 
     Returns
     -------
-        machines : tuple
-            all machines parsed from string
+    machines : tuple
+        All machines parsed from string.
 
     """
     host_list = host_list_str.split()
@@ -134,12 +135,12 @@ def parse_hosts_ccs(host_list_str):
     Parameters
     ----------
     host_list_str : str
-        format "#hosts host1 #cores1 host2 #cores2 host3 #cores3 ... hostN #coresN"
+        format ``#hosts host1 #cores1 host2 #cores2 host3 #cores3 ... hostN #coresN``
 
     Returns
     -------
-        machines : tuple
-            all machines parsed from string
+    machines : tuple
+        All machines parsed from string.
 
     """
     host_list = host_list_str.split()
@@ -166,13 +167,13 @@ def parse_hosts_pbs(pbs_node_file):
 
     Parameters
     ----------
-    pbs_node_file :
-
+    pbs_node_file : str
+        Path to the PBS file.
 
     Returns
     -------
-        machines : tuple
-            all machines parsed from file
+    machines : tuple
+        All machines parsed from file.
 
     """
     host_cores = {}
@@ -212,12 +213,12 @@ def parse_hosts_slurm(host_list_str):
     Parameters
     ----------
     host_list_str : str
-        string extracted from SLURM_JOB_NODELIST
+        String extracted from SLURM_JOB_NODELIST
 
     Returns
     -------
-        machines : tuple
-            all machines parsed
+    machines : tuple
+        All machines parsed.
 
     """
     # first get all unparsed nodes, eg host_a[2-5,7,14-15]
@@ -255,7 +256,7 @@ def parse_hosts_slurm(host_list_str):
 
 
 def _parse_single_host(unparsed_str):
-    """Parse host string
+    """Parse host string.
 
     Parameters
     ----------
@@ -264,8 +265,8 @@ def _parse_single_host(unparsed_str):
 
     Returns
     -------
-        hosts : list
-            expanded list of hosts
+    hosts : list
+        Expanded list of hosts.
 
     """
     host, node_numbers_str = re.findall(r"([a-zA-Z0-9_.-]*)\[([0-9,-]*)]", unparsed_str)[0]

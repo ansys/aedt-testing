@@ -17,15 +17,11 @@ def set_logger(logging_file, level=logging.DEBUG, pyaedt_module=None):
     Parameters
     ----------
     logging_file : str or Path
-        path to log file
+        Path to log file.
     level : int, default=logging.DEBUG
-        level of logging to emit
-    pyaedt_module : pyaedt
-        pyaedt module to disable/configure logging (Default value = None)
-
-    Returns
-    -------
-        None
+        Level of logging to emit.
+    pyaedt_module : pyaedt, optional
+        ``pyaedt`` module to disable/configure logging
 
     """
 
