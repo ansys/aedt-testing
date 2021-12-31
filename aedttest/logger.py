@@ -21,7 +21,7 @@ def set_logger(logging_file, level=logging.DEBUG, pyaedt_module=None):
     level : int, default=logging.DEBUG
         Level of logging to emit.
     pyaedt_module : pyaedt, optional
-        ``pyaedt`` module to disable/configure logging
+        ``pyaedt`` module to disable/configure logging.
 
     """
 

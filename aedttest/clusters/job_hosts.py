@@ -12,17 +12,18 @@ def get_job_machines(custom_input=None):
     """Function to get all available hostnames and cores for the submitted job.
 
     Schedulers use different  environment variables to share available hosts for the job:
-        UGE (SGE): PE_HOSTFILE
-        LSF: LSB_MCPU_HOSTS
-        PBS: PBS_NODEFILE
-        SLURM: SLURM_JOB_NODELIST
-        Azure Batch: CCP_NODES
+
+    * UGE (SGE): PE_HOSTFILE
+    * LSF: LSB_MCPU_HOSTS
+    * PBS: PBS_NODEFILE
+    * SLURM: SLURM_JOB_NODELIST
+    * Azure Batch: CCP_NODES
 
     Parameters
     ----------
     custom_input : str, optional
-        if scheduler is not in supported list, then user needs to
-        provide string with available hosts and cores. Format: "host1:15,host2:10"
+        If scheduler is not in supported list, then user needs to
+        provide string with available hosts and cores. Format: ``"host1:15,host2:10"``.
 
     Returns
     -------
@@ -62,7 +63,7 @@ def parse_custom_input(custom_input: str):
     Parameters
     ----------
     custom_input : str
-        Format: "host1:15,host2:10"
+        Format: ``"host1:15,host2:10"``.
 
     Returns
     -------
@@ -113,7 +114,7 @@ def parse_hosts_lsf(host_list_str):
     Parameters
     ----------
     host_list_str : str
-        format from env var ``host_nameA num_processors1 host_nameB num_processors2``
+        Format from env var ``host_nameA num_processors1 host_nameB num_processors2``.
 
     Returns
     -------
@@ -135,7 +136,7 @@ def parse_hosts_ccs(host_list_str):
     Parameters
     ----------
     host_list_str : str
-        format ``#hosts host1 #cores1 host2 #cores2 host3 #cores3 ... hostN #coresN``
+        format ``#hosts host1 #cores1 host2 #cores2 host3 #cores3 ... hostN #coresN``.
 
     Returns
     -------
@@ -213,7 +214,7 @@ def parse_hosts_slurm(host_list_str):
     Parameters
     ----------
     host_list_str : str
-        String extracted from SLURM_JOB_NODELIST
+        String extracted from ``SLURM_JOB_NODELIST``.
 
     Returns
     -------
@@ -261,7 +262,7 @@ def _parse_single_host(unparsed_str):
     Parameters
     ----------
     unparsed_str : str
-        format 'host_c[008-010,012,017-019]'
+        Format ``'host_c[008-010,012,017-019]'``.
 
     Returns
     -------

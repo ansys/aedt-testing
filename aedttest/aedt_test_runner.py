@@ -52,7 +52,7 @@ PROJECT_PAGE_TEMPLATE = get_template("project-report.html")
 
 
 def main() -> None:
-    """Main function that is executed by 'flit' CLI script and by executing this python file."""
+    """Main function that is executed by ``flit`` CLI script and by executing this python file."""
     try:
         cli_args = parse_arguments()
     except ValueError as exc:
@@ -220,7 +220,7 @@ class ElectronicsDesktopTester:
             logger.info(msg)
 
     def create_combined_report(self) -> Path:
-        """Reads all .json files in 'reference_folder' and dumps it to single file 'reference_results.json'.
+        """Reads all .json files in ``reference_folder`` and dumps it to single file ``'reference_results.json'``.
 
         Returns
         -------
@@ -340,7 +340,7 @@ class ElectronicsDesktopTester:
     ) -> None:
         """Task runner that is called by each thread.
 
-        Mutates self.report_data["projects"] and self.machines_dict
+        Mutates ``self.report_data["projects"]`` and ``self.machines_dict``
         Calls update of HTML pages status, starts AEDT process, calls render of project_name.html
 
         Parameters
@@ -578,13 +578,13 @@ class ElectronicsDesktopTester:
         key_name : str
             Mesh or simulation_time, depending on what to extract.
         design_data : dict
-            All the data related to a single design in project_name.
+            All the data related to a single design in ``project_name``.
         design_name : str
             Name of the design.
         project_name : str
             Name of the project.
         project_report : dict
-            Project report dictionary that is required by 'render_project_html()'.
+            Project report dictionary that is required by ``render_project_html()``.
 
         """
         for variation_name, variation_data in design_data[key_name].items():
@@ -669,7 +669,7 @@ def allocate_task(
     """Allocate task on one or more nodes.
 
     Will use MPI and split the job.
-    If multiple parametric tasks are defined, distribute uniform.
+    If multiple parametric tasks are defined, distribute uniformly.
 
     Parameters
     ----------
@@ -737,7 +737,7 @@ def allocate_task_within_node(
     Returns
     -------
     machines : dict
-        Allocated machines for the project or None if not allocated.
+        Allocated machines for the project or ``None`` if not allocated.
 
     """
     for machine, cores in machines_dict.items():
@@ -796,7 +796,7 @@ def copy_dependencies(project_config: Dict[str, Any], dst: str) -> None:
 def copy_path_to(src: str, dst: str) -> Union[str, List[str]]:
     """Copy path from src to dst.
 
-    If src is a relative path, preserves relative folder tree.
+    If ``src`` is a relative path, preserves relative folder tree.
 
     Parameters
     ----------
@@ -843,14 +843,14 @@ def mkdtemp_persistent(*args: Any, persistent: bool = True, **kwargs: Any) -> An
     *args: Any
         TemporaryDirectory args
     persistent : bool, default=True
-         if True, create permanent directory
+         If ``True``, create a permanent directory.
     **kwargs: Any
-        TemporaryDirectory kwargs
+        TemporaryDirectory keyword arguments.
 
     Returns
     -------
     tempfile.TemporaryDirectory
-        Context manager with temp directory from 'tempfile' module
+        Context manager with temp directory from ``tempfile`` module.
 
     """
     if persistent:
@@ -865,7 +865,7 @@ def mkdtemp_persistent(*args: Any, persistent: bool = True, **kwargs: Any) -> An
 
 
 def generator_unique_id() -> Iterator[str]:
-    """Generator that incrementally yields new IDs"""
+    """Generator that incrementally yields new IDs."""
     i = 1
     while True:
         yield f"a{i}"
@@ -1019,9 +1019,9 @@ def compare_keys(
     dict_path: str = "",
     results_type: str = "reference",
 ) -> None:
-    """Compare that keys from dict_1 are present in dict_2 recursively.
+    """Compare that keys from ``dict_1`` are present in ``dict_2`` recursively.
 
-    Mutates exceptions_list and appends errors if key is not present.
+    Mutates ``exceptions_list`` and appends errors if key is not present.
 
     """
     if dict_path:
