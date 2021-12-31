@@ -144,10 +144,6 @@ class ElectronicsDesktopTester:
         Checks that distribution is specified correctly and that projects in
         reference identical to configuration
 
-        Returns
-        -------
-            None
-
         """
         for project_name, config in self.project_tests_config.items():
             distribution_config = config["distribution"]
