@@ -405,7 +405,6 @@ class ElectronicsDesktopTester:
             project report dictionary that is required by ``render_project_html()``.
 
         """
-
         report_file = Path(project_path).parent / f"{project_name}.json"
         project_report: Dict[str, Union[List[Any], Any]] = {
             "plots": [],
@@ -510,7 +509,6 @@ class ElectronicsDesktopTester:
             Project report dictionary that is required by 'render_project_html()'.
 
         """
-
         for report_name, report_data in design_data["report"].items():
             for trace_name, trace_data in report_data.items():
                 for curve_name, curve_data in trace_data["curves"].items():
@@ -619,7 +617,6 @@ class ElectronicsDesktopTester:
         allocated_machines : Dict
             Allocated machines.
         """
-
         sorted_by_cores_desc = sorted(
             self.project_tests_config.keys(),
             key=lambda x: self.project_tests_config[x]["distribution"]["cores"],
@@ -687,7 +684,6 @@ def allocate_task(
         Allocated machines for the project or ``None`` if not allocated.
 
     """
-
     if distribution_config.get("single_node", False):
         return None
 
@@ -744,7 +740,6 @@ def allocate_task_within_node(
         Allocated machines for the project or None if not allocated.
 
     """
-
     for machine, cores in machines_dict.items():
         if cores - distribution_config["cores"] >= 0:
             return {
@@ -918,7 +913,6 @@ def execute_aedt(
         Distribution configuration for the job.
 
     """
-
     aedt_path = get_aedt_executable_path(version)
 
     command = [
@@ -996,7 +990,6 @@ def get_aedt_executable_path(version: str) -> str:
         Path to Electronics Desktop executable.
 
     """
-
     aedt_env = f"ANSYSEM_ROOT{version}"
     aedt_path = os.environ.get(aedt_env, None)
     if not aedt_path:
