@@ -739,8 +739,8 @@ def allocate_task_within_node(
 
     Returns
     -------
-        machines : dict
-            allocated machines for the project or None if not allocated
+    machines : dict
+        allocated machines for the project or None if not allocated
 
     """
 
@@ -756,21 +756,21 @@ def allocate_task_within_node(
 
 
 def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> Union[str, List[str]]:
-    """Copy project to run location, temp by default
+    """Copy project to run location, temp by default.
 
     Parameters
     ----------
     project_name : str
-        name of the project to start
+        Name of the project to start.
     project_config : dict
-        configuration of project, distribution, etc
+        Configuration of project, distribution, etc.
     dst : str
-        path where to copy
+        Path where to copy.
 
     Returns
     -------
-        path : str
-            location where it was copied
+    path : str
+        location where it was copied
 
     """
     src = project_config.get("path", project_name + ".aedt")
@@ -778,18 +778,14 @@ def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> Un
 
 
 def copy_dependencies(project_config: Dict[str, Any], dst: str) -> None:
-    """Copies project dependencies to run location
+    """Copies project dependencies to run location.
 
     Parameters
     ----------
     project_config : dict
-        configuration of project, distribution, etc
+        Configuration of project, distribution, etc.
     dst : str
-        path where to copy
-
-    Returns
-    -------
-        None
+        Path where to copy.
 
     """
     deps = project_config.get("dependencies", None)
@@ -802,20 +798,21 @@ def copy_dependencies(project_config: Dict[str, Any], dst: str) -> None:
 
 
 def copy_path_to(src: str, dst: str) -> Union[str, List[str]]:
-    """Copy path from src to dst
-    If src is a relative path, preserves relative folder tree
+    """Copy path from src to dst.
+
+    If src is a relative path, preserves relative folder tree.
 
     Parameters
     ----------
     src : str
-        path with copy target, relative or absolute
+        Path with copy target, relative or absolute.
     dst : str
-        path where to copy
+        Path where to copy.
 
     Returns
     -------
-        path: str or list
-            path to copied file or list with paths if folder is copied
+    path: str or list
+        path to copied file or list with paths if folder is copied
 
     """
     src_path = Path(src.replace("\\", "/"))
@@ -882,12 +879,12 @@ id_generator = generator_unique_id()
 
 
 def unique_id() -> str:
-    """When called runs generator to pick new unique ID
+    """When called runs generator to pick new unique ID.
 
     Returns
     -------
-        id : str
-            new ID
+    id : str
+        new ID
 
     """
     return next(id_generator)
@@ -901,26 +898,22 @@ def execute_aedt(
     machines: Optional[Dict[str, Any]] = None,
     distribution_config: Optional[Dict[str, Any]] = None,
 ) -> None:
-    """Execute single instance of Electronics Desktop
+    """Execute single instance of Electronics Desktop.
 
     Parameters
     ----------
     version : str
-        version to run
+        Version to run.
     script : str, optional
-        path to the script
+        Path to the script.
     script_args : str, optional
-        arguments to the script
+        Arguments to the script.
     project_path : str, optional
-        path to the project
+        Path to the project.
     machines : dict, optional
-        machine specification for current job
+        Machine specification for current job.
     distribution_config : dict, optional
-        distribution configuration for the job
-
-    Returns
-    -------
-        None
+        Distribution configuration for the job.
 
     """
 
@@ -988,17 +981,17 @@ def execute_aedt(
 
 
 def get_aedt_executable_path(version: str) -> str:
-    """Get platform specific Electronics Desktop executable path
+    """Get platform specific Electronics Desktop executable path.
 
     Parameters
     ----------
     version : str
-        version of Electronics Desktop
+        version of Electronics Desktop.
 
     Returns
     -------
-        path : str
-            path to Electronics Desktop executable
+    path : str
+        path to Electronics Desktop executable.
 
     """
 
@@ -1032,11 +1025,8 @@ def compare_keys(
     results_type: str = "reference",
 ) -> None:
     """Compare that keys from dict_1 are present in dict_2 recursively.
-    Mutates exceptions_list and appends errors if key is not present
 
-    Returns
-    -------
-        None
+    Mutates exceptions_list and appends errors if key is not present.
 
     """
     if dict_path:
@@ -1051,12 +1041,12 @@ def compare_keys(
 
 
 def parse_arguments() -> argparse.Namespace:
-    """Parse CLI arguments
+    """Parse CLI arguments.
 
     Returns
     -------
-        args : argparse.Namespace
-            validated arguments
+    args : argparse.Namespace
+        validated arguments
 
     """
     parser = argparse.ArgumentParser()
