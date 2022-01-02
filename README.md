@@ -84,3 +84,4 @@ sbatch \
 Currently, project does not support or partially supports following features:
 * Automatic results creation is possible only for versions 2019R1+
 * LS-DSO is not supported
+* Linux clusters require SSH to be pre-configured for the user
