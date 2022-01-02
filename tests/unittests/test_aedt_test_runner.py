@@ -329,6 +329,58 @@ class TestValidateConfig(BaseElectronicsDesktopTester):
         assert "'parametric_tasks' key must be >= 1" in str(exc.value)
 
 
+class TestElectronicsDesktopTester(BaseElectronicsDesktopTester):
+    def test_validate_hardware(self):
+        self.aedt_tester.machines_dict = {"host1": 1}
+        with pytest.raises(ValueError) as exc:
+            self.aedt_tester.validate_hardware()
+
+        assert "just_winding requires 2 cores. Not enough resources to run" in str(exc.value)
+
+    @mock.patch("aedttest.aedt_test_runner.time_now", wraps=lambda *a, **kw: "2021-12-31 20:16:04")
+    def test_initialize_results(self, time_mock):
+        with TemporaryDirectory() as tmp_dir:
+            self.aedt_tester.results_path = Path(tmp_dir)
+            self.aedt_tester.initialize_results()
+
+            assert self.aedt_tester.report_data == {
+                "all_delta": 1,
+                "projects": {
+                    "just_winding": {
+                        "cores": 2,
+                        "status": "queued",
+                        "link": None,
+                        "delta": 0,
+                        "time": "2021-12-31 20:16:04",
+                    }
+                },
+            }
+
+    @mock.patch(
+        "aedttest.aedt_test_runner.ElectronicsDesktopTester.prepare_project_report",
+        wraps=lambda *a, **kw: {"error_exception": [], "slider_limit": 2},
+    )
+    @mock.patch("aedttest.aedt_test_runner.ElectronicsDesktopTester.render_project_html", wraps=lambda *a, **kw: None)
+    @mock.patch("aedttest.aedt_test_runner.ElectronicsDesktopTester.render_main_html", wraps=lambda *a, **kw: None)
+    @mock.patch("aedttest.aedt_test_runner.execute_aedt", wraps=lambda *a, **kw: None)
+    @mock.patch("aedttest.aedt_test_runner.time_now", wraps=lambda *a, **kw: "2021-12-31 20:16:04")
+    def test_task_runner(self, time_mock, aedt_execute_mock, render_main_mock, render_project_mock, prep_proj_mock):
+        self.aedt_tester.active_tasks = 5
+        self.aedt_tester.machines_dict = {"my_host": 10}
+        self.aedt_tester.report_data["projects"] = {"my_proj": {}}
+
+        self.aedt_tester.task_runner("my_proj", "my/path", {"distribution": None}, {"my_host": {"cores": 5}})
+
+        assert self.aedt_tester.report_data == {
+            "projects": {
+                "my_proj": {"time": "2021-12-31 20:16:04", "status": "success", "link": "my_proj.html", "delta": 2}
+            }
+        }
+        assert self.aedt_tester.active_tasks == 4
+        assert self.aedt_tester.machines_dict == {"my_host": 15}
+        assert render_main_mock.call_count == 2
+
+
 class TestCLIArgs:
     def setup(self):
         self.default_argv = ["aedt_test_runner.py", "--aedt-version=212", r"--config-file=file/path"]
