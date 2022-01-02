@@ -466,3 +466,24 @@ def test_compare_keys():
         "Key '3->4nest' does not exist in reference results",
         "Key '3->5nest->6nn' does not exist in reference results",
     ]
+
+
+def test_mkdtemp_persistent_false():
+    result = aedt_test_runner.mkdtemp_persistent(persistent=False)
+    assert type(result) == TemporaryDirectory
+
+    with aedt_test_runner.mkdtemp_persistent(persistent=False) as tempdir:
+        assert Path(tempdir).exists()
+    assert not Path(tempdir).exists()
+
+
+def test_mkdtemp_persistent_true():
+    from contextlib import _GeneratorContextManager
+
+    result = aedt_test_runner.mkdtemp_persistent(persistent=True)
+    assert type(result) == _GeneratorContextManager
+
+    with aedt_test_runner.mkdtemp_persistent(persistent=True) as tempdir:
+        assert Path(tempdir).exists()
+    assert Path(tempdir).exists()
+    Path(tempdir).rmdir()
