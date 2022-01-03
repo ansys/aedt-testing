@@ -42,6 +42,24 @@ class AedtTestException(Exception):
 
 
 def parse_mesh_stats(mesh_stats_file, design_name, variation, setup_name):
+    """Get the mesh element number.
+
+    Parameters
+    ----------
+    mesh_stats_file : str
+        Path of the mesh stats ``.mstat`` file.
+    design_name : str
+        Name of the design.
+    variation : str
+        Variation string.
+    setup_name : str
+        Name of the setup.
+
+    Returns
+    -------
+    int
+        Number of mesh elements.
+    """
 
     with open(mesh_stats_file) as fid:
         lines = fid.readlines()
@@ -56,6 +74,24 @@ def parse_mesh_stats(mesh_stats_file, design_name, variation, setup_name):
 
 
 def parse_profile_file(profile_file, design_name, variation, setup_name):
+    """Get the simulation time.
+
+    Parameters
+    ----------
+    profile_file : str
+        Path of the profile file ``.prof``.
+    design_name : str
+        Name of the design.
+    variation : str
+        Variation string.
+    setup_name : str
+        Name of the setup.
+
+    Returns
+    -------
+    simulation_time : str
+        Elapsed simulation time.
+    """
     elapsed_time = ""
     with open(profile_file) as file:
         for line in file:
@@ -74,6 +110,22 @@ def parse_profile_file(profile_file, design_name, variation, setup_name):
 
 
 def parse_variation_string(string):
+    """Get the number and unit of a variation string.
+
+    The number is truncated to 9 digits with scientific notation.
+
+    Parameters
+    ----------
+    string : str
+        Variation string which includes number and unit.
+
+    Returns
+    -------
+    number : str
+        String of number in format of 0.9e.
+    unit : str
+        Unit of the value.
+    """
     units = ""
     precision = -9
     origin_string = string
@@ -96,6 +148,24 @@ def parse_variation_string(string):
 
 
 def extract_data(desktop, project_dir, design_names):
+    """Extract designs' data for a project.
+
+    Parameters
+    ----------
+    desktop : object
+        ``pyaedt`` ``Desktop`` object.
+    project_dir : str
+        Path to the project.
+    design_names : list
+        List of design names.
+
+    Returns
+    -------
+    designs_dict : dict
+        Dictionary includes data of all listed designs.
+
+    """
+
     designs_dict = {}
 
     for design_name in design_names:
@@ -137,6 +207,27 @@ def extract_data(desktop, project_dir, design_names):
 
 
 def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
+    """Extract single design data.
+
+    Parameters
+    ----------
+    app : object
+        ``pyaedt`` Electronics Desktop application object.
+    design_name : str
+        Name of the design
+    setup_dict : dict
+        Dictionary of the setups. key: setup name, value: sweeps.
+    project_dir : str
+        Path to the project folder
+    design_dict : dict
+        Dictionary {design_name: {"mesh": {}, "simulation_time": {}, "report": {}}}.
+
+    Returns
+    -------
+    design_dict : dict
+        Dictionary with values of mesh elements, simulation_time and report data.
+
+    """
 
     for setup, sweep in setup_dict.items():
         variation_strings = app.available_variations.get_variation_strings(sweep)
@@ -162,6 +253,19 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
 
 
 def compose_variation_string(variation_string):
+    """Format the variation string.
+
+    Parameters
+    ----------
+    variation_string : str
+        Variation string from electronics desktop.
+
+    Returns
+    -------
+    variation_name : str
+        Formatted variation string
+
+    """
     strings = variation_string.split(" ")
     variation_name = ""
     for string in strings:
@@ -175,6 +279,24 @@ def compose_variation_string(variation_string):
 
 
 def extract_reports_data(app, design_name, project_dir, report_names):
+    """Get the report data form .rdat file.
+
+    Parameters
+    ----------
+    app : object
+        Any ``pyaedt`` Electronics Desktop application object.
+    design_name : str
+        Name of the design.
+    project_dir : str
+        Path to the project.
+    report_names : list
+        List of report names.
+
+    Returns
+    -------
+    report_dict : dictionary
+        Dictionary includes all data from report.
+    """
     report_dict = {}
 
     if not report_names:
@@ -193,6 +315,19 @@ def extract_reports_data(app, design_name, project_dir, report_names):
 
 
 def compose_curve_keys(data_dict):
+    """Format the curve keys' number to 0.9e.
+
+    Parameters
+    ----------
+    data_dict : dict
+        Report data dictionary.
+
+    Returns
+    -------
+    data_dict : dict
+        Report data dictionary with formatted keys.
+
+    """
     for plot_name in data_dict.keys():
         for trace_name in data_dict[plot_name].keys():
             curves_dict = data_dict[plot_name][trace_name]["curves"]
@@ -207,6 +342,19 @@ def compose_curve_keys(data_dict):
 
 
 def check_nan(data_dict):
+    """Remove the curve if ``nan`` is in ``x`` or ``y`` data.
+
+    Parameters
+    ----------
+    data_dict : dict
+        Report data dictionary.
+
+    Returns
+    -------
+    data_dict : dict
+        Checked report data dictionary.
+
+    """
 
     for plot_name in data_dict.keys():
         for trace_name in data_dict[plot_name].keys():
@@ -223,6 +371,21 @@ def check_nan(data_dict):
 
 
 def generate_unique_file_path(project_dir, extension):
+    """Generate a unique file path.
+
+    Parameters
+    ----------
+    project_dir : str
+        Path to the project dir.
+    extension : str
+        Specified file extension.
+
+    Returns
+    -------
+    file_path : str
+        Unique path for the file.
+
+    """
     file_name = generate_unique_name("")
     file_path = os.path.join(project_dir, file_name + extension)
 
