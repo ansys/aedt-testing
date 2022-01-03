@@ -57,7 +57,7 @@ def parse_mesh_stats(mesh_stats_file, design_name, variation, setup_name):
 
     Returns
     -------
-    :int
+    int
         number of mesh elements.
     """
 
