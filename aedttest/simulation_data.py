@@ -47,7 +47,7 @@ def parse_mesh_stats(mesh_stats_file, design_name, variation, setup_name):
     Parameters
     ----------
     mesh_stats_file : str
-        Path of the mesh stats .mstat file.
+        Path of the mesh stats ``.mstat`` file.
     design_name : str
         Name of the design.
     variation : str
@@ -110,8 +110,8 @@ def parse_profile_file(profile_file, design_name, variation, setup_name):
 
 
 def parse_variation_string(string):
-    """Get the number and unit of a variation string. 
-    
+    """Get the number and unit of a variation string.
+
     The number is truncated to 9 digits with scientific notation.
 
     Parameters
@@ -284,7 +284,7 @@ def extract_reports_data(app, design_name, project_dir, report_names):
     Parameters
     ----------
     app : object
-        Electronics desktop application.
+        Any ``pyaedt`` Electronics Desktop application object.
     design_name : str
         Name of the design.
     project_dir : str
