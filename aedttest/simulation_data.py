@@ -79,7 +79,7 @@ def parse_profile_file(profile_file, design_name, variation, setup_name):
     Parameters
     ----------
     profile_file : str
-        Path of the profile file .prof.
+        Path of the profile file ``.prof``.
     design_name : str
         Name of the design.
     variation : str
@@ -110,7 +110,9 @@ def parse_profile_file(profile_file, design_name, variation, setup_name):
 
 
 def parse_variation_string(string):
-    """Get the number and unit of a variation string. The number is truncated to 9 digits with scientific notation
+    """Get the number and unit of a variation string. 
+    
+    The number is truncated to 9 digits with scientific notation.
 
     Parameters
     ----------
@@ -340,7 +342,7 @@ def compose_curve_keys(data_dict):
 
 
 def check_nan(data_dict):
-    """Remove the curve if nan is in x or y data.
+    """Remove the curve if ``nan`` is in ``x`` or ``y`` data.
 
     Parameters
     ----------
