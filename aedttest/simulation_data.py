@@ -223,7 +223,7 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
     Returns
     -------
     design_dict : dict
-        Dictionary with values of mesh elementS, simulation_time and report data.
+        Dictionary with values of mesh elements, simulation_time and report data.
 
     """
 
