@@ -47,18 +47,18 @@ def parse_mesh_stats(mesh_stats_file, design_name, variation, setup_name):
     Parameters
     ----------
     mesh_stats_file : str
-        path of the mesh stats .mstat file.
+        Path of the mesh stats .mstat file.
     design_name : str
-        name of the design.
+        Name of the design.
     variation : str
-        variation string.
+        Variation string.
     setup_name : str
-        name of the setup.
+        Name of the setup.
 
     Returns
     -------
     int
-        number of mesh elements.
+        Number of mesh elements.
     """
 
     with open(mesh_stats_file) as fid:
@@ -79,18 +79,18 @@ def parse_profile_file(profile_file, design_name, variation, setup_name):
     Parameters
     ----------
     profile_file : str
-        path of the profile file .prof.
+        Path of the profile file .prof.
     design_name : str
-        name of the design.
+        Name of the design.
     variation : str
-        variation string.
+        Variation string.
     setup_name : str
-        name of the setup.
+        Name of the setup.
 
     Returns
     -------
     simulation_time : str
-        elapsed simulation time.
+        Elapsed simulation time.
     """
     elapsed_time = ""
     with open(profile_file) as file:
@@ -110,19 +110,19 @@ def parse_profile_file(profile_file, design_name, variation, setup_name):
 
 
 def parse_variation_string(string):
-    """Get the number and unit of a variation string.
+    """Get the number and unit of a variation string. The number is truncated to 9 digits with scientific notation
 
     Parameters
     ----------
     string : str
-        variation string which includes number and unit.
+        Variation string which includes number and unit.
 
     Returns
     -------
     number : str
-        string of number in format of 0.9e.
+        String of number in format of 0.9e.
     unit : str
-        unit of the number.
+        Unit of the number.
     """
     units = ""
     precision = -9
@@ -151,16 +151,16 @@ def extract_data(desktop, project_dir, design_names):
     Parameters
     ----------
     desktop : object
-        obj of electronics desktop.
+        Obj of electronics desktop.
     project_dir : str
-        path to the project.
+        Path to the project.
     design_names : list of strings
-        list of design names.
+        List of design names.
 
     Returns
     -------
     designs_dict : dict
-        dictionary includes data of all listed designs.
+        Dictionary includes data of all listed designs.
 
     """
 
@@ -210,20 +210,20 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
     Parameters
     ----------
     app : object
-        electronics desktop application.
+        Electronics desktop application.
     design_name : str
-        name of the design
+        Name of the design
     setup_dict : dict
-        dictionary of the setups. key: setup name, value: sweeps.
+        Dictionary of the setups. key: setup name, value: sweeps.
     project_dir : str
-        path to the project folder
+        Path to the project folder
     design_dict : dict
-        dictionary {design_name: {"mesh": {}, "simulation_time": {}, "report": {}}}.
+        Dictionary {design_name: {"mesh": {}, "simulation_time": {}, "report": {}}}.
 
     Returns
     -------
     design_dict : dict
-        dictionary with values of mesh, simulation_time and report data.
+        Dictionary with values of mesh elementS, simulation_time and report data.
 
     """
 
@@ -256,12 +256,12 @@ def compose_variation_string(variation_string):
     Parameters
     ----------
     variation_string : str
-        variation string from electronics desktop.
+        Variation string from electronics desktop.
 
     Returns
     -------
     variation_name : str
-        formatted variation string
+        Formatted variation string
 
     """
     strings = variation_string.split(" ")
@@ -282,18 +282,18 @@ def extract_reports_data(app, design_name, project_dir, report_names):
     Parameters
     ----------
     app : object
-        electronics desktop application.
+        Electronics desktop application.
     design_name : str
-        name of the design.
+        Name of the design.
     project_dir : str
-        path to the project.
+        Path to the project.
     report_names : list of strings.
-        list of report names.
+        List of report names.
 
     Returns
     -------
     report_dict : dictionary
-        dictionary includes all data from report.
+        Dictionary includes all data from report.
     """
     report_dict = {}
 
@@ -318,12 +318,12 @@ def compose_curve_keys(data_dict):
     Parameters
     ----------
     data_dict : dict
-        report data dictionary.
+        Report data dictionary.
 
     Returns
     -------
     data_dict : dict
-        report data dictionary with formatted keys.
+        Report data dictionary with formatted keys.
 
     """
     for plot_name in data_dict.keys():
@@ -345,12 +345,12 @@ def check_nan(data_dict):
     Parameters
     ----------
     data_dict : dict
-        report data dictionary.
+        Report data dictionary.
 
     Returns
     -------
     data_dict : dict
-        checked report data dictionary.
+        Checked report data dictionary.
 
     """
 
@@ -374,14 +374,14 @@ def generate_unique_file_path(project_dir, extension):
     Parameters
     ----------
     project_dir : str
-        path to the project dir.
+        Path to the project dir.
     extension : str
-        specified file extension.
+        Specified file extension.
 
     Returns
     -------
     file_path : str
-        unique path for the file.
+        Unique path for the file.
 
     """
     file_name = generate_unique_name("")
