@@ -124,7 +124,7 @@ def parse_variation_string(string):
     number : str
         String of number in format of 0.9e.
     unit : str
-        Unit of the number.
+        Unit of the value.
     """
     units = ""
     precision = -9
@@ -153,10 +153,10 @@ def extract_data(desktop, project_dir, design_names):
     Parameters
     ----------
     desktop : object
-        Obj of electronics desktop.
+        ``pyaedt`` ``Desktop`` object.
     project_dir : str
         Path to the project.
-    design_names : list of strings
+    design_names : list
         List of design names.
 
     Returns
@@ -212,7 +212,7 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
     Parameters
     ----------
     app : object
-        Electronics desktop application.
+        ``pyaedt`` Electronics Desktop application object.
     design_name : str
         Name of the design
     setup_dict : dict
@@ -289,7 +289,7 @@ def extract_reports_data(app, design_name, project_dir, report_names):
         Name of the design.
     project_dir : str
         Path to the project.
-    report_names : list of strings.
+    report_names : list
         List of report names.
 
     Returns
