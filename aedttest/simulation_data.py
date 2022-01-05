@@ -233,6 +233,7 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
         variation_strings = app.available_variations.get_variation_strings(sweep)
         for variation_string in variation_strings:
             variation_name = "nominal" if not variation_string else compose_variation_string(variation_string)
+            variation_string_formatted = parse_variation_string(variation_string)
 
             if variation_name not in design_dict[design_name]["mesh"]:
                 design_dict[design_name]["mesh"][variation_name] = {}
@@ -241,12 +242,12 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
 
             mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
             app.export_mesh_stats(setup, variation_string, mesh_stats_file)
-            mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_string, setup)
+            mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_string_formatted, setup)
             design_dict[design_name]["mesh"][variation_name][setup] = mesh_data
 
             profile_file = generate_unique_file_path(project_dir, ".prof")
             app.export_profile(setup, variation_string, profile_file)
-            simulation_time = parse_profile_file(profile_file, design_name, variation_string, setup)
+            simulation_time = parse_profile_file(profile_file, design_name, variation_string_formatted, setup)
             design_dict[design_name]["simulation_time"][variation_name][setup] = simulation_time
 
     return design_dict
