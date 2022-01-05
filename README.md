@@ -1,6 +1,9 @@
 ## Description
-Current project aims to provide an Automated Framework to test Ansys Electronics Desktop (AEDT). User can set up a 
-suite of tests to validate stability/regression of results between different versions of Electronics Desktop 
+This project aims to provide an Automated Framework to test Ansys 
+Electronics Desktop (AEDT). 
+Users can set up a 
+suite of tests to validate stability/regression of results between 
+different versions of Ansys Electronics Desktop.
 
 
 ## Table of Contents
@@ -18,17 +21,19 @@ suite of tests to validate stability/regression of results between different ver
     + [Generate only reference results](#generate-only-reference-results-1)
     + [Run comparison between versions](#run-comparison-between-versions-1)
 - [Limitations](#limitations)
+- [Contributors](#contributors)
 
 <!-- tocstop -->
 
 ## Features
-Current framework has the following features:
+The current framework provides the following features:
 * Compare results of XY plots, mesh statistics and simulation time.
 * Web page output format for visual comparison
-* JSON file output format for automated workflows
+* JSON file output format to support automated workflows and use of test results downstream.
 * Parallel distribution of test projects
-* Cross-platform: supports Windows and Linux
-* Compatibility with local machine and most known cluster schedulers: LSF, SGE, Slurm, PBS, Windows HPC
+* Cross-platform: support for Windows and Linux
+* Compatibility with local machine and most known cluster schedulers: 
+  LSF, SGE, Slurm, PBS, Windows HPC
 * Control of required resources for each project and optimized distribution of tasks
 * Automatic generation of reference results (AEDT versions 2019R1+)
 
@@ -85,3 +90,6 @@ Currently, project does not support or partially supports following features:
 * Automatic results creation is possible only for versions 2019R1+
 * LS-DSO is not supported
 * Linux clusters require SSH to be pre-configured for the user
+
+## Contributors
+If you would like to contribute to this project, please see [CONTRIBUTE](docs/CONTRIBUTE.md).
