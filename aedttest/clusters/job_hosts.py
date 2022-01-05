@@ -11,7 +11,7 @@ hostinfo = namedtuple("hostinfo", ("hostname", "cores"))
 def get_job_machines(custom_input=None):
     """Function to get all available hostnames and cores for the submitted job.
 
-    Schedulers use different  environment variables to share available hosts for the job:
+    Schedulers use different environment variables to share available hosts for the job:
 
     * UGE (SGE): PE_HOSTFILE
     * LSF: LSB_MCPU_HOSTS
@@ -22,8 +22,9 @@ def get_job_machines(custom_input=None):
     Parameters
     ----------
     custom_input : str, optional
-        If scheduler is not in supported list, then user needs to
-        provide string with available hosts and cores. Format: ``"host1:15,host2:10"``.
+        If the scheduler is not in the list of supported schedulers, then
+        the user needs to provide a string input with the available
+        hosts and cores. Format: ``"host1:15,host2:10"``.
 
     Returns
     -------
