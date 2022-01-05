@@ -441,8 +441,8 @@ class ElectronicsDesktopTester:
         """Check that report file exists.
 
         Check that project report exists in reference data.
-        Check that all keys present in reference date are in current run data.
-        Check that all keys present in current run data are in reference data.
+        Check that all keys present in the reference data are also in the current run data.
+        Check that all keys present in the current run data are also in the reference data.
 
         Parameters
         ----------
