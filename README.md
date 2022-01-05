@@ -1,8 +1,6 @@
 ## Description
-This project aims to provide an Automated Framework to test Ansys 
-Electronics Desktop (AEDT). 
-Users can set up a 
-suite of tests to validate stability/regression of results between 
+This project aims to provide an Automated Framework to test Ansys Electronics Desktop (AEDT). 
+Users can set up a suite of tests to validate stability/regression of results between 
 different versions of Ansys Electronics Desktop.
 
 
