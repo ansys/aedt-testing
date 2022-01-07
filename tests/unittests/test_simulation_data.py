@@ -21,28 +21,28 @@ class BaseTest:
 
 class TestParse(BaseTest):
     def test_parse_variation_string(self):
-        result = simulation_data.parse_variation_string("abc")
+        result = simulation_data.parse_value_with_unit("abc")
         assert result == ("abc", "")
 
-        result = simulation_data.parse_variation_string("")
+        result = simulation_data.parse_value_with_unit("")
         assert result == ("", "")
 
-        result = simulation_data.parse_variation_string("3m2")
+        result = simulation_data.parse_value_with_unit("3m2")
         assert result == ("3", "m2")
 
-        result = simulation_data.parse_variation_string("3.12345678901234mH")
+        result = simulation_data.parse_value_with_unit("3.12345678901234mH")
         assert result == ("3.123456789e+00", "mH")
 
-        result = simulation_data.parse_variation_string("3.1234567891e-9mH")
+        result = simulation_data.parse_value_with_unit("3.1234567891e-9mH")
         assert result == ("3.123456789e-09", "mH")
 
-        result = simulation_data.parse_variation_string("3.1234567891e-111mH")
+        result = simulation_data.parse_value_with_unit("3.1234567891e-111mH")
         assert result == ("3.123456789e-111", "mH")
 
-        result = simulation_data.parse_variation_string("3")
+        result = simulation_data.parse_value_with_unit("3")
         assert result == ("3", "")
 
-        result = simulation_data.parse_variation_string("3.0")
+        result = simulation_data.parse_value_with_unit("3.0")
         assert result == ("3.0", "")
 
     @mock.patch("aedttest.simulation_data.parse_profile_file", return_value="10:00:00")
