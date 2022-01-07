@@ -23,7 +23,7 @@ if not DEBUG:
     specified_version = None
 else:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--desktop-version", default="2021.1")
+    parser.add_argument("--desktop-version", default="2021.2")
     args = parser.parse_args()
     specified_version = args.desktop_version
 
