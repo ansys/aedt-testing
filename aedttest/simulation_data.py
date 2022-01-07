@@ -109,7 +109,7 @@ def parse_profile_file(profile_file, design_name, variation, setup_name):
         )
 
 
-def parse_number_with_uint(string):
+def parse_value_with_unit(string):
     """Get the number and unit of a variation string.
 
     The number is truncated to 9 digits with scientific notation.
@@ -241,12 +241,12 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
 
             mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
             app.export_mesh_stats(setup, variation_string, mesh_stats_file)
-            mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_string, setup)
+            mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_name, setup)
             design_dict[design_name]["mesh"][variation_name][setup] = mesh_data
 
             profile_file = generate_unique_file_path(project_dir, ".prof")
             app.export_profile(setup, variation_string, profile_file)
-            simulation_time = parse_profile_file(profile_file, design_name, variation_string, setup)
+            simulation_time = parse_profile_file(profile_file, design_name, variation_name, setup)
             design_dict[design_name]["simulation_time"][variation_name][setup] = simulation_time
 
     return design_dict
@@ -272,7 +272,7 @@ def compose_variation_string(variation_string):
         var, val = string.split("=")
         val = val.replace("'", "")
         val = val.replace('"', "")
-        val, unit = parse_number_with_uint(val)
+        val, unit = parse_value_with_unit(val)
         variation_name += "{}={}{} ".format(var, val, unit)
     variation_name = variation_name.strip()
     return variation_name
