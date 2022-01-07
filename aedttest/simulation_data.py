@@ -109,7 +109,7 @@ def parse_profile_file(profile_file, design_name, variation, setup_name):
         )
 
 
-def parse_variation_string(string):
+def parse_number_with_uint(string):
     """Get the number and unit of a variation string.
 
     The number is truncated to 9 digits with scientific notation.
@@ -272,7 +272,7 @@ def compose_variation_string(variation_string):
         var, val = string.split("=")
         val = val.replace("'", "")
         val = val.replace('"', "")
-        val, unit = parse_variation_string(val)
+        val, unit = parse_number_with_uint(val)
         variation_name += "{}={}{} ".format(var, val, unit)
     variation_name = variation_name.strip()
     return variation_name
