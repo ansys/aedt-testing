@@ -364,6 +364,7 @@ def check_nan(data_dict):
                 if sys.version_info.major == 3:
                     number_types = (float, int)
                 else:
+                    # need to handle "long" data type in python 2
                     number_types = (float, int, long)  # noqa: F821
 
                 if any(not isinstance(x, number_types) for x in curves_dict[curve_name]["x_data"]) or any(
