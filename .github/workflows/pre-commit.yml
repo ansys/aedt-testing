@@ -16,5 +16,5 @@ jobs:
         python-version: 3.7
     - name: Upgrade setuptools
       run: |
-        python3.7 -m pip install -U setuptools
+        python -m pip install -U setuptools
     - uses: pre-commit/action@v2.0.3
