@@ -11,9 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      with:
+          python-version: 2.7
     - uses: actions/setup-python@v2
-    # Install venv to avoid issues https://github.com/asottile/reorder_python_imports/issues/210
-    - name: Upgrade setuptools
-      run: |
-        python3.10 -m pip install -U setuptools
     - uses: pre-commit/action@v2.0.3
