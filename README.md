@@ -43,13 +43,24 @@ pip install .
 
 ## Usage
 Electronics Desktop testing framework automatically identifies environment where it was launched. In this chapter we 
-will show basic examples of starting tests on local machine or on clusters with scheduler. In all scenarios we use CLI.
+will show basic examples of starting tests on local machine or on clusters with scheduler. In all scenarios we use 
+Command Line Interface (CLI).
 
 ### Configuration file
 Framework requires configuration file as input. Please read [configuration.md](docs/configuration.md) to understand how 
 to create a file.
 
-### Local machine
+### CLI Commands
+To expose the available commands use the following command line
+
+#### Open CLI commands Help
+```bash
+aedt_test_runner -h
+```
+
+### Examples
+
+#### Local machine
 To start test on local machine use following command line
 
 #### Generate only reference results
@@ -62,7 +73,7 @@ aedt_test_runner --config-file=config.json --aedt-version=193 --only-reference
 aedt_test_runner --config-file=config.json --aedt-version=222 --reference-file=input/reference_results.json
 ```
 
-### Slurm
+#### Slurm
 #### Generate only reference results
 ```bash
 sbatch \
