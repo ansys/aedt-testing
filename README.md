@@ -12,12 +12,15 @@ different versions of Ansys Electronics Desktop.
 - [Installation](#installation)
 - [Usage](#usage)
   * [Configuration file](#configuration-file)
-  * [Local machine](#local-machine)
-    + [Generate only reference results](#generate-only-reference-results)
-    + [Run comparison between versions](#run-comparison-between-versions)
-  * [Slurm](#slurm)
-    + [Generate only reference results](#generate-only-reference-results-1)
-    + [Run comparison between versions](#run-comparison-between-versions-1)
+  * [CLI Commands](#cli-commands)
+    + [Open CLI commands Help](#open-cli-commands-help)
+  * [Examples](#examples)
+    + [Local machine](#local-machine)
+      - [Generate only reference results](#generate-only-reference-results)
+      - [Run comparison between versions](#run-comparison-between-versions)
+    + [Slurm](#slurm)
+      - [Generate only reference results](#generate-only-reference-results-1)
+      - [Run comparison between versions](#run-comparison-between-versions-1)
 - [Limitations](#limitations)
 - [Contributors](#contributors)
 
@@ -43,27 +46,38 @@ pip install .
 
 ## Usage
 Electronics Desktop testing framework automatically identifies environment where it was launched. In this chapter we 
-will show basic examples of starting tests on local machine or on clusters with scheduler. In all scenarios we use CLI.
+will show basic examples of starting tests on local machine or on clusters with scheduler. In all scenarios we use 
+Command Line Interface (CLI).
 
 ### Configuration file
 Framework requires configuration file as input. Please read [configuration.md](docs/configuration.md) to understand how 
 to create a file.
 
-### Local machine
+### CLI Commands
+To expose the available commands use the following command line
+
+#### Open CLI commands Help
+```bash
+aedt_test_runner -h
+```
+
+### Examples
+
+#### Local machine
 To start test on local machine use following command line
 
-#### Generate only reference results
+##### Generate only reference results
 ```bash
 aedt_test_runner --config-file=config.json --aedt-version=193 --only-reference
 ```
 
-#### Run comparison between versions
+##### Run comparison between versions
 ```bash
 aedt_test_runner --config-file=config.json --aedt-version=222 --reference-file=input/reference_results.json
 ```
 
-### Slurm
-#### Generate only reference results
+#### Slurm
+##### Generate only reference results
 ```bash
 sbatch \
   --job-name aedttest \
@@ -73,7 +87,7 @@ sbatch \
   --wrap "aedt_test_runner --config-file=config.json --aedt-version=193 --only-reference"
 ```
 
-#### Run comparison between versions
+##### Run comparison between versions
 ```bash
 sbatch \
   --job-name aedttest \
