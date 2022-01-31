@@ -31,7 +31,7 @@ from aedttest.clusters.job_hosts import get_job_machines
 from aedttest.logger import logger
 from aedttest.logger import set_logger
 
-from pyaedt import __file__ as _py_aedt_path  # noreorder
+from pyaedt import __file__ as _py_aedt_path  # isort: skip
 
 
 MODULE_DIR = Path(__file__).resolve().parent

@@ -11,14 +11,21 @@ repos:
         language_version: python3
         args: ['-l', '120']
   - repo: https://github.com/asottile/blacken-docs
-    rev: v1.11.0
+    rev: v1.12.1
     hooks:
       - id: blacken-docs
         additional_dependencies: [black]
-  -   repo: https://github.com/asottile/reorder_python_imports
-      rev: v2.6.0
-      hooks:
-      -   id: reorder-python-imports
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        name: isort (python)
+        args: ['-sl', '--profile', 'black']
+      - id: isort
+        name: isort (pyi)
+        types: [ pyi ]
+        args: ['-sl', '--profile', 'black']
+
   - repo: https://github.com/pycqa/flake8
     rev: 3.9.2
     hooks:
