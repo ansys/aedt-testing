@@ -33,7 +33,6 @@ from pyaedt.desktop import Desktop  # noqa: E402
 from pyaedt.generic.general_methods import generate_unique_name  # noqa: E402
 from pyaedt.generic.report_file_parser import parse_rdat_file  # noqa: E402
 
-
 PROJECT_DICT = {"error_exception": [], "designs": {}}
 
 

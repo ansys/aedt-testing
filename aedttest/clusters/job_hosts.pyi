@@ -1,4 +1,6 @@
-from typing import Any, NamedTuple, Tuple
+from typing import Any
+from typing import NamedTuple
+from typing import Tuple
 
 class hostinfo(NamedTuple):
     hostname: Any

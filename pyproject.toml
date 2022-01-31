@@ -41,3 +41,7 @@ Home = "https://github.com/ansys/aedt-testing"
 # CLI script command
 [project.scripts]
 aedt_test_runner = "aedttest.aedt_test_runner:main"
+
+[tool.isort]
+profile = "black"
+

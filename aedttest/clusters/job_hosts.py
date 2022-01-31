@@ -4,7 +4,6 @@ import re
 from collections import namedtuple
 from socket import gethostname
 
-
 hostinfo = namedtuple("hostinfo", ("hostname", "cores"))
 
 
