@@ -33,7 +33,6 @@ from aedttest.logger import set_logger
 
 from pyaedt import __file__ as _py_aedt_path  # isort: skip
 
-
 MODULE_DIR = Path(__file__).resolve().parent
 CWD_DIR = Path.cwd()
 
@@ -950,7 +949,12 @@ def execute_aedt(
             ]
 
     if project_path is not None:
-        command.append(project_path)
+        log_path = os.path.splitext(project_path)[0] + ".log"
+        command += [
+            "-LogFile",
+            log_path,
+            project_path,
+        ]
 
     logger.debug(f"Execute {subprocess.list2cmdline(command)}")
     # filter variable to avoid AEDT thinking it was submitted by scheduler

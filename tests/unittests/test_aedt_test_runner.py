@@ -206,6 +206,8 @@ def test_execute_aedt(mock_aedt_path, mock_call):
         "my/script/path.py",
         "-ScriptArgs",
         '"arg1"',
+        "-LogFile",
+        "custom/pr.log",
         "custom/pr.aedt",
     ]
 
