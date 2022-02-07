@@ -201,13 +201,13 @@ def test_execute_aedt(mock_aedt_path, mock_call):
         "maxlevels=2",
         "numlevel1=4",
         "-ng",
-        "-LogFile",
-        "custom/pr.log",
         "-features=SF6694_NON_GRAPHICAL_COMMAND_EXECUTION",
         "-RunScriptAndExit",
         "my/script/path.py",
         "-ScriptArgs",
         '"arg1"',
+        "-LogFile",
+        "custom/pr.log",
         "custom/pr.aedt",
     ]
 
