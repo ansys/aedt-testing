@@ -914,7 +914,9 @@ def execute_aedt(
 
     """
     aedt_path = get_aedt_executable_path(version)
-    log_path = os.path.splitext(project_path)[0] + ".log"
+    log_path = ""
+    if project_path is not None:
+        log_path = os.path.splitext(project_path)[0] + ".log"
 
     command = [
         aedt_path,
