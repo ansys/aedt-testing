@@ -4,5 +4,6 @@ Current module allows to setup and run automated tests and validate results acro
 Ansys Electronics Desktop products, eg HFSS, Maxwell, Icepak, Q3D, etc
 """
 
-__version__ = "0.0.1.dev1"
+with open("version.txt") as file:
+    __version__ = file.readline().strip()
 __authors__ = "Maksim Beliaev, Bo Yang"
