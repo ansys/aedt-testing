@@ -1,5 +1,5 @@
-# This workflow will be triggered when new TAG is pushed. It will create version.txt file with tag name
-# Then workflow will publish a package to PyPi with version from version.txt
+# This workflow will be triggered when new TAG is pushed.
+# It will update pyproject.toml file with tag name, build and publish a package to PyPi
 
 name: Upload Python Package
 
@@ -25,17 +25,7 @@ jobs:
 
     - name: Set version
       run: |
-          cd aedttest
-          rm -f version.txt
-          echo ${{ github.ref_name }} > version.txt
-
-    - name: Test version.txt file
-      run: |
-          cd aedttest
-          if [ ! -f version.txt ]; then
-              echo "version.txt does not exist"
-              exit 1
-          fi
+          sed -i -r "s/version = (.*)/version = \"${{ github.ref_name }}\"/g" pyproject.toml
 
     - name: Build package
       run: python -m flit build
