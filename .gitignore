@@ -5,7 +5,6 @@
 /input/
 results/
 dummy.py
-version.txt
 
 ### Django ###
 *.log
