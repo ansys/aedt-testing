@@ -41,7 +41,7 @@ The current framework provides the following features:
 ## Installation
 To install the package use:
 ```bash
-pip install .
+pip install aedttest
 ```
 
 ## Usage
