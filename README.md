@@ -1,3 +1,7 @@
+[![](https://img.shields.io/pypi/v/aedttest.svg)](https://pypi.python.org/pypi/aedttest/)
+[![](https://img.shields.io/pypi/pyversions/aedttest.svg)](https://pypi.python.org/pypi/aedttest/)
+
+    
 ## Description
 This project aims to provide an Automated Framework to test Ansys Electronics Desktop (AEDT). 
 Users can set up a suite of tests to validate stability/regression of results between 
