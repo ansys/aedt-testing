@@ -11,6 +11,7 @@ if version_file.exists():
     with open(version_file) as file:
         __version__ = file.readline().strip()
 else:
-    __version__ = "0.0.1.alpha0"
+    pass
+    # __version__ = "0.0.1.alpha0"
 
 __authors__ = "Maksim Beliaev, Bo Yang"
