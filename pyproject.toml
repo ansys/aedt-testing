@@ -8,14 +8,29 @@ build-backend = "flit_core.buildapi"
 # description of current module
 [project]
 name = "aedttest"
+version = "0.0.1.dev7"
+
+description = """
+Ansys Electronics Desktop Testing Framework.
+Current module allows to setup and run automated tests and validate results across multiple versions of
+Ansys Electronics Desktop products, eg HFSS, Maxwell, Icepak, Q3D, etc
+"""
+
 authors = [
     {name = "Maksim Beliaev", email = "maksim.beliaev@ansys.com"},
     {name = "Bo Yang", email = "bo.yang@ansys.com"},
 ]
 readme = "README.md"
 requires-python = ">=3.7"
-classifiers = ["License :: OSI Approved :: MIT License"]
-dynamic = ["version", "description"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
 
 dependencies = [
     "pyaedt==0.4.16",
