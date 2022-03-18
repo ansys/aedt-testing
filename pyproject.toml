@@ -8,7 +8,7 @@ build-backend = "flit_core.buildapi"
 # description of current module
 [project]
 name = "aedttest"
-version = "0.0.1.dev7"
+version = "0.0.1.dev0"
 
 description = """
 Ansys Electronics Desktop Testing Framework.
