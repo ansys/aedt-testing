@@ -1,0 +1,48 @@
+{
+    "just_winding": {
+        "distribution": {
+            "cores": 28,
+            "distribution_types": [
+                "Variations",
+                "Frequencies"
+            ],
+            "parametric_tasks": 1,
+            "multilevel_distribution_tasks": 0,
+            "single_node": true
+        },
+        "path": "input\\just_winding.aedt"
+    },
+    "expression_excitation": {
+        "distribution": {
+            "cores": 20,
+            "distribution_types": [
+                "default"
+            ]
+        },
+        "path": "input\\expression_excitation.aedt"
+    },
+    "01_voltage_control": {
+        "distribution": {
+            "cores": 10,
+            "distribution_types": [
+                "default"
+            ]
+        },
+        "path": "input\\01_voltage_control.aedt",
+        "dependencies": ["input\\nested\\ctrl_prog"]
+    },
+    "19": {
+        "distribution": {
+            "cores": 12
+        },
+		"parametric_tasks": 6,
+        "path": "input\\19.aedt"
+    },
+    "2019R1": {
+        "distribution": {
+            "cores": 10
+        },
+		"parametric_tasks": 2,
+        "path": "input\\2019R1.aedt"
+    }
+}

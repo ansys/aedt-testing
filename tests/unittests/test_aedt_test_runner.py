@@ -9,6 +9,8 @@ import pytest
 
 from aedttest import aedt_test_runner
 
+TESTS_DIR = Path(__file__).resolve().parent.parent
+
 
 def test_allocate_task_single():
     job_machines = aedt_test_runner.get_job_machines("host1:15,host2:10")
@@ -84,7 +86,7 @@ def test_allocator():
         version="212",
         max_cores=9999,
         max_tasks=9999,
-        config_file=r"C:\git\aedt-testing\tests\input\allocator_config.json",
+        config_file=TESTS_DIR / "input" / "allocator_config.json",
         out_dir=None,
         save_projects=None,
         only_reference=True,
@@ -95,6 +97,9 @@ def test_allocator():
     allocated = [(project_name, allocated_machines) for project_name, allocated_machines in aedt_tester.allocator()]
     assert ("just_winding", {"host1": {"cores": 28, "tasks": 1}}) == allocated.pop(0)
     assert ("expression_excitation", {"host2": {"cores": 20, "tasks": 1}}) == allocated.pop(0)
+    assert ("19", {"host3": {"cores": 12, "tasks": 1}}) == allocated.pop(0)
+    assert ("01_voltage_control", {"host3": {"cores": 10, "tasks": 1}}) == allocated.pop(0)
+    assert ("2019R1", {"host2": {"cores": 8, "tasks": 1}, "host3": {"cores": 2, "tasks": 1}}) == allocated.pop(0)
 
 
 class TestCopyPathTo:
