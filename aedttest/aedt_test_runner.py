@@ -1012,7 +1012,19 @@ def get_aedt_executable_path(version: str) -> str:
     return aedt_path
 
 
-def get_aedt_install_path(version):
+def get_aedt_install_path(version: str) -> str:
+    """Extract installation path of AEDT from environment variable.
+
+    Parameters
+    ----------
+    version : str
+        Version of Electronics Desktop.
+
+    Returns
+    -------
+    path : str
+        Path to Electronics Desktop root.
+    """
     aedt_env = f"ANSYSEM_ROOT{version}"
     aedt_path = os.environ.get(aedt_env, None)
     if not aedt_path:
