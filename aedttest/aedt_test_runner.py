@@ -932,7 +932,6 @@ def execute_aedt(
             project_path,
         ]
 
-    logger.debug(f"Execute {subprocess.list2cmdline(command)}")
     # filter variable to avoid AEDT thinking it was submitted by scheduler
     env = {}
     filtered = []
@@ -952,10 +951,12 @@ def execute_aedt(
     logger.debug(f"Variables filtered: {','.join(filtered)}")
     logger.debug(f"Variables applied: {env}")
 
-    if platform.system() == "Linux" and len(machines) > 1:
+    if platform.system() == "Linux":
+        logger.debug("Execute via Intel MPI")
         mpi_path = get_intel_mpi_path(version)
         command = [mpi_path, "-n", "1", "-hosts", list(machines.keys())[0]] + command
 
+    logger.debug(f"Execute {subprocess.list2cmdline(command)}")
     output = subprocess.check_output(command, env=env)
     logger.debug(output.decode())
 
