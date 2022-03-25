@@ -676,6 +676,10 @@ def allocate_task(
     to_fill = distribution_config["cores"]
 
     for machine, cores in machines_dict.items():
+        if cores < 1:
+            # skip machine if no cores available
+            continue
+
         if tasks == 1:
             allocate_cores = cores if to_fill - cores > 0 else to_fill
             allocate_tasks = 1
