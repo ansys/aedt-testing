@@ -79,6 +79,24 @@ def test_allocate_task_within_node():
     assert allocated_machines == {"host1": {"cores": 2, "tasks": 1}}
 
 
+def test_allocator():
+    aedt_tester = aedt_test_runner.ElectronicsDesktopTester(
+        version="212",
+        max_cores=9999,
+        max_tasks=9999,
+        config_file=r"C:\git\aedt-testing\tests\input\allocator_config.json",
+        out_dir=None,
+        save_projects=None,
+        only_reference=True,
+        reference_file="",
+    )
+    job_machines = aedt_test_runner.get_job_machines("host1:28,host2:28,host3:28")
+    aedt_tester.machines_dict = {machine.hostname: machine.cores for machine in job_machines}
+    allocated = [(project_name, allocated_machines) for project_name, allocated_machines in aedt_tester.allocator()]
+    assert ("just_winding", {"host1": {"cores": 28, "tasks": 1}}) == allocated.pop(0)
+    assert ("expression_excitation", {"host2": {"cores": 20, "tasks": 1}}) == allocated.pop(0)
+
+
 class TestCopyPathTo:
     def test_copy_path_file_absolute(self):
         with TemporaryDirectory(prefix="src_") as src_tmp_dir:
