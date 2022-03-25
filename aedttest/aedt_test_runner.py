@@ -965,7 +965,20 @@ def execute_aedt(
     logger.debug(output.decode())
 
 
-def get_intel_mpi_path(version):
+def get_intel_mpi_path(version: str) -> str:
+    """Get path to Intel MPI on Linux machines.
+
+    Parameters
+    ----------
+    version : str
+        Version of Electronics Desktop.
+
+    Returns
+    -------
+    path : str
+        Path to Electronics Desktop Intel MPI `mpiexec`.
+
+    """
     aedt_path = get_aedt_install_path(version)
     mpi_path = os.path.join(aedt_path, "common", "fluent_mpi", "multiport", "mpi", "lnamd64", "intel", "bin", "mpiexec")
     return mpi_path
