@@ -195,15 +195,17 @@ def test_get_aedt_executable_path():
 
 
 @mock.patch("aedttest.aedt_test_runner.subprocess.check_output", wraps=lambda *a, **kw: b"output")
+@mock.patch("aedttest.aedt_test_runner.platform.system", return_value="Linux")
 @mock.patch("aedttest.aedt_test_runner.get_aedt_executable_path", return_value="aedt/install/path")
-def test_execute_aedt(mock_aedt_path, mock_call):
+@mock.patch("aedttest.aedt_test_runner.get_intel_mpi_path", return_value="aedt/install/path/mpiexec")
+def test_execute_aedt(mock_mpi_path, mock_aedt_path, mock_platform, mock_call):
 
     aedt_test_runner.execute_aedt(
         version="212",
+        machines={"host1": {"cores": 10, "tasks": 2}, "host2": {"cores": 15, "tasks": 3}},
         script="my/script/path.py",
         script_args="arg1",
         project_path="custom/pr.aedt",
-        machines={"host1": {"cores": 10, "tasks": 2}, "host2": {"cores": 15, "tasks": 3}},
         distribution_config={
             "cores": 2,
             "distribution_types": ["Variations", "Frequencies"],
@@ -216,6 +218,11 @@ def test_execute_aedt(mock_aedt_path, mock_call):
     assert mock_aedt_path.call_args[0][0] == "212"
 
     assert mock_call.call_args[0][0] == [
+        "aedt/install/path/mpiexec",
+        "-n",
+        "1",
+        "-hosts",
+        "host1",
         "aedt/install/path",
         "-machinelist",
         "list=host1:2:10:90%,host2:3:15:90%",
