@@ -177,10 +177,10 @@ def test_execute_aedt(mock_aedt_path, mock_call):
 
     aedt_test_runner.execute_aedt(
         version="212",
+        machines={"host1": {"cores": 10, "tasks": 2}, "host2": {"cores": 15, "tasks": 3}},
         script="my/script/path.py",
         script_args="arg1",
         project_path="custom/pr.aedt",
-        machines={"host1": {"cores": 10, "tasks": 2}, "host2": {"cores": 15, "tasks": 3}},
         distribution_config={
             "cores": 2,
             "distribution_types": ["Variations", "Frequencies"],

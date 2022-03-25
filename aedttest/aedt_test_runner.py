@@ -74,23 +74,7 @@ def main() -> None:
             if cli_args.only_validate:
                 return
 
-        if len(aedt_tester.machines_dict) > 1 and not cli_args.rsm_is_started:
-            if not cli_args.rsm_path or not os.path.isfile(cli_args.rsm_path):
-                raise ValueError("Path to RSM service is not provided or wrong")
-            if platform.system() == "Windows":
-                raise ValueError("You must start RSM service on Windows manually and enable flag --rsm-is-started")
-
-            for machine in aedt_tester.machines_dict:
-                out = subprocess.check_output(["ssh", machine, f"{cli_args.rsm_path} start"])
-                logger.debug(f"{machine}: {out.decode().strip()}")
-
-        try:
-            aedt_tester.run()
-        finally:
-            if len(aedt_tester.machines_dict) > 1 and not cli_args.rsm_is_started:
-                for machine in aedt_tester.machines_dict:
-                    out = subprocess.check_output(["ssh", machine, f"{cli_args.rsm_path} stop"])
-                    logger.debug(f"{machine}: {out.decode().strip()}")
+        aedt_tester.run()
 
     except Exception as exc:
         logger.exception(str(exc))
@@ -359,10 +343,10 @@ class ElectronicsDesktopTester:
 
         execute_aedt(
             self.version,
+            allocated_machines,
             self.script,
             self.script_args,
             project_path,
-            allocated_machines,
             distribution_config=project_config["distribution"],
         )
         logger.debug(f"Project {project_name} analyses finished. Prepare report.")
@@ -888,10 +872,10 @@ def unique_id() -> str:
 
 def execute_aedt(
     version: str,
+    machines: Dict[str, Any],
     script: Optional[str] = None,
     script_args: Optional[str] = None,
     project_path: Optional[str] = None,
-    machines: Optional[Dict[str, Any]] = None,
     distribution_config: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Execute single instance of Electronics Desktop.
@@ -900,30 +884,22 @@ def execute_aedt(
     ----------
     version : str
         Version to run.
+    machines : dict
+        Machine specification for current job.
     script : str, optional
         Path to the script.
     script_args : str, optional
         Arguments to the script.
     project_path : str, optional
         Path to the project.
-    machines : dict, optional
-        Machine specification for current job.
     distribution_config : dict, optional
         Distribution configuration for the job.
 
     """
     aedt_path = get_aedt_executable_path(version)
 
-    command = [
-        aedt_path,
-    ]
-
-    if machines is not None:
-        command.append("-machinelist")
-        host_list = "list=" + ",".join(
-            [f"{name}:{conf['tasks']}:{conf['cores']}:90%" for name, conf in machines.items()]
-        )
-        command.append(host_list)
+    aedt_format_machines = ",".join([f"{name}:{conf['tasks']}:{conf['cores']}:90%" for name, conf in machines.items()])
+    command = [aedt_path, "-machinelist", "list=" + aedt_format_machines]
 
     if distribution_config and distribution_config.get("distribution_types", None):
         command.append("-distributed")
@@ -976,8 +952,18 @@ def execute_aedt(
     logger.debug(f"Variables filtered: {','.join(filtered)}")
     logger.debug(f"Variables applied: {env}")
 
+    if platform.system() == "Linux" and len(machines) > 1:
+        mpi_path = get_intel_mpi_path(version)
+        command = [mpi_path, "-n", "1", "-hosts", list(machines.keys())[0]] + command
+
     output = subprocess.check_output(command, env=env)
     logger.debug(output.decode())
+
+
+def get_intel_mpi_path(version):
+    aedt_path = get_aedt_install_path(version)
+    mpi_path = os.path.join(aedt_path, "common", "fluent_mpi", "multiport", "mpi", "lnamd64", "intel", "bin", "mpiexec")
+    return mpi_path
 
 
 def get_aedt_executable_path(version: str) -> str:
@@ -994,10 +980,7 @@ def get_aedt_executable_path(version: str) -> str:
         Path to Electronics Desktop executable.
 
     """
-    aedt_env = f"ANSYSEM_ROOT{version}"
-    aedt_path = os.environ.get(aedt_env, None)
-    if not aedt_path:
-        raise ValueError(f"Environment variable {aedt_env} is not set.")
+    aedt_path = get_aedt_install_path(version)
 
     if platform.system() == "Windows":
         executable = "ansysedt.exe"
@@ -1008,6 +991,14 @@ def get_aedt_executable_path(version: str) -> str:
 
     aedt_path = os.path.join(aedt_path, executable)
 
+    return aedt_path
+
+
+def get_aedt_install_path(version):
+    aedt_env = f"ANSYSEM_ROOT{version}"
+    aedt_path = os.environ.get(aedt_env, None)
+    if not aedt_path:
+        raise ValueError(f"Environment variable {aedt_env} is not set.")
     return aedt_path
 
 
@@ -1063,17 +1054,6 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--rsm-is-started",
-        action="store_true",
-        help="When job uses multiple nodes and user started RSM service on each node manually",
-    )
-
-    parser.add_argument(
-        "--rsm-path",
-        help="When job uses multiple nodes tool requires RSM, RSM will be auto-started from provided path",
-    )
-
-    parser.add_argument(
         "--out-dir", "-o", help="Output directory for reports and project files (if --save-sim-data set)"
     )
     parser.add_argument(
@@ -1090,9 +1070,6 @@ def parse_arguments() -> argparse.Namespace:
 
     if not cli_args.only_reference and not cli_args.reference_file:
         raise ValueError("Either set --only-reference flag or provide path via --reference-file")
-
-    if cli_args.rsm_path and cli_args.rsm_is_started:
-        raise ValueError("--rsm-is-started and --rsm-path are mutually exclusive")
 
     if cli_args.suppress_validation and cli_args.only_validate:
         raise ValueError("--only-validate and --suppress-validation are mutually exclusive")
