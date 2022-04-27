@@ -1,24 +1,31 @@
 import argparse
 import decimal
 import json
+import logging
 import os
 import re
 import shlex
 import sys
 
 DEBUG = False if "oDesktop" in dir() else True
+MODULE_DIR_PARENT = os.path.dirname(os.path.dirname(__file__))
+sys.path.append(MODULE_DIR_PARENT)
+
+from aedttest.logger import logger  # noqa: E402
+from aedttest.logger import set_logger  # noqa: E402
 
 
 def parse_args():
-    arg_string = ScriptArgument  # noqa: F821
+    arg_string = ScriptArgument.replace('"', "")  # noqa: F821
     parser = argparse.ArgumentParser()
     parser.add_argument("--pyaedt-path")
+    parser.add_argument("--logfile-path")
     args = parser.parse_args(shlex.split(arg_string))
-    return args.pyaedt_path
+    return args.pyaedt_path, args.logfile_path
 
 
 if not DEBUG:
-    pyaedt_path = parse_args()
+    pyaedt_path, logfile_path = parse_args()
     sys.path.append(pyaedt_path)
     specified_version = None
 else:
@@ -26,8 +33,10 @@ else:
     parser.add_argument("--desktop-version", default="2021.2")
     args = parser.parse_args()
     specified_version = args.desktop_version
+    logfile_path = os.path.join(MODULE_DIR_PARENT, "aedt_test_framework.log")
 
 
+import pyaedt  # noqa: E402
 from pyaedt import get_pyaedt_app  # noqa: E402
 from pyaedt.desktop import Desktop  # noqa: E402
 from pyaedt.generic.general_methods import generate_unique_name  # noqa: E402
@@ -146,7 +155,7 @@ def parse_value_with_unit(string):
         return origin_string, ""
 
 
-def extract_data(desktop, project_dir, design_names):
+def extract_data(desktop, project_dir, project_name, design_names):
     """Extract designs' data for a project.
 
     Parameters
@@ -166,6 +175,7 @@ def extract_data(desktop, project_dir, design_names):
     """
 
     designs_dict = {}
+    oDesktop = desktop._main.oDesktop
 
     for design_name in design_names:
         design_dict = {design_name: {"mesh": {}, "simulation_time": {}, "report": {}}}
@@ -182,8 +192,16 @@ def extract_data(desktop, project_dir, design_names):
         analyze_success = desktop.analyze_all(design=design_name)
 
         if not analyze_success:
-            PROJECT_DICT["error_exception"].append("{} analyze_all failed".format(design_name))
+            logger.error("design {} analyze_all failed".format(design_name))
+
+            error_messages = oDesktop.GetMessages(project_name, design_name, 1)
+            message = str(error_messages).replace("[error]", "")
+            logger.error(message)
+            PROJECT_DICT["error_exception"].append(message)
+
             continue
+        else:
+            logger.info("design {} analyze_all success".format(design_name))
 
         design_dict = extract_design_data(
             app=app,
@@ -401,15 +419,18 @@ def generate_unique_file_path(project_dir, extension):
 
 
 def main():
+    set_logger(logging_file=logfile_path, level=logging.INFO, pyaedt_module=pyaedt)
 
     desktop = Desktop(specified_version=specified_version, non_graphical=False, new_desktop_session=False)
 
     project_name = desktop.project_list().pop()
     project_dir = desktop.project_path(project_name=project_name)
+    logger.info("running {}/{}".format(project_dir, project_name))
+
     design_names = desktop.design_list()
 
     if design_names:
-        designs_dict = extract_data(desktop, project_dir, design_names)
+        designs_dict = extract_data(desktop, project_dir, project_name, design_names)
         PROJECT_DICT["designs"].update(designs_dict)
     else:
         PROJECT_DICT["error_exception"].append("Project has no design")
@@ -420,4 +441,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        logger.exception(str(exc))
+        raise
