@@ -420,8 +420,6 @@ def main():
 
     desktop = Desktop(specified_version=specified_version, non_graphical=False, new_desktop_session=False)
 
-    # todo oDesktop = desktop._main.oDesktop oDesktop.GetMessages("","only_winding1",1)
-
     logger.info("Start")
 
     project_name = desktop.project_list().pop()
