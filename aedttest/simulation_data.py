@@ -1,24 +1,31 @@
 import argparse
 import decimal
 import json
+import logging
 import os
 import re
 import shlex
 import sys
 
 DEBUG = False if "oDesktop" in dir() else True
+MODULE_DIR_PARENT = os.path.dirname(os.path.dirname(__file__))
+sys.path.append(MODULE_DIR_PARENT)
+
+from aedttest.logger import logger  # noqa: E402
+from aedttest.logger import set_logger  # noqa: E402
 
 
 def parse_args():
     arg_string = ScriptArgument  # noqa: F821
     parser = argparse.ArgumentParser()
     parser.add_argument("--pyaedt-path")
+    parser.add_argument("--logfile-path")
     args = parser.parse_args(shlex.split(arg_string))
-    return args.pyaedt_path
+    return args.pyaedt_path, args.logfile_path
 
 
 if not DEBUG:
-    pyaedt_path = parse_args()
+    pyaedt_path, logfile_path = parse_args()
     sys.path.append(pyaedt_path)
     specified_version = None
 else:
@@ -26,8 +33,10 @@ else:
     parser.add_argument("--desktop-version", default="2021.2")
     args = parser.parse_args()
     specified_version = args.desktop_version
+    logfile_path = os.path.join(MODULE_DIR_PARENT, "aedt_test_framework.log")
 
 
+import pyaedt  # noqa: E402
 from pyaedt import get_pyaedt_app  # noqa: E402
 from pyaedt.desktop import Desktop  # noqa: E402
 from pyaedt.generic.general_methods import generate_unique_name  # noqa: E402
@@ -401,9 +410,13 @@ def generate_unique_file_path(project_dir, extension):
 
 
 def main():
+    set_logger(logging_file=logfile_path, level=logging.INFO, pyaedt_module=pyaedt)
 
     desktop = Desktop(specified_version=specified_version, non_graphical=False, new_desktop_session=False)
 
+    # todo oDesktop = desktop._main.oDesktop
+
+    logger.info("simulation start")
     project_name = desktop.project_list().pop()
     project_dir = desktop.project_path(project_name=project_name)
     design_names = desktop.design_list()
