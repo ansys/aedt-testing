@@ -108,7 +108,7 @@ class ElectronicsDesktopTester:
                 self.reference_data = json.load(file)
 
         self.script = str(MODULE_DIR / "simulation_data.py")
-        self.script_args = f"--pyaedt-path={Path(_py_aedt_path).parent.parent} --logfile-path={LOGFILE_PATH}"
+        self.script_args = f"\"--pyaedt-path='{Path(_py_aedt_path).parent.parent}' --logfile-path='{LOGFILE_PATH}'\""
 
         self.report_data: Dict[str, Any] = {}
 

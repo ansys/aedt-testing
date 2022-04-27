@@ -16,7 +16,7 @@ from aedttest.logger import set_logger  # noqa: E402
 
 
 def parse_args():
-    arg_string = ScriptArgument  # noqa: F821
+    arg_string = ScriptArgument.replace('"', "")  # noqa: F821
     parser = argparse.ArgumentParser()
     parser.add_argument("--pyaedt-path")
     parser.add_argument("--logfile-path")
@@ -193,8 +193,9 @@ def extract_data(desktop, project_dir, project_name, design_names):
 
         if not analyze_success:
             logger.error("design {} analyze_all failed".format(design_name))
-            error_message = oDesktop.GetMessages(project_name, design_name, 1)
-            message = str(error_message).replace("[error]", "\n")
+
+            error_messages = oDesktop.GetMessages(project_name, design_name, 1)
+            message = str(error_messages).replace("[error]", "")
             logger.error(message)
             PROJECT_DICT["error_exception"].append(message)
 
