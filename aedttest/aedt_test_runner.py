@@ -35,6 +35,7 @@ from pyaedt import __file__ as _py_aedt_path  # isort: skip
 
 MODULE_DIR = Path(__file__).resolve().parent
 CWD_DIR = Path.cwd()
+LOGFILE_PATH = CWD_DIR / "aedt_test_framework.log"
 
 # configure Django templates
 django_settings.configure(
@@ -107,7 +108,7 @@ class ElectronicsDesktopTester:
                 self.reference_data = json.load(file)
 
         self.script = str(MODULE_DIR / "simulation_data.py")
-        self.script_args = f"--pyaedt-path={Path(_py_aedt_path).parent.parent}"
+        self.script_args = f"--pyaedt-path={Path(_py_aedt_path).parent.parent} --logfile-path={LOGFILE_PATH}"
 
         self.report_data: Dict[str, Any] = {}
 
@@ -1096,7 +1097,7 @@ def parse_arguments() -> argparse.Namespace:
     cli_args = parser.parse_args()
 
     log_level = 10 if cli_args.debug else 20
-    set_logger(logging_file=CWD_DIR / "aedt_test_framework.log", level=log_level, pyaedt_module=None)
+    set_logger(logging_file=LOGFILE_PATH, level=log_level, pyaedt_module=None)
 
     if not cli_args.only_reference and not cli_args.reference_file:
         raise ValueError("Either set --only-reference flag or provide path via --reference-file")

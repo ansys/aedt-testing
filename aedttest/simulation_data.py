@@ -192,10 +192,12 @@ def extract_data(desktop, project_dir, project_name, design_names):
         analyze_success = desktop.analyze_all(design=design_name)
 
         if not analyze_success:
-            PROJECT_DICT["error_exception"].append("{} analyze_all failed".format(design_name))
             logger.error("design {} analyze_all failed".format(design_name))
             error_message = oDesktop.GetMessages(project_name, design_name, 1)
-            logger.error(str(error_message).replace("[error]", "\n [error]"))
+            message = str(error_message).replace("[error]", "\n")
+            logger.error(message)
+            PROJECT_DICT["error_exception"].append(message)
+
             continue
         else:
             logger.info("design {} analyze_all success".format(design_name))
@@ -420,8 +422,6 @@ def main():
 
     desktop = Desktop(specified_version=specified_version, non_graphical=False, new_desktop_session=False)
 
-    logger.info("Start")
-
     project_name = desktop.project_list().pop()
     project_dir = desktop.project_path(project_name=project_name)
     logger.info("running {}/{}".format(project_dir, project_name))
@@ -433,8 +433,6 @@ def main():
         PROJECT_DICT["designs"].update(designs_dict)
     else:
         PROJECT_DICT["error_exception"].append("Project has no design")
-
-    logger.info("End")
 
     out_json = r"{}.json".format(project_name)
     with open(os.path.join(project_dir, out_json), "w") as outfile:
