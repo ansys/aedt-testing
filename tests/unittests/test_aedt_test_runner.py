@@ -492,11 +492,11 @@ def test_compare_keys():
         },
     }
     report = []
-    aedt_test_runner.compare_keys(dict_ref, dict_now, report, results_type="reference")
+    aedt_test_runner.compare_keys(dict_ref, dict_now, report, results_type="current")
     assert report == [
-        "Key '2' does not exist in reference results",
-        "Key '3->4nest' does not exist in reference results",
-        "Key '3->5nest->6nn' does not exist in reference results",
+        "Key '2' does not exist in current results",
+        "Key '3->4nest' does not exist in current results",
+        "Key '3->5nest->6nn' does not exist in current results",
     ]
 
 
