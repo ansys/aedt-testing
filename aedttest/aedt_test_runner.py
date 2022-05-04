@@ -59,17 +59,17 @@ def main() -> None:
         logger.error(str(exc))
         raise SystemExit(1)
 
-    aedt_tester = ElectronicsDesktopTester(
-        version=cli_args.aedt_version,
-        max_cores=cli_args.max_cores,
-        max_tasks=cli_args.max_tasks,
-        config_file=cli_args.config_file,
-        out_dir=cli_args.out_dir,
-        save_projects=cli_args.save_sim_data,
-        only_reference=cli_args.only_reference,
-        reference_file=cli_args.reference_file,
-    )
     try:
+        aedt_tester = ElectronicsDesktopTester(
+            version=cli_args.aedt_version,
+            max_cores=cli_args.max_cores,
+            max_tasks=cli_args.max_tasks,
+            config_file=cli_args.config_file,
+            out_dir=cli_args.out_dir,
+            save_projects=cli_args.save_sim_data,
+            only_reference=cli_args.only_reference,
+            reference_file=cli_args.reference_file,
+        )
         if not cli_args.suppress_validation:
             aedt_tester.validate_config()
             if cli_args.only_validate:
@@ -79,6 +79,7 @@ def main() -> None:
 
     except Exception as exc:
         logger.exception(str(exc))
+        raise
 
 
 class ElectronicsDesktopTester:
