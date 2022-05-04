@@ -28,12 +28,14 @@ if not DEBUG:
     pyaedt_path, logfile_path = parse_args()
     sys.path.append(pyaedt_path)
     specified_version = None
+    log_level = logging.INFO
 else:
     parser = argparse.ArgumentParser()
     parser.add_argument("--desktop-version", default="2021.2")
     args = parser.parse_args()
     specified_version = args.desktop_version
     logfile_path = os.path.join(MODULE_DIR_PARENT, "aedt_test_framework.log")
+    log_level = logging.DEBUG
 
 
 import pyaedt  # noqa: E402
@@ -41,6 +43,8 @@ from pyaedt import get_pyaedt_app  # noqa: E402
 from pyaedt.desktop import Desktop  # noqa: E402
 from pyaedt.generic.general_methods import generate_unique_name  # noqa: E402
 from pyaedt.generic.report_file_parser import parse_rdat_file  # noqa: E402
+
+set_logger(logging_file=logfile_path, level=log_level, pyaedt_module=pyaedt)
 
 PROJECT_DICT = {"error_exception": [], "designs": {}}
 
@@ -421,8 +425,6 @@ def generate_unique_file_path(project_dir, extension):
 
 
 def main():
-    set_logger(logging_file=logfile_path, level=logging.INFO, pyaedt_module=pyaedt)
-
     desktop = Desktop(specified_version=specified_version, non_graphical=False, new_desktop_session=False)
 
     project_name = desktop.project_list().pop()
