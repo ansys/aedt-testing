@@ -459,13 +459,13 @@ class ElectronicsDesktopTester:
                     self.reference_data["projects"][project_name],
                     project_data,
                     exceptions_list=project_exceptions,
-                    results_type="reference",
+                    results_type="current",
                 )
                 compare_keys(
                     project_data,
                     self.reference_data["projects"][project_name],
                     exceptions_list=project_exceptions,
-                    results_type="current",
+                    results_type="reference",
                 )
 
         return project_data
@@ -1058,7 +1058,7 @@ def compare_keys(
             exceptions_list.append(f"Key '{dict_path}{key}' does not exist in {results_type} results")
             continue
         if isinstance(val, dict):
-            compare_keys(val, dict_2[key], exceptions_list, dict_path=f"{dict_path}{key}", results_type="reference")
+            compare_keys(val, dict_2[key], exceptions_list, dict_path=f"{dict_path}{key}", results_type=results_type)
 
 
 def parse_arguments() -> argparse.Namespace:
