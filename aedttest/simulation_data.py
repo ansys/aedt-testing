@@ -164,6 +164,8 @@ def extract_data(desktop, project_dir, project_name, design_names):
         ``pyaedt`` ``Desktop`` object.
     project_dir : str
         Path to the project.
+    project_name : str
+        Name of the project
     design_names : list
         List of design names.
 
@@ -425,11 +427,10 @@ def main():
 
     project_name = desktop.project_list().pop()
     project_dir = desktop.project_path(project_name=project_name)
-    logger.info("running {}/{}".format(project_dir, project_name))
-
     design_names = desktop.design_list()
 
     if design_names:
+        logger.info("Start extraction for {}".format(os.path.join(project_dir, project_name)))
         designs_dict = extract_data(desktop, project_dir, project_name, design_names)
         PROJECT_DICT["designs"].update(designs_dict)
     else:
