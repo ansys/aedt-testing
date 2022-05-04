@@ -196,10 +196,10 @@ class ElectronicsDesktopTester:
 
             self.render_main_html(finished=True)  # make thread-safe render
             combined_report_path = self.create_combined_report()
-            msg = f"Job is completed.\nReference result file is stored under {combined_report_path}"
-
-            if not self.only_reference:
-                msg += f"\nYou can view report by opening in web browser: {self.results_path / 'main.html'}"
+            msg = (
+                f"Job is completed.\nReference result file is stored under {combined_report_path}"
+                f"\nYou can view report by opening in web browser: {self.results_path / 'main.html'}"
+            )
 
             logger.info(msg)
 
