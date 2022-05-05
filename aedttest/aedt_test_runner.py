@@ -399,13 +399,16 @@ class ElectronicsDesktopTester:
             "slider_limit": 0,
         }
         project_data = self.check_all_results_present(project_report["error_exception"], report_file, project_name)
-        if project_report["error_exception"]:
-            # some keys are missing
-            return project_report
+        keys_missing = bool(project_report["error_exception"])
 
         try:
             copy_path_to(str(report_file), str(self.results_path / "reference_folder"))
             project_report["error_exception"] += project_data["error_exception"]
+
+            if keys_missing:
+                # cannot do extraction if some keys are missing
+                return project_report
+
             for design_name, design_data in project_data["designs"].items():
                 # get mesh data
                 self.extract_mesh_or_time_data("mesh", design_data, design_name, project_name, project_report)
