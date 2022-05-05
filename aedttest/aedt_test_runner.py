@@ -59,17 +59,17 @@ def main() -> None:
         logger.error(str(exc))
         raise SystemExit(1)
 
-    aedt_tester = ElectronicsDesktopTester(
-        version=cli_args.aedt_version,
-        max_cores=cli_args.max_cores,
-        max_tasks=cli_args.max_tasks,
-        config_file=cli_args.config_file,
-        out_dir=cli_args.out_dir,
-        save_projects=cli_args.save_sim_data,
-        only_reference=cli_args.only_reference,
-        reference_file=cli_args.reference_file,
-    )
     try:
+        aedt_tester = ElectronicsDesktopTester(
+            version=cli_args.aedt_version,
+            max_cores=cli_args.max_cores,
+            max_tasks=cli_args.max_tasks,
+            config_file=cli_args.config_file,
+            out_dir=cli_args.out_dir,
+            save_projects=cli_args.save_sim_data,
+            only_reference=cli_args.only_reference,
+            reference_file=cli_args.reference_file,
+        )
         if not cli_args.suppress_validation:
             aedt_tester.validate_config()
             if cli_args.only_validate:
@@ -79,6 +79,7 @@ def main() -> None:
 
     except Exception as exc:
         logger.exception(str(exc))
+        raise
 
 
 class ElectronicsDesktopTester:
@@ -398,13 +399,16 @@ class ElectronicsDesktopTester:
             "slider_limit": 0,
         }
         project_data = self.check_all_results_present(project_report["error_exception"], report_file, project_name)
-        if project_report["error_exception"]:
-            # some keys are missing
-            return project_report
+        keys_missing = bool(project_report["error_exception"])
 
         try:
             copy_path_to(str(report_file), str(self.results_path / "reference_folder"))
             project_report["error_exception"] += project_data["error_exception"]
+
+            if keys_missing:
+                # cannot do extraction if some keys are missing
+                return project_report
+
             for design_name, design_data in project_data["designs"].items():
                 # get mesh data
                 self.extract_mesh_or_time_data("mesh", design_data, design_name, project_name, project_report)

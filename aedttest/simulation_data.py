@@ -28,12 +28,14 @@ if not DEBUG:
     pyaedt_path, logfile_path = parse_args()
     sys.path.append(pyaedt_path)
     specified_version = None
+    log_level = logging.INFO
 else:
     parser = argparse.ArgumentParser()
     parser.add_argument("--desktop-version", default="2021.2")
     args = parser.parse_args()
     specified_version = args.desktop_version
     logfile_path = os.path.join(MODULE_DIR_PARENT, "aedt_test_framework.log")
+    log_level = logging.DEBUG
 
 
 import pyaedt  # noqa: E402
@@ -41,6 +43,8 @@ from pyaedt import get_pyaedt_app  # noqa: E402
 from pyaedt.desktop import Desktop  # noqa: E402
 from pyaedt.generic.general_methods import generate_unique_name  # noqa: E402
 from pyaedt.generic.report_file_parser import parse_rdat_file  # noqa: E402
+
+set_logger(logging_file=logfile_path, level=log_level, pyaedt_module=pyaedt)
 
 PROJECT_DICT = {"error_exception": [], "designs": {}}
 
@@ -194,16 +198,17 @@ def extract_data(desktop, project_dir, project_name, design_names):
         analyze_success = desktop.analyze_all(design=design_name)
 
         if not analyze_success:
-            logger.error("design {} analyze_all failed".format(design_name))
+            logger.error("design {} 'analyze_all' failed".format(design_name))
 
             error_messages = oDesktop.GetMessages(project_name, design_name, 1)
             message = str(error_messages).replace("[error]", "")
+            message = "{}: {}".format(design_name, message)
             logger.error(message)
             PROJECT_DICT["error_exception"].append(message)
 
             continue
         else:
-            logger.info("design {} analyze_all success".format(design_name))
+            logger.info("design {} 'analyze_all' success".format(design_name))
 
         design_dict = extract_design_data(
             app=app,
@@ -421,24 +426,27 @@ def generate_unique_file_path(project_dir, extension):
 
 
 def main():
-    set_logger(logging_file=logfile_path, level=logging.INFO, pyaedt_module=pyaedt)
-
     desktop = Desktop(specified_version=specified_version, non_graphical=False, new_desktop_session=False)
 
     project_name = desktop.project_list().pop()
     project_dir = desktop.project_path(project_name=project_name)
+    project_path = os.path.join(project_dir, project_name + ".aedt")
     design_names = desktop.design_list()
 
     if design_names:
-        logger.info("Start extraction for {}".format(os.path.join(project_dir, project_name)))
+        logger.info("Start extraction for {}".format(project_path))
         designs_dict = extract_data(desktop, project_dir, project_name, design_names)
         PROJECT_DICT["designs"].update(designs_dict)
     else:
         PROJECT_DICT["error_exception"].append("Project has no design")
 
-    out_json = r"{}.json".format(project_name)
-    with open(os.path.join(project_dir, out_json), "w") as outfile:
+    logger.info("Finished extraction for {}".format(project_path))
+
+    results_json = os.path.join(project_dir, project_name + ".json")
+    with open(results_json, "w") as outfile:
         json.dump(PROJECT_DICT, outfile, indent=4)
+
+    logger.debug("JSON dumped to {}".format(results_json))
 
 
 if __name__ == "__main__":
