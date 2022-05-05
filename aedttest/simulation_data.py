@@ -430,16 +430,17 @@ def main():
 
     project_name = desktop.project_list().pop()
     project_dir = desktop.project_path(project_name=project_name)
+    project_path = os.path.join(project_dir, project_name + ".aedt")
     design_names = desktop.design_list()
 
     if design_names:
-        logger.info("Start extraction for {}.aedt".format(os.path.join(project_dir, project_name)))
+        logger.info("Start extraction for {}".format(project_path))
         designs_dict = extract_data(desktop, project_dir, project_name, design_names)
         PROJECT_DICT["designs"].update(designs_dict)
     else:
         PROJECT_DICT["error_exception"].append("Project has no design")
 
-    logger.info("Finished extraction for {}.aedt".format(os.path.join(project_dir, project_name)))
+    logger.info("Finished extraction for {}".format(project_path))
     out_json = r"{}.json".format(project_name)
     results_json = os.path.join(project_dir, out_json)
     with open(results_json, "w") as outfile:
