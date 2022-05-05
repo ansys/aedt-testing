@@ -441,8 +441,8 @@ def main():
         PROJECT_DICT["error_exception"].append("Project has no design")
 
     logger.info("Finished extraction for {}".format(project_path))
-    out_json = r"{}.json".format(project_name)
-    results_json = os.path.join(project_dir, out_json)
+
+    results_json = os.path.join(project_dir, project_name + ".json")
     with open(results_json, "w") as outfile:
         json.dump(PROJECT_DICT, outfile, indent=4)
 
