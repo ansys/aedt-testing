@@ -198,16 +198,17 @@ def extract_data(desktop, project_dir, project_name, design_names):
         analyze_success = desktop.analyze_all(design=design_name)
 
         if not analyze_success:
-            logger.error("design {} analyze_all failed".format(design_name))
+            logger.error("design {} 'analyze_all' failed".format(design_name))
 
             error_messages = oDesktop.GetMessages(project_name, design_name, 1)
             message = str(error_messages).replace("[error]", "")
+            message = "{}: {}".format(design_name, message)
             logger.error(message)
             PROJECT_DICT["error_exception"].append(message)
 
             continue
         else:
-            logger.info("design {} analyze_all success".format(design_name))
+            logger.info("design {} 'analyze_all' success".format(design_name))
 
         design_dict = extract_design_data(
             app=app,
@@ -444,7 +445,7 @@ def main():
     with open(results_json, "w") as outfile:
         json.dump(PROJECT_DICT, outfile, indent=4)
 
-    logger.info("JSON dumped to {}".format(results_json))
+    logger.debug("JSON dumped to {}".format(results_json))
 
 
 if __name__ == "__main__":
