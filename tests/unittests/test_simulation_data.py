@@ -97,6 +97,15 @@ class TestParse(BaseTest):
         )
         assert result == "00:00:02"
 
+    def test_parse_profile_mixed_case(self):
+        result = simulation_data.parse_profile_file(
+            profile_file=os.path.join(TESTS_DIR, "input", "prof_test_mixed_case.prof"),
+            design_name="test_design",
+            variation="test_variation",
+            setup_name="test_setup",
+        )
+        assert result == "00:00:50"
+
     def test_parse_mesh_stats_no_mesh(self):
 
         result = simulation_data.parse_mesh_stats(

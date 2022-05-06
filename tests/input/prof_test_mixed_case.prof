@@ -1,0 +1,117 @@
+::::::::::::::
+_RW2N7P.prof
+::::::::::::::
+Maxwell 3D Profile
+  Project:           ExTR2RotationalMotion
+  Design:            Maxwell3DDesign2
+  Solution setup:    Setup1
+
+  Task                Real Time  CPU Time  Memory  Information
+  ----                ---------  --------  ------  -----------
+
+  Solution Process                                 Start Time: 05/04/2022 17:33:37, Host: ottc01sn037.ansys.com, Processor: 28, OS: Linux 3.10.0-957.el7.x86_64, Product: Maxwell 3D 2023.1.0
+                                                   Executing from /nfs/ott/apps/daily_builds/linx64/v231_EBU_Certified_Daily/v231/Linux64/MAXWELLCOMENGINE.exe
+                                                   HPC: Enabled
+                                                   Desired RAM limit not set.
+  Design Validation                                Elapsed time : 00:00:00 , Maxwell 3D ComEngine Memory : 75.9 M
+                                                   Perform full validations
+                                                   
+  Initial Meshing                                  Time: 05/04/2022 17:33:37
+  Mesh                00:00:00   00:00:01  47.9 M  Type: TAU, Cores: 4, Tetrahedra: 12032
+  Coarsen             00:00:01   00:00:01  47.9 M  Tetrahedra: 4789
+  Post                00:00:01   00:00:00  48.6 M  Tetrahedra: 4842
+  Manual Refine       00:00:02   00:00:02  40.7 M  Tetrahedra: 15023, magnet, region, Sensor
+                                                   
+  Transient Solution                               Time: 05/04/2022 17:33:42
+  Solver Progress                                  From: 0s, To: 1s
+  Solve               00:00:01   00:00:01  144 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0s                                        
+  Matrix Solve        00:00:00   00:00:01  57.9 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  293 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.05s                                     
+  Matrix Solve        00:00:00   00:00:01  57.3 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:02   00:00:03  299 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.1s                                      
+  Matrix Solve        00:00:00   00:00:01  54 M    Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:03   00:00:03  305 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.15s                                     
+  Matrix Solve        00:00:01   00:00:01  59.6 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  310 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.2s                                      
+  Matrix Solve        00:00:01   00:00:01  58.1 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  296 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.25s                                     
+  Matrix Solve        00:00:01   00:00:01  55.2 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  316 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.3s                                      
+  Matrix Solve        00:00:00   00:00:01  59.9 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  308 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.35s                                     
+  Matrix Solve        00:00:00   00:00:01  54.1 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  295 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.4s                                      
+  Matrix Solve        00:00:00   00:00:01  58.6 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  308 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.45s                                     
+  Matrix Solve        00:00:00   00:00:01  56.8 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:02   00:00:03  297 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.5s                                      
+  Matrix Solve        00:00:00   00:00:00  55.6 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:02   00:00:03  305 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.55s                                     
+  Matrix Solve        00:00:00   00:00:00  59.1 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  306 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.6s                                      
+  Matrix Solve        00:00:00   00:00:01  55.4 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  311 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.65s                                     
+  Matrix Solve        00:00:00   00:00:01  58.8 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  323 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.7s                                      
+  Matrix Solve        00:00:00   00:00:01  58.4 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  290 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.75s                                     
+  Matrix Solve        00:00:00   00:00:01  55.6 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:02  297 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.8s                                      
+  Matrix Solve        00:00:00   00:00:01  57 M    Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  297 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.85s                                     
+  Matrix Solve        00:00:00   00:00:01  52.8 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  318 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.9s                                      
+  Matrix Solve        00:00:00   00:00:00  57.8 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  322 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 0.95s                                     
+  Matrix Solve        00:00:00   00:00:01  55.7 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:01   00:00:03  286 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Time - 1s                                        
+  Matrix Solve        00:00:00   00:00:01  54.1 M  Type: DRS, Cores: 4, Matrix: 20910, Disk: 0KB, Iteration: 1
+  Solve               00:00:02   00:00:03  307 M   Cores: 4, Tetrahedra: 15023
+                                                   
+  Transient Solution  00:00:31   00:01:21          Elapsed Time: 00:00:44
+                                                   Completed: 1s
+                                                   
+  Solution Process    00:00:35   00:01:25          Elapsed Time: 00:00:50, ComEngine Memory: 78.4 M
+                                                   Stop Time: 05/04/2022 17:34:27, Status: Normal Completion
