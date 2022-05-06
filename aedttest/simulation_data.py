@@ -30,7 +30,7 @@ if not DEBUG:
     specified_version = None
 else:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--desktop-version", default="2021.2")
+    parser.add_argument("--desktop-version", default="2022.1")
     args = parser.parse_args()
     specified_version = args.desktop_version
     logfile_path = os.path.join(MODULE_DIR_PARENT, "aedt_test_framework.log")
@@ -103,11 +103,11 @@ def parse_profile_file(profile_file, design_name, variation, setup_name):
     elapsed_time = ""
     with open(profile_file) as file:
         for line in file:
-            if "Elapsed time" in line:
-                elapsed_time = line
+            if "elapsed time" in line.lower():
+                elapsed_time = line.lower()
 
     if elapsed_time:
-        split_line = elapsed_time.split("Elapsed time")[1]
+        split_line = elapsed_time.split("elapsed time")[1]
 
         simulation_time = re.findall(r"[0-9]*:[0-9][0-9]:[0-9][0-9]", split_line)[0]
         return simulation_time
