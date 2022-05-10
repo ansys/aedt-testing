@@ -9,8 +9,7 @@ Maxwell 3D Profile
   Task                Real Time  CPU Time  Memory  Information
   ----                ---------  --------  ------  -----------
 
-  Solution Process                                 Start Time: 05/04/2022 17:33:37, Host: ottc01sn037.ansys.com, Processor: 28, OS: Linux 3.10.0-957.el7.x86_64, Product: Maxwell 3D 2023.1.0
-                                                   Executing from /nfs/ott/apps/daily_builds/linx64/v231_EBU_Certified_Daily/v231/Linux64/MAXWELLCOMENGINE.exe
+  Solution Process                                 Start Time: 05/04/2022 17:33:37, Product: Maxwell 3D 2023.1.0
                                                    HPC: Enabled
                                                    Desired RAM limit not set.
   Design Validation                                Elapsed time : 00:00:00 , Maxwell 3D ComEngine Memory : 75.9 M
