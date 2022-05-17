@@ -35,7 +35,8 @@ from pyaedt import __file__ as _py_aedt_path  # isort: skip
 
 MODULE_DIR = Path(__file__).resolve().parent
 CWD_DIR = Path.cwd()
-LOGFILE_PATH = CWD_DIR / "aedt_test_framework.log"
+LOGFOLDER_PATH = CWD_DIR / "logs"
+LOGFILE_PATH = LOGFOLDER_PATH / "aedt_test_framework.log"
 
 # configure Django templates
 django_settings.configure(
@@ -109,7 +110,9 @@ class ElectronicsDesktopTester:
                 self.reference_data = json.load(file)
 
         self.script = str(MODULE_DIR / "simulation_data.py")
-        self.script_args = f"\"--pyaedt-path='{Path(_py_aedt_path).parent.parent}' --logfile-path='{LOGFILE_PATH}'\""
+
+        # logfile path will be appended dynamically later
+        self.script_args = f"\"--pyaedt-path='{Path(_py_aedt_path).parent.parent}' --logfile-path='{{}}'\""
 
         self.report_data: Dict[str, Any] = {}
 
@@ -343,11 +346,12 @@ class ElectronicsDesktopTester:
         self.report_data["projects"][project_name]["status"] = "running"
         self.render_main_html()
 
+        log_file = LOGFOLDER_PATH / f"framework_{project_name}.log"
         execute_aedt(
             self.version,
             allocated_machines,
             self.script,
-            self.script_args,
+            self.script_args.format(log_file),
             project_path,
             distribution_config=project_config["distribution"],
         )
@@ -934,7 +938,7 @@ def execute_aedt(
             ]
 
     if project_path is not None:
-        log_path = os.path.splitext(project_path)[0] + ".log"
+        log_path = f"{LOGFOLDER_PATH / Path(project_path).stem}.log"
         command += [
             "-LogFile",
             log_path,
@@ -1101,6 +1105,10 @@ def parse_arguments() -> argparse.Namespace:
     cli_args = parser.parse_args()
 
     log_level = 10 if cli_args.debug else 20
+
+    if not LOGFOLDER_PATH.exists():
+        LOGFOLDER_PATH.mkdir()
+
     set_logger(logging_file=LOGFILE_PATH, level=log_level, pyaedt_module=None)
 
     if not cli_args.only_reference and not cli_args.reference_file:
