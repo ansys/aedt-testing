@@ -102,7 +102,8 @@ class ElectronicsDesktopTester:
         self.active_tasks = 0
         self.out_dir = Path(out_dir) if out_dir else CWD_DIR
         self.results_path = self.out_dir / "results"
-        self.proj_dir = self.out_dir if save_projects else None
+        self.proj_dir = self.out_dir if save_projects else self.results_path
+        self.keep_sim_data = save_projects
         self.only_reference = only_reference
         self.reference_data = {}
         if not only_reference:
@@ -174,9 +175,7 @@ class ElectronicsDesktopTester:
         self.initialize_results()
 
         threads_list = []
-        with mkdtemp_persistent(
-            persistent=(self.proj_dir is not None), dir=self.proj_dir, prefix=f"{self.version}_"
-        ) as tmp_dir:
+        with mkdtemp_persistent(persistent=self.keep_sim_data, dir=self.proj_dir, prefix=f"{self.version}_") as tmp_dir:
             for project_name, allocated_machines in self.allocator():
                 project_config = self.project_tests_config[project_name]
 
