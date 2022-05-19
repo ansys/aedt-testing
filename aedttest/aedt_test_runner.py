@@ -103,7 +103,7 @@ class ElectronicsDesktopTester:
         self.out_dir = Path(out_dir) if out_dir else CWD_DIR
         self.results_path = self.out_dir / "results"
         self.proj_dir = self.out_dir if save_projects else self.results_path
-        self.keep_sim_data = save_projects
+        self.keep_sim_data = bool(save_projects)
         self.only_reference = only_reference
         self.reference_data = {}
         if not only_reference:
