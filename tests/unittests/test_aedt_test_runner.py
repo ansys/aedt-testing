@@ -8,6 +8,7 @@ from unittest import mock
 import pytest
 
 from aedttest import aedt_test_runner
+from aedttest.aedt_test_runner import LOGFOLDER_PATH
 
 TESTS_DIR = Path(__file__).resolve().parent.parent
 
@@ -237,7 +238,7 @@ def test_execute_aedt(mock_mpi_path, mock_aedt_path, mock_platform, mock_call):
         "-ScriptArgs",
         '"arg1"',
         "-LogFile",
-        "custom/pr.log",
+        str(LOGFOLDER_PATH / "pr.log"),
         "custom/pr.aedt",
     ]
 
