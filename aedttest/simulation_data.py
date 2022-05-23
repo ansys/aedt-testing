@@ -262,7 +262,6 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
         variation_strings = app.available_variations.get_variation_strings(sweep)
         if not variation_strings:
             continue
-            
         for variation_string in variation_strings:
             variation_name = "nominal" if not variation_string else compose_variation_string(variation_string)
 
