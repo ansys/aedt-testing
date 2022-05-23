@@ -195,9 +195,9 @@ def extract_data(desktop, project_dir, project_name, design_names):
         sweeps = app.existing_analysis_sweeps
         setup_dict = {}
         for setups in setups_names:
-            for s in sweeps:
-                if setups in s:
-                    setup_dict[setups] = s
+            for sweep in sweeps:
+                if setups in sweep:
+                    setup_dict[setups] = sweep
                     break
 
         analyze_success = desktop.analyze_all(design=design_name)
