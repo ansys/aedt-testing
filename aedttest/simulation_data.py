@@ -300,11 +300,14 @@ def compose_variation_string(variation_string):
     strings = variation_string.split(" ")
     variation_name = ""
     for string in strings:
-        var, val = string.split("=")
-        val = val.replace("'", "")
-        val = val.replace('"', "")
-        val, unit = parse_value_with_unit(val)
-        variation_name += "{}={}{} ".format(var, val, unit)
+        if "=" in string:  # smith chart curve key is real and imag
+            var, val = string.split("=")
+            val = val.replace("'", "")
+            val = val.replace('"', "")
+            val, unit = parse_value_with_unit(val)
+            variation_name += "{}={}{} ".format(var, val, unit)
+        else:
+            variation_name = string
     variation_name = variation_name.strip()
     return variation_name
 

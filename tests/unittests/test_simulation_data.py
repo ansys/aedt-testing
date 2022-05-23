@@ -219,3 +219,28 @@ class TestCheck(BaseTest):
         result_keys = list(result["L Plot 1"]["Matrix1.L(Winding1,Winding1)"]["curves"].keys())
         result_keys.sort()
         assert ref_keys == result_keys
+
+    def test_compose_key_smith(self):
+        input_data = {
+            "S Parameter Chart 1": {
+                "S(Port1,Port1)": {
+                    "x_name": "S(Port1,Port1)",
+                    "x_unit": "Hz",
+                    "y_unit": "",
+                    "curves": {
+                        "real": {
+                            "x_data": [],
+                            "y_data": [],
+                        },
+                        "imag": {
+                            "x_data": [],
+                            "y_data": [],
+                        },
+                    },
+                }
+            }
+        }
+        result = simulation_data.compose_curve_keys(input_data)
+        result_keys = list(result["S Parameter Chart 1"]["S(Port1,Port1)"]["curves"].keys())
+        result_keys.sort()
+        assert result_keys == ["imag", "real"]
