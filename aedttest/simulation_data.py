@@ -260,24 +260,26 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
 
     for setup, sweep in setup_dict.items():
         variation_strings = app.available_variations.get_variation_strings(sweep)
-        if variation_strings:
-            for variation_string in variation_strings:
-                variation_name = "nominal" if not variation_string else compose_variation_string(variation_string)
+        if not variation_strings:
+            continue
+            
+        for variation_string in variation_strings:
+            variation_name = "nominal" if not variation_string else compose_variation_string(variation_string)
 
-                if variation_name not in design_dict[design_name]["mesh"]:
-                    design_dict[design_name]["mesh"][variation_name] = {}
-                if variation_name not in design_dict[design_name]["simulation_time"]:
-                    design_dict[design_name]["simulation_time"][variation_name] = {}
+            if variation_name not in design_dict[design_name]["mesh"]:
+                design_dict[design_name]["mesh"][variation_name] = {}
+            if variation_name not in design_dict[design_name]["simulation_time"]:
+                design_dict[design_name]["simulation_time"][variation_name] = {}
 
-                mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
-                app.export_mesh_stats(setup, variation_string, mesh_stats_file)
-                mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_name, setup)
-                design_dict[design_name]["mesh"][variation_name][setup] = mesh_data
+            mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
+            app.export_mesh_stats(setup, variation_string, mesh_stats_file)
+            mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_name, setup)
+            design_dict[design_name]["mesh"][variation_name][setup] = mesh_data
 
-                profile_file = generate_unique_file_path(project_dir, ".prof")
-                app.export_profile(setup, variation_string, profile_file)
-                simulation_time = parse_profile_file(profile_file, design_name, variation_name, setup)
-                design_dict[design_name]["simulation_time"][variation_name][setup] = simulation_time
+            profile_file = generate_unique_file_path(project_dir, ".prof")
+            app.export_profile(setup, variation_string, profile_file)
+            simulation_time = parse_profile_file(profile_file, design_name, variation_name, setup)
+            design_dict[design_name]["simulation_time"][variation_name][setup] = simulation_time
 
     return design_dict
 
