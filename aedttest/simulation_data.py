@@ -193,7 +193,12 @@ def extract_data(desktop, project_dir, project_name, design_names):
             continue
 
         sweeps = app.existing_analysis_sweeps
-        setup_dict = dict(zip(setups_names, sweeps))
+        setup_dict = {}
+        for setups in setups_names:
+            for sweep in sweeps:
+                if setups in sweep:
+                    setup_dict[setups] = sweep
+                    break
 
         analyze_success = desktop.analyze_all(design=design_name)
 
@@ -255,6 +260,8 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
 
     for setup, sweep in setup_dict.items():
         variation_strings = app.available_variations.get_variation_strings(sweep)
+        if not variation_strings:
+            continue
         for variation_string in variation_strings:
             variation_name = "nominal" if not variation_string else compose_variation_string(variation_string)
 
