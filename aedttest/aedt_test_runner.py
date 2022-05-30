@@ -367,7 +367,7 @@ class ElectronicsDesktopTester:
 
         project_report = self.prepare_project_report(project_name, project_path)
         if errors:
-            project_report["error_exception"].insert(0, errors)
+            project_report["error_exception"].insert(0, errors)  # type: ignore[union-attr]
 
         self.render_project_html(project_name, project_report)
 
