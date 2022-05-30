@@ -11,30 +11,5 @@
             "single_node": true
         },
         "path": "input\\just_winding.aedt"
-    },
-    "expression_excitation": {
-        "distribution": {
-            "cores": 1,
-            "distribution_types": [
-                "default"
-            ]
-        },
-        "path": "input\\expression_excitation.aedt"
-    },
-    "01_voltage_control": {
-        "distribution": {
-            "cores": 4,
-            "distribution_types": [
-                "default"
-            ]
-        },
-        "path": "input\\01_voltage_control.aedt",
-        "dependencies": ["input\\nested\\ctrl_prog"]
-    },
-    "19": {
-        "distribution": {
-            "cores": 4
-        },
-        "path": "input\\19.aedt"
     }
 }

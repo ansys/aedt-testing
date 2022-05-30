@@ -346,6 +346,7 @@ class ElectronicsDesktopTester:
         self.render_main_html()
 
         log_file = LOGFOLDER_PATH / f"framework_{project_name}.log"
+        errors = None
         try:
             execute_aedt(
                 self.version,
@@ -356,13 +357,17 @@ class ElectronicsDesktopTester:
                 distribution_config=project_config["distribution"],
             )
             logger.debug(f"Project {project_name} analyses finished. Prepare report.")
-            project_report = self.prepare_project_report(project_name, project_path)
+
         except OSError as exc:
-            project_report = {"error_exception": str(exc)}
+            errors = str(exc)
         finally:
             # return cores back
             for machine in allocated_machines:
                 self.machines_dict[machine] += allocated_machines[machine]["cores"]
+
+        project_report = self.prepare_project_report(project_name, project_path)
+        if errors:
+            project_report["error_exception"].insert(0, errors)
 
         self.render_project_html(project_name, project_report)
 
@@ -964,6 +969,7 @@ def execute_aedt(
 
     logger.debug(f"Variables filtered: {','.join(filtered)}")
     logger.debug(f"Variables applied: {env}")
+    raise OSError(f"Intel MPI doesn't exist under {22}")
 
     if platform.system() == "Linux":
         logger.debug("Execute via Intel MPI")
