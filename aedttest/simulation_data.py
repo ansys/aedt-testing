@@ -276,7 +276,7 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
             design_dict[design_name]["mesh"][variation_name][setup] = mesh_data
 
             profile_file = generate_unique_file_path(project_dir, ".prof")
-            app.export_profile(setup, variation_string, profile_file)
+            profile_file = app.export_profile(setup, variation_string, profile_file)
             simulation_time = parse_profile_file(profile_file, design_name, variation_name, setup)
             design_dict[design_name]["simulation_time"][variation_name][setup] = simulation_time
 
