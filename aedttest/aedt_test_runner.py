@@ -951,32 +951,13 @@ def execute_aedt(
             project_path,
         ]
 
-    # filter variable to avoid AEDT thinking it was submitted by scheduler
-    env = {}
-    filtered = []
-    for key, val in os.environ.items():
-        if (
-            "sge" not in key.lower()
-            and "slurm" not in key.lower()
-            and "lsf" not in key.lower()
-            and "lsb" not in key.lower()
-            and "pbs" not in key.lower()
-            and "PE_HOSTFILE" not in key.lower()
-        ):
-            env[key] = val
-        else:
-            filtered.append(key)
-
-    logger.debug(f"Variables filtered: {','.join(filtered)}")
-    logger.debug(f"Variables applied: {env}")
-
     if platform.system() == "Linux":
         logger.debug("Execute via Intel MPI")
         mpi_path = get_intel_mpi_path(version)
-        command = [mpi_path, "-n", "1", "-hosts", list(machines.keys())[0]] + command
+        command = [mpi_path, "-envnone", "-n", "1", "-hosts", list(machines.keys())[0]] + command
 
     logger.debug(f"Execute {subprocess.list2cmdline(command)}")
-    output = subprocess.check_output(command, env=env)
+    output = subprocess.check_output(command)
     logger.debug(output.decode())
 
 

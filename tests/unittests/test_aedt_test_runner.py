@@ -220,6 +220,7 @@ def test_execute_aedt(mock_mpi_path, mock_aedt_path, mock_platform, mock_call):
 
     assert mock_call.call_args[0][0] == [
         "aedt/install/path/mpiexec",
+        "-envnone",
         "-n",
         "1",
         "-hosts",
