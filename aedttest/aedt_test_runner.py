@@ -346,21 +346,28 @@ class ElectronicsDesktopTester:
         self.render_main_html()
 
         log_file = LOGFOLDER_PATH / f"framework_{project_name}.log"
-        execute_aedt(
-            self.version,
-            allocated_machines,
-            self.script,
-            self.script_args.format(log_file),
-            project_path,
-            distribution_config=project_config["distribution"],
-        )
-        logger.debug(f"Project {project_name} analyses finished. Prepare report.")
+        errors = None
+        try:
+            execute_aedt(
+                self.version,
+                allocated_machines,
+                self.script,
+                self.script_args.format(log_file),
+                project_path,
+                distribution_config=project_config["distribution"],
+            )
+            logger.debug(f"Project {project_name} analyses finished. Prepare report.")
 
-        # return cores back
-        for machine in allocated_machines:
-            self.machines_dict[machine] += allocated_machines[machine]["cores"]
+        except OSError as exc:
+            errors = str(exc)
+        finally:
+            # return cores back
+            for machine in allocated_machines:
+                self.machines_dict[machine] += allocated_machines[machine]["cores"]
 
         project_report = self.prepare_project_report(project_name, project_path)
+        if errors:
+            project_report["error_exception"].insert(0, errors)  # type: ignore[union-attr]
 
         self.render_project_html(project_name, project_report)
 
@@ -988,8 +995,12 @@ def get_intel_mpi_path(version: str) -> str:
 
     """
     aedt_path = get_aedt_install_path(version)
-    mpi_path = os.path.join(aedt_path, "common", "fluent_mpi", "multiport", "mpi", "lnamd64", "intel", "bin", "mpiexec")
-    return mpi_path
+    mpi_path = aedt_path / "common" / "fluent_mpi" / "multiport" / "mpi" / "lnamd64" / "intel" / "bin" / "mpiexec"
+
+    if not mpi_path.exists():
+        raise OSError(f"Intel MPI doesn't exist under {mpi_path}")
+
+    return str(mpi_path)
 
 
 def get_aedt_executable_path(version: str) -> str:
@@ -1015,12 +1026,12 @@ def get_aedt_executable_path(version: str) -> str:
     else:
         raise SystemError("Platform is neither Windows nor Linux")
 
-    aedt_path = os.path.join(aedt_path, executable)
+    aedt_path = aedt_path / executable
 
-    return aedt_path
+    return str(aedt_path)
 
 
-def get_aedt_install_path(version: str) -> str:
+def get_aedt_install_path(version: str) -> Path:
     """Extract installation path of AEDT from environment variable.
 
     Parameters
@@ -1030,14 +1041,15 @@ def get_aedt_install_path(version: str) -> str:
 
     Returns
     -------
-    path : str
+    path : Path
         Path to Electronics Desktop root.
     """
     aedt_env = f"ANSYSEM_ROOT{version}"
     aedt_path = os.environ.get(aedt_env, None)
     if not aedt_path:
         raise ValueError(f"Environment variable {aedt_env} is not set.")
-    return aedt_path
+
+    return Path(aedt_path)
 
 
 def time_now() -> str:
