@@ -954,7 +954,7 @@ def execute_aedt(
     if platform.system() == "Linux":
         logger.debug("Execute via Intel MPI")
         mpi_path = get_intel_mpi_path(version)
-        command = [mpi_path, "-envnone", "-n", "1", "-hosts", list(machines.keys())[0]] + command
+        command = [mpi_path, "-envall", "-n", "1", "-hosts", list(machines.keys())[0]] + command
 
     logger.debug(f"Execute {subprocess.list2cmdline(command)}")
     output = subprocess.check_output(command)
