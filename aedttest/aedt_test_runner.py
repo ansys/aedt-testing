@@ -969,7 +969,6 @@ def execute_aedt(
 
     logger.debug(f"Variables filtered: {','.join(filtered)}")
     logger.debug(f"Variables applied: {env}")
-    raise OSError(f"Intel MPI doesn't exist under {22}")
 
     if platform.system() == "Linux":
         logger.debug("Execute via Intel MPI")
