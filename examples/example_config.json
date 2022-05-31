@@ -8,7 +8,8 @@
             ],
             "parametric_tasks": 1,
             "multilevel_distribution_tasks": 0,
-            "single_node": true
+            "single_node": true,
+            "auto": false
         },
         "path": "input\\just_winding.aedt"
     },

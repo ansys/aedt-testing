@@ -204,16 +204,17 @@ def test_execute_aedt(mock_mpi_path, mock_aedt_path, mock_platform, mock_call):
     aedt_test_runner.execute_aedt(
         version="212",
         machines={"host1": {"cores": 10, "tasks": 2}, "host2": {"cores": 15, "tasks": 3}},
-        script="my/script/path.py",
-        script_args="arg1",
-        project_path="custom/pr.aedt",
         distribution_config={
             "cores": 2,
             "distribution_types": ["Variations", "Frequencies"],
             "parametric_tasks": 3,
             "multilevel_distribution_tasks": 4,
             "single_node": False,
+            "auto": False,
         },
+        script="my/script/path.py",
+        script_args="arg1",
+        project_path="custom/pr.aedt",
     )
 
     assert mock_aedt_path.call_args[0][0] == "212"
@@ -226,12 +227,12 @@ def test_execute_aedt(mock_mpi_path, mock_aedt_path, mock_platform, mock_call):
         "-hosts",
         "host1",
         "aedt/install/path",
-        "-machinelist",
-        "list=host1:2:10:90%,host2:3:15:90%",
         "-distributed",
         "includetypes=Variations,Frequencies",
         "maxlevels=2",
         "numlevel1=4",
+        "-machinelist",
+        "list=host1:2:10:90%,host2:3:15:90%",
         "-ng",
         "-features=SF6694_NON_GRAPHICAL_COMMAND_EXECUTION",
         "-RunScriptAndExit",

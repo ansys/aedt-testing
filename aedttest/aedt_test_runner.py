@@ -351,10 +351,10 @@ class ElectronicsDesktopTester:
             execute_aedt(
                 self.version,
                 allocated_machines,
-                self.script,
-                self.script_args.format(log_file),
-                project_path,
                 distribution_config=project_config["distribution"],
+                script=self.script,
+                script_args=self.script_args.format(log_file),
+                project_path=project_path,
             )
             logger.debug(f"Project {project_name} analyses finished. Prepare report.")
 
@@ -892,10 +892,10 @@ def unique_id() -> str:
 def execute_aedt(
     version: str,
     machines: Dict[str, Any],
+    distribution_config: Optional[Dict[str, Any]],
     script: Optional[str] = None,
     script_args: Optional[str] = None,
     project_path: Optional[str] = None,
-    distribution_config: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Execute single instance of Electronics Desktop.
 
@@ -905,30 +905,38 @@ def execute_aedt(
         Version to run.
     machines : dict
         Machine specification for current job.
+    distribution_config : dict
+        Distribution configuration for the job.
     script : str, optional
         Path to the script.
     script_args : str, optional
         Arguments to the script.
     project_path : str, optional
         Path to the project.
-    distribution_config : dict, optional
-        Distribution configuration for the job.
 
     """
     aedt_path = get_aedt_executable_path(version)
+    command = [aedt_path]
 
-    aedt_format_machines = ",".join([f"{name}:{conf['tasks']}:{conf['cores']}:90%" for name, conf in machines.items()])
-    command = [aedt_path, "-machinelist", "list=" + aedt_format_machines]
+    if distribution_config.get("auto", True):
+        aedt_format_machines = ",".join([f"{name}:-1:{conf['cores']}:90%" for name, conf in machines.items()])
+        command += ["-auto", f"NumDistributedVariations={distribution_config['parametric_tasks']}"]
+    else:
+        aedt_format_machines = ",".join(
+            [f"{name}:{conf['tasks']}:{conf['cores']}:90%" for name, conf in machines.items()]
+        )
 
-    if distribution_config and distribution_config.get("distribution_types", None):
-        command.append("-distributed")
-        dist_type_str = ",".join([dist_type for dist_type in distribution_config["distribution_types"]])
-        command.append(f"includetypes={dist_type_str}")
+        if distribution_config.get("distribution_types", None):
+            command.append("-distributed")
+            dist_type_str = ",".join([dist_type for dist_type in distribution_config["distribution_types"]])
+            command.append(f"includetypes={dist_type_str}")
 
-        tasks = distribution_config.get("multilevel_distribution_tasks", 0)
-        if tasks > 0:
-            command.append("maxlevels=2")
-            command.append(f"numlevel1={tasks}")
+            tasks = distribution_config.get("multilevel_distribution_tasks", 0)
+            if tasks > 0:
+                command.append("maxlevels=2")
+                command.append(f"numlevel1={tasks}")
+
+    command += ["-machinelist", "list=" + aedt_format_machines]
 
     if script is not None:
         command += [

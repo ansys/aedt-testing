@@ -8,8 +8,10 @@ Here is an example showing all available options  along with descriptions.
 {
     "project_name1": { # <-- project name, value is an dictionary
         "distribution": { # <-- distribution configuration
-            "cores": 2, # <-- number of cores used when this project is run
-            "distribution_types": [ # <-- (OPTIONAL) (default: None) list of parallel distribution types.
+            "cores": 2, # <-- number of cores used when this project is run,
+  
+             # <-- (OPTIONAL) (default: None) list of parallel distribution types. Ignored if auto is true
+            "distribution_types": [
                 "Variations",
                 "Frequencies"
             ],
@@ -19,6 +21,7 @@ Here is an example showing all available options  along with descriptions.
                                                   # and multilevel is required,
                                                   # then set the number of tasks for the 1st level
             "single_node": true # <-- (OPTIONAL) (default: false) forces project to be solved on a single node
+            "auto": false  # <-- (OPTIONAL) (default: true) enables auto HPC distribution
         },
         "path": "input\\just_winding.aedt", # <-- (OPTIONAL) (default: project name + .aedt in current working 
                                           # directory, eg <cwd>/project_name1.aedt) Supports full and relative paths.
