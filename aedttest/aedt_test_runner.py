@@ -892,7 +892,7 @@ def unique_id() -> str:
 def execute_aedt(
     version: str,
     machines: Dict[str, Any],
-    distribution_config: Optional[Dict[str, Any]],
+    distribution_config: Dict[str, Any],
     script: Optional[str] = None,
     script_args: Optional[str] = None,
     project_path: Optional[str] = None,
