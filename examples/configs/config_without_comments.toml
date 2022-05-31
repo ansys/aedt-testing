@@ -8,4 +8,4 @@ distribution_types = ["default"]
 parametric_tasks = 1
 multilevel_distribution_tasks = 0
 single_node = false
-auto = false
+auto = true

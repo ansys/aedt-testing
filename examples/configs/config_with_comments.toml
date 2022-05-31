@@ -29,4 +29,4 @@ parametric_tasks = 1
 multilevel_distribution_tasks = 0
 
 single_node = false  # (OPTIONAL) (default: false) Forces project to be solved on a single node
-auto = true  # (OPTIONAL) (default: true) Enables auto HPC distribution
+auto = false  # (OPTIONAL) (default: true) Enables auto HPC distribution
