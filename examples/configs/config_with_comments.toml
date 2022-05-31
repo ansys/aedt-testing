@@ -1,10 +1,14 @@
 # all lines started with '#' are comments and could be omitted
 [project]
-name = "just_winding"
+name = "01_voltage_control"
 
 # (OPTIONAL) (default: project name + .aedt in current working  directory, eg <cwd>/project_name1.aedt) 
 # Supports full and relative paths. If the path is relative, the folder structure will be preserved during execution.
-path = "input\\just_winding.aedt"
+path = "input\\01_voltage_control.aedt"
+
+# (OPTIONAL) (default: None) specifies file(s)/folder(s) dependencies for the project, e.g. the "control program"
+# script in Maxwelll. The format is: (string) path or (list[str]) paths. Path may be relative or absolute
+dependencies = ["input\\nested\\ctrl_prog"]
 
 # Distribution Configuration
 [project.distribution]

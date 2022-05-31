@@ -55,7 +55,7 @@ Command Line Interface (CLI).
 
 ### Configuration file
 Framework requires configuration file as input. Please see example of a configuration file 
-[config.toml](examples/config.toml) to understand how to create a file.
+[config.toml](examples/configs/config_without_comments.toml) to understand how to create a file.
 
 ### CLI Commands
 To expose the available commands use the following command line
