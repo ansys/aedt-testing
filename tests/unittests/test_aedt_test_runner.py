@@ -86,8 +86,8 @@ def test_allocator():
     aedt_tester = aedt_test_runner.ElectronicsDesktopTester(
         version="212",
         max_cores=9999,
-        max_tasks=9999,
-        config_file=TESTS_DIR / "input" / "allocator_config.json",
+        max_parallel_projects=9999,
+        config_folder=TESTS_DIR / "input" / "allocator_config.json",
         out_dir=None,
         save_projects=None,
         only_reference=True,
@@ -307,8 +307,8 @@ class BaseElectronicsDesktopTester:
             self.aedt_tester = aedt_test_runner.ElectronicsDesktopTester(
                 version="212",
                 max_cores=9999,
-                max_tasks=9999,
-                config_file=conf_file,
+                max_parallel_projects=9999,
+                config_folder=conf_file,
                 out_dir=None,
                 save_projects=None,
                 only_reference=None,
