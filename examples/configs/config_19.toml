@@ -5,4 +5,4 @@ path = "input\\19.aedt"
 [project.distribution]
 cores = 4
 parametric_tasks = 4
-auto = true
+auto = false
