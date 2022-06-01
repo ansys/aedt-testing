@@ -87,7 +87,7 @@ def test_allocator():
         version="212",
         max_cores=9999,
         max_parallel_projects=9999,
-        config_folder=TESTS_DIR / "input" / "allocator_config.json",
+        config_folder=TESTS_DIR / "input" / "configs",
         out_dir=None,
         save_projects=None,
         only_reference=True,
@@ -98,9 +98,9 @@ def test_allocator():
     allocated = [(project_name, allocated_machines) for project_name, allocated_machines in aedt_tester.allocator()]
     assert ("just_winding", {"host1": {"cores": 28, "tasks": 1}}) == allocated.pop(0)
     assert ("expression_excitation", {"host2": {"cores": 20, "tasks": 1}}) == allocated.pop(0)
-    assert ("19", {"host3": {"cores": 12, "tasks": 1}}) == allocated.pop(0)
+    assert ("19", {"host3": {"cores": 12, "tasks": 6}}) == allocated.pop(0)
     assert ("01_voltage_control", {"host3": {"cores": 10, "tasks": 1}}) == allocated.pop(0)
-    assert ("2019R1", {"host2": {"cores": 8, "tasks": 1}, "host3": {"cores": 2, "tasks": 1}}) == allocated.pop(0)
+    assert ("2019R1", {"host2": {"cores": 4, "tasks": 2}}) == allocated.pop(0)
 
 
 class TestCopyPathTo:
@@ -296,10 +296,6 @@ class BaseElectronicsDesktopTester:
 
     def setup(self):
         with TemporaryDirectory() as tmp_dir:
-            conf_file = Path(tmp_dir) / "config.json"
-            with open(conf_file, "w") as file:
-                json.dump(self.config_sample, file)
-
             ref_file = Path(tmp_dir) / "ref.json"
             with open(ref_file, "w") as file:
                 json.dump(self.reference_sample, file)
@@ -308,7 +304,7 @@ class BaseElectronicsDesktopTester:
                 version="212",
                 max_cores=9999,
                 max_parallel_projects=9999,
-                config_folder=conf_file,
+                config_folder=TESTS_DIR / "input" / "config_simple",
                 out_dir=None,
                 save_projects=None,
                 only_reference=None,
@@ -418,7 +414,7 @@ class TestElectronicsDesktopTester(BaseElectronicsDesktopTester):
 
 class TestCLIArgs:
     def setup(self):
-        self.default_argv = ["aedt_test_runner.py", "--aedt-version=212", r"--config-file=file/path"]
+        self.default_argv = ["aedt_test_runner.py", "--aedt-version=212", r"--config-folder=file/path"]
 
     @mock.patch("sys.stderr", new_callable=StringIO)
     def test_version(self, mock_stderr):
@@ -442,7 +438,7 @@ class TestCLIArgs:
         with mock.patch("sys.argv", ["aedt_test_runner.py", "--aedt-version=212"]):
             with pytest.raises(SystemExit):
                 aedt_test_runner.parse_arguments()
-            assert "the following arguments are required: --config-file" in mock_stderr.getvalue()
+            assert "the following arguments are required: --config-folder" in mock_stderr.getvalue()
 
     def test_reference(self):
         with mock.patch("sys.argv", self.default_argv):
@@ -462,12 +458,12 @@ class TestCLIArgs:
         with mock.patch("sys.argv", self.default_argv):
             with pytest.raises(ValueError) as exc:
                 aedt_test_runner.parse_arguments()
-            assert "Configuration file does not exist" in str(exc.value)
+            assert "Configuration folder does not exist" in str(exc.value)
 
     def test_sim_data(self):
         self.default_argv += ["--only-reference", "--suppress-validation", "-s"]
         with mock.patch("sys.argv", self.default_argv):
-            with mock.patch("aedttest.aedt_test_runner.os.path.isfile", return_value=True):
+            with mock.patch("aedttest.aedt_test_runner.Path.is_dir", return_value=True):
                 with pytest.raises(ValueError) as exc:
                     aedt_test_runner.parse_arguments()
                 assert "Saving of simulation data was requested but output directory is not provided" in str(exc.value)

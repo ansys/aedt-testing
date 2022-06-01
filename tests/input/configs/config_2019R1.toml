@@ -1,0 +1,8 @@
+[project]
+name = "2019R1"
+path = "input\\2019R1.aedt"
+
+[project.distribution]
+cores = 4
+parametric_tasks = 2
+auto = false

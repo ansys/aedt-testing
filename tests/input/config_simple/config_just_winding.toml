@@ -1,0 +1,7 @@
+[project]
+name = "just_winding"
+path = "input\\just_winding.aedt"
+
+[project.distribution]
+cores = 2
+parametric_tasks = 1
