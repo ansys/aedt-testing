@@ -1,0 +1,11 @@
+[project]
+name = "just_winding"
+path = "input\\just_winding.aedt"
+
+[project.distribution]
+cores = 4
+distribution_types = ["default"]
+parametric_tasks = 1
+multilevel_distribution_tasks = 0
+single_node = false
+auto = true

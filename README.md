@@ -54,8 +54,13 @@ will show basic examples of starting tests on local machine or on clusters with 
 Command Line Interface (CLI).
 
 ### Configuration file
-Framework requires configuration file as input. Please read [configuration.md](docs/configuration.md) to understand how 
-to create a file.
+Framework requires configuration file as input. Please see example of a configuration file 
+[config_with_comments.toml][1] to understand how to create a file.  
+
+You can use both [config_with_comments.toml][1] or [config_without_comments.toml][2] as template.
+
+[1]: examples/configs/config_with_comments.toml
+[2]: examples/configs/config_without_comments.toml
 
 ### CLI Commands
 To expose the available commands use the following command line
@@ -72,12 +77,12 @@ To start test on local machine use following command line
 
 ##### Generate only reference results
 ```bash
-aedt_test_runner --config-file=config.json --aedt-version=193 --only-reference
+aedt_test_runner --config-folder=examples/configs --aedt-version=193 --only-reference
 ```
 
 ##### Run comparison between versions
 ```bash
-aedt_test_runner --config-file=config.json --aedt-version=222 --reference-file=input/reference_results.json
+aedt_test_runner --config-folder=examples/configs --aedt-version=222 --reference-file=input/reference_results.json
 ```
 
 #### Slurm
@@ -88,7 +93,7 @@ sbatch \
   --partition ottc01 \
   --export "ALL,ANSYSEM_ROOT193=/apps/software/ANSYS_EM_2019R1/AnsysEM19.3/Linux64,ANS_NODEPCHECK=1" \
   --nodes 2-2 --ntasks 56 \
-  --wrap "aedt_test_runner --config-file=config.json --aedt-version=193 --only-reference"
+  --wrap "aedt_test_runner --config-folder=examples/configs --aedt-version=193 --only-reference"
 ```
 
 ##### Run comparison between versions
@@ -98,7 +103,7 @@ sbatch \
   --partition ottc01 \
   --export "ALL,ANSYSEM_ROOT222=/ott/apps/software/ANSYS_EM_2022R2_211129/v222/Linux64,ANS_NODEPCHECK=1" \
   --nodes 2-2 --ntasks 56 \
-  --wrap "aedt_test_runner --config-file=config.json --aedt-version=222 --reference-file=~/reference_results.json"
+  --wrap "aedt_test_runner --config-folder=examples/configs --aedt-version=222 --reference-file=~/reference_results.json"
 ```
 
 ## Limitations

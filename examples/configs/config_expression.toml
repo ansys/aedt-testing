@@ -1,0 +1,7 @@
+[project]
+name = "expression_excitation"
+path = "input\\expression_excitation.aedt"
+
+[project.distribution]
+cores = 4
+auto = false

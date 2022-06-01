@@ -1,0 +1,13 @@
+[project]
+name = "01_voltage_control"
+path = "input\\01_voltage_control.aedt"
+dependencies = ["input\\nested\\ctrl_prog"]
+
+# Distribution Configuration
+[project.distribution]
+cores = 10
+distribution_types = [
+    "Variations",
+    "Frequencies",
+]
+auto = false

@@ -1,0 +1,32 @@
+# all lines started with '#' are comments and could be omitted
+[project]
+name = "01_voltage_control"
+
+# (OPTIONAL) (default: project name + .aedt in current working  directory, eg <cwd>/project_name1.aedt) 
+# Supports full and relative paths. If the path is relative, the folder structure will be preserved during execution.
+path = "input\\01_voltage_control.aedt"
+
+# (OPTIONAL) (default: None) specifies file(s)/folder(s) dependencies for the project, e.g. the "control program"
+# script in Maxwelll. The format is: (string) path or (list[str]) paths. Path may be relative or absolute
+dependencies = ["input\\nested\\ctrl_prog"]
+
+# Distribution Configuration
+[project.distribution]
+cores = 4  # Number of cores used when this project is run
+
+# (OPTIONAL) (default: None) List of parallel distribution types.
+# IMPORTANT: Ignored if auto is true.
+distribution_types = [
+    "Variations",
+    "Frequencies",
+]
+
+# (OPTIONAL) (default: 1) If project runs a parametric sweep, this is the number of tasks to run in parallel
+parametric_tasks = 1
+
+# (OPTIONAL) (default: 0) If distribution_types is defined  and multilevel is required,
+# then set the number of tasks for the 1st level
+multilevel_distribution_tasks = 0
+
+single_node = false  # (OPTIONAL) (default: false) Forces project to be solved on a single node
+auto = false  # (OPTIONAL) (default: true) Enables auto HPC distribution

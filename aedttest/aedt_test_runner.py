@@ -23,6 +23,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+import tomli
 from django import setup as django_setup
 from django.conf import settings as django_settings
 from django.template.loader import get_template
@@ -64,8 +65,8 @@ def main() -> None:
         aedt_tester = ElectronicsDesktopTester(
             version=cli_args.aedt_version,
             max_cores=cli_args.max_cores,
-            max_tasks=cli_args.max_tasks,
-            config_file=cli_args.config_file,
+            max_parallel_projects=cli_args.max_projects,
+            config_folder=cli_args.config_folder,
             out_dir=cli_args.out_dir,
             save_projects=cli_args.save_sim_data,
             only_reference=cli_args.only_reference,
@@ -88,17 +89,17 @@ class ElectronicsDesktopTester:
         self,
         version: str,
         max_cores: int,
-        max_tasks: int,
-        config_file: Union[str, Path],
+        max_parallel_projects: int,
+        config_folder: Path,
         out_dir: Optional[str],
         save_projects: Optional[bool],
         only_reference: Optional[bool],
         reference_file: Union[str, Path],
     ) -> None:
-        logger.info(f"Initialize new Electronics Desktop Test run. Configuration file is {config_file}")
+        logger.info(f"Initialize new Electronics Desktop Test run. Configuration folder is {config_folder}")
         self.version = version
         self.max_cores = max_cores
-        self.max_tasks = max_tasks
+        self.max_parallel_projects = max_parallel_projects
         self.active_tasks = 0
         self.out_dir = Path(out_dir) if out_dir else CWD_DIR
         self.results_path = self.out_dir / "results"
@@ -119,11 +120,15 @@ class ElectronicsDesktopTester:
 
         self.machines_dict = {machine.hostname: machine.cores for machine in get_job_machines()}
 
-        with open(config_file) as file:
-            self.project_tests_config = json.load(file)
+        self.project_tests_config = {}
+        for config in config_folder.rglob("*.toml"):
+            logger.debug(f"Add config {config}")
+            with open(config, "rb") as file:
+                proj_conf = tomli.load(file)
+                self.project_tests_config[proj_conf["project"]["name"]] = proj_conf["project"]
 
     def validate_config(self) -> None:
-        """Make quick validation of --config-file [and --reference-file if present].
+        """Make quick validation of --config-folder [and --reference-file if present].
 
         Checks that distribution is specified correctly and that projects in
         reference identical to configuration.
@@ -622,7 +627,7 @@ class ElectronicsDesktopTester:
         )
         proj_name = ""
         while sorted_by_cores_desc:
-            if self.active_tasks >= self.max_tasks:
+            if self.active_tasks >= self.max_parallel_projects:
                 logger.debug("Number of maximum tasks limit is reached. Wait for job to finish")
                 sleep(4)
                 continue
@@ -920,7 +925,7 @@ def execute_aedt(
 
     if distribution_config.get("auto", True):
         aedt_format_machines = ",".join([f"{name}:-1:{conf['cores']}:90%" for name, conf in machines.items()])
-        command += ["-auto", f"NumDistributedVariations={distribution_config['parametric_tasks']}"]
+        command += ["-auto", f"NumDistributedVariations={distribution_config.get('parametric_tasks', 1)}"]
     else:
         aedt_format_machines = ",".join(
             [f"{name}:{conf['tasks']}:{conf['cores']}:90%" for name, conf in machines.items()]
@@ -1080,7 +1085,7 @@ def parse_arguments() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--aedt-version", required=True, help="Electronics Desktop version to test, e.g. 221")
-    parser.add_argument("--config-file", required=True, help="Project config file path")
+    parser.add_argument("--config-folder", required=True, help="Path to project configuration folder")
     parser.add_argument("--reference-file", help="Reference results file path")
     parser.add_argument("--only-reference", action="store_true", help="Only create reference results")
     parser.add_argument(
@@ -1099,7 +1104,9 @@ def parse_arguments() -> argparse.Namespace:
         "--save-sim-data", "-s", action="store_true", help="Save simulation data under output dir (--out-dir flag)"
     )
     parser.add_argument("--max-cores", "-c", type=int, help="total number of cores limit", default=99999)
-    parser.add_argument("--max-tasks", "-t", type=int, help="total number of parallel tasks limit", default=99999)
+    parser.add_argument(
+        "--max-projects", "-mp", type=int, help="total number of parallel projects limit", default=99999
+    )
 
     parser.add_argument("--debug", action="store_true", help="Adds additional DEBUG logs")
     cli_args = parser.parse_args()
@@ -1126,8 +1133,9 @@ def parse_arguments() -> argparse.Namespace:
     if not aedt_version_pattern.match(cli_args.aedt_version):
         raise ValueError("Electronics Desktop version value is invalid. Valid format example: 221")
 
-    if not os.path.isfile(cli_args.config_file):
-        raise ValueError(f"Configuration file does not exist: {cli_args.config_file}")
+    cli_args.config_folder = Path(cli_args.config_folder)
+    if not cli_args.config_folder.is_dir():
+        raise ValueError(f"Configuration folder does not exist: {cli_args.config_folder}")
 
     if cli_args.save_sim_data and not cli_args.out_dir:
         raise ValueError("Saving of simulation data was requested but output directory is not provided")
