@@ -70,7 +70,7 @@ def main() -> None:
             out_dir=cli_args.out_dir,
             save_projects=cli_args.save_sim_data,
             only_reference=cli_args.only_reference,
-            reference_folder=cli_args.reference_file,
+            reference_folder=cli_args.reference_folder,
         )
         if not cli_args.suppress_validation:
             aedt_tester.validate_config()
