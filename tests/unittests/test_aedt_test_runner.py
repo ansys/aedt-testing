@@ -91,7 +91,7 @@ def test_allocator():
         out_dir=None,
         save_projects=None,
         only_reference=True,
-        reference_file="",
+        reference_folder="",
     )
     job_machines = aedt_test_runner.get_job_machines("host1:28,host2:28,host3:28")
     aedt_tester.machines_dict = {machine.hostname: machine.cores for machine in job_machines}
@@ -308,7 +308,7 @@ class BaseElectronicsDesktopTester:
                 out_dir=None,
                 save_projects=None,
                 only_reference=None,
-                reference_file=ref_file,
+                reference_folder=ref_file,
             )
 
 

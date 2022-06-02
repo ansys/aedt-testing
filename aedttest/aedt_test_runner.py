@@ -70,7 +70,7 @@ def main() -> None:
             out_dir=cli_args.out_dir,
             save_projects=cli_args.save_sim_data,
             only_reference=cli_args.only_reference,
-            reference_file=cli_args.reference_file,
+            reference_folder=cli_args.reference_file,
         )
         if not cli_args.suppress_validation:
             aedt_tester.validate_config()
@@ -94,7 +94,7 @@ class ElectronicsDesktopTester:
         out_dir: Optional[str],
         save_projects: Optional[bool],
         only_reference: Optional[bool],
-        reference_file: Union[str, Path],
+        reference_folder: Optional[Path],
     ) -> None:
         logger.info(f"Initialize new Electronics Desktop Test run. Configuration folder is {config_folder}")
         self.version = version
@@ -108,8 +108,12 @@ class ElectronicsDesktopTester:
         self.only_reference = only_reference
         self.reference_data = {}
         if not only_reference:
-            with open(reference_file) as file:
-                self.reference_data = json.load(file)
+            for ref in reference_folder.rglob("*.json"):
+                with open(ref) as file:
+                    data = json.load(file)
+                self.reference_data[data["name"]] = data
+        else:
+            self.reference_folder = self.results_path / "reference_folder"
 
         self.script = str(MODULE_DIR / "simulation_data.py")
 
@@ -153,10 +157,7 @@ class ElectronicsDesktopTester:
                     raise KeyError("'cores' divided by 'parametric_tasks' must be integer")
 
         if not self.only_reference:
-            if "projects" not in self.reference_data:
-                raise KeyError("'projects' key is not specified in Reference File")
-
-            not_found_in_conf = set(self.reference_data["projects"]) - set(self.project_tests_config)
+            not_found_in_conf = set(self.reference_data) - set(self.project_tests_config)
             if not_found_in_conf:
                 msg = (
                     f"Following projects defined in reference results: {', '.join(list(not_found_in_conf))}"
@@ -164,7 +165,7 @@ class ElectronicsDesktopTester:
                 )
                 raise KeyError(msg)
 
-            not_found_in_ref = set(self.project_tests_config) - set(self.reference_data["projects"])
+            not_found_in_ref = set(self.project_tests_config) - set(self.reference_data)
             if not_found_in_ref:
                 msg = (
                     f"Following projects defined in configuration file: {', '.join(list(not_found_in_ref))}"
@@ -203,39 +204,12 @@ class ElectronicsDesktopTester:
                 th.join()
 
             self.render_main_html(finished=True)  # make thread-safe render
-            combined_report_path = self.create_combined_report()
             msg = (
-                f"Job is completed.\nReference result file is stored under {combined_report_path}"
+                f"Job is completed.\nReference result folder is stored under {self.reference_folder}"
                 f"\nYou can view report by opening in web browser: {self.results_path / 'main.html'}"
             )
 
             logger.info(msg)
-
-    def create_combined_report(self) -> Path:
-        """Reads all .json files in ``reference_folder`` and dumps it to single file ``'reference_results.json'``.
-
-        Returns
-        -------
-        Path
-            Path to the combined .json file.
-
-        """
-        combined_report_path = self.results_path / "reference_results.json"
-        combined_data: Dict[str, Any] = {"error_exception": [], "aedt_version": self.version, "projects": {}}
-
-        reference_folder = self.results_path / "reference_folder"
-        if not reference_folder.exists():
-            raise RuntimeError("Reference results were not generated. Probably projects failed to run")
-
-        for json_file in reference_folder.iterdir():
-            with open(json_file) as file:
-                single_data = json.load(file)
-                combined_data["projects"][json_file.stem] = single_data
-
-        with open(combined_report_path, "w") as file:
-            json.dump(combined_data, file, indent=4)
-
-        return combined_report_path
 
     def validate_hardware(self) -> None:
         """Validate that we have enough hardware resources to run requested configuration."""
@@ -260,6 +234,7 @@ class ElectronicsDesktopTester:
             remove_tree(str(self.results_path))
         copy_path_to(str(MODULE_DIR / "static" / "css"), str(self.results_path))
         copy_path_to(str(MODULE_DIR / "static" / "js"), str(self.results_path))
+        self.reference_folder.mkdir()
 
         self.report_data["all_delta"] = 1 if not self.only_reference else None
         self.report_data["projects"] = {}
@@ -414,10 +389,14 @@ class ElectronicsDesktopTester:
             "slider_limit": 0,
         }
         project_data = self.check_all_results_present(project_report["error_exception"], report_file, project_name)
+        project_data["aedt_version"] = self.version
+        project_data["name"] = project_name
+        with open(self.reference_folder / f"ref_{project_name}.json", "w") as file:
+            json.dump(project_data, file)
+
         keys_missing = bool(project_report["error_exception"])
 
         try:
-            copy_path_to(str(report_file), str(self.results_path / "reference_folder"))
             project_report["error_exception"] += project_data["error_exception"]
 
             if keys_missing:
@@ -471,18 +450,18 @@ class ElectronicsDesktopTester:
             project_data = json.load(file)
 
         if not self.only_reference:
-            if project_name not in self.reference_data["projects"]:
+            if project_name not in self.reference_data:
                 project_exceptions.append(f"Project report for {project_name} does not exist in reference file")
             else:
                 compare_keys(
-                    self.reference_data["projects"][project_name],
+                    self.reference_data[project_name],
                     project_data,
                     exceptions_list=project_exceptions,
                     results_type="current",
                 )
                 compare_keys(
                     project_data,
-                    self.reference_data["projects"][project_name],
+                    self.reference_data[project_name],
                     exceptions_list=project_exceptions,
                     results_type="reference",
                 )
@@ -530,9 +509,9 @@ class ElectronicsDesktopTester:
                     }
 
                     if not self.only_reference:
-                        y_ref_data = self.reference_data["projects"][project_name]["designs"][design_name]["report"][
-                            report_name
-                        ][trace_name]["curves"][curve_name]["y_data"]
+                        y_ref_data = self.reference_data[project_name]["designs"][design_name]["report"][report_name][
+                            trace_name
+                        ]["curves"][curve_name]["y_data"]
 
                         if len(y_ref_data) != len(curve_data["y_data"]):
                             msg = (
@@ -555,7 +534,7 @@ class ElectronicsDesktopTester:
                         project_report["slider_limit"] = max(project_report["slider_limit"], int(max_delta_perc) + 1)
                         plot_data.update(
                             {
-                                "version_ref": self.reference_data["aedt_version"],
+                                "version_ref": self.reference_data[project_name]["aedt_version"],
                                 "y_axis_ref": y_ref_data,
                                 "diff": difference,
                                 "delta": max_delta_perc,
@@ -597,7 +576,7 @@ class ElectronicsDesktopTester:
                     "current": current_stat,
                 }
                 if not self.only_reference:
-                    reference_dict = self.reference_data["projects"][project_name]["designs"][design_name][key_name]
+                    reference_dict = self.reference_data[project_name]["designs"][design_name][key_name]
                     if variation_name not in reference_dict:
                         project_report["error_exception"].append(
                             f"Variation ({variation_name}) wasn't found in reference results for design: {design_name}"
@@ -1099,7 +1078,7 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--aedt-version", required=True, help="Electronics Desktop version to test, e.g. 221")
     parser.add_argument("--config-folder", required=True, help="Path to project configuration folder")
-    parser.add_argument("--reference-file", help="Reference results file path")
+    parser.add_argument("--reference-folder", help="Reference results folder path")
     parser.add_argument("--only-reference", action="store_true", help="Only create reference results")
     parser.add_argument(
         "--only-validate", action="store_true", help="Only validate current --config-file [and --reference-file]"
@@ -1131,8 +1110,16 @@ def parse_arguments() -> argparse.Namespace:
 
     set_logger(logging_file=LOGFILE_PATH, level=log_level, pyaedt_module=None)
 
-    if not cli_args.only_reference and not cli_args.reference_file:
-        raise ValueError("Either set --only-reference flag or provide path via --reference-file")
+    if not cli_args.only_reference:
+        if not cli_args.reference_folder:
+            raise ValueError("Either set --only-reference flag or provide path via --reference-folder")
+
+        cli_args.reference_folder = Path(cli_args.reference_folder)
+        if not cli_args.reference_folder.is_dir():
+            raise ValueError(f"Reference folder does not exist: {cli_args.reference_folder}")
+
+        if len(list(cli_args.reference_folder.rglob("*.json"))) < 1:
+            raise ValueError(f"No reference .json file found in {cli_args.reference_folder}")
 
     if cli_args.suppress_validation and cli_args.only_validate:
         raise ValueError("--only-validate and --suppress-validation are mutually exclusive")
