@@ -103,6 +103,7 @@ class ElectronicsDesktopTester:
         self.active_tasks = 0
         self.out_dir = Path(out_dir) if out_dir else CWD_DIR
         self.results_path = self.out_dir / f"results_{time_now(posix=True)}"
+        self.reference_folder = self.results_path / "reference_folder"
         self.proj_dir = self.out_dir if save_projects else self.results_path
         self.keep_sim_data = bool(save_projects)
         self.only_reference = only_reference
@@ -112,8 +113,6 @@ class ElectronicsDesktopTester:
                 with open(ref) as file:
                     data = json.load(file)
                 self.reference_data[data["name"]] = data
-        else:
-            self.reference_folder = self.results_path / "reference_folder"
 
         self.script = str(MODULE_DIR / "simulation_data.py")
 
@@ -392,7 +391,7 @@ class ElectronicsDesktopTester:
         project_data["aedt_version"] = self.version
         project_data["name"] = project_name
         with open(self.reference_folder / f"ref_{project_name}.json", "w") as file:
-            json.dump(project_data, file)
+            json.dump(project_data, file, indent=4)
 
         keys_missing = bool(project_report["error_exception"])
 
@@ -454,14 +453,14 @@ class ElectronicsDesktopTester:
                 project_exceptions.append(f"Project report for {project_name} does not exist in reference file")
             else:
                 compare_keys(
-                    self.reference_data[project_name],
-                    project_data,
+                    self.reference_data[project_name]["designs"],
+                    project_data["designs"],
                     exceptions_list=project_exceptions,
                     results_type="current",
                 )
                 compare_keys(
-                    project_data,
-                    self.reference_data[project_name],
+                    project_data["designs"],
+                    self.reference_data[project_name]["designs"],
                     exceptions_list=project_exceptions,
                     results_type="reference",
                 )
