@@ -102,7 +102,7 @@ class ElectronicsDesktopTester:
         self.max_parallel_projects = max_parallel_projects
         self.active_tasks = 0
         self.out_dir = Path(out_dir) if out_dir else CWD_DIR
-        self.results_path = self.out_dir / "results"
+        self.results_path = self.out_dir / f"results_{time_now(posix=True)}"
         self.proj_dir = self.out_dir if save_projects else self.results_path
         self.keep_sim_data = bool(save_projects)
         self.only_reference = only_reference
@@ -1046,8 +1046,21 @@ def get_aedt_install_path(version: str) -> Path:
     return Path(aedt_path)
 
 
-def time_now() -> str:
-    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+def time_now(posix=False) -> str:
+    """Return current date and time.
+
+    Parameters
+    ----------
+    posix : bool
+        Set to True if need to return date time to be compatible with file names.
+
+    Returns
+    -------
+    str
+        Date and time now.
+    """
+    time_format = "%Y_%m_%d_%H_%M_%S" if posix else "%Y-%m-%d %H:%M:%S"
+    return datetime.datetime.now().strftime(time_format)
 
 
 def compare_keys(
