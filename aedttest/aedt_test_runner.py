@@ -108,7 +108,7 @@ class ElectronicsDesktopTester:
         self.keep_sim_data = bool(save_projects)
         self.only_reference = only_reference
         self.reference_data = {}
-        if not only_reference:
+        if not only_reference and reference_folder is not None:
             for ref in reference_folder.rglob("*.json"):
                 with open(ref) as file:
                     data = json.load(file)
@@ -1024,7 +1024,7 @@ def get_aedt_install_path(version: str) -> Path:
     return Path(aedt_path)
 
 
-def time_now(posix=False) -> str:
+def time_now(posix: bool = False) -> str:
     """Return current date and time.
 
     Parameters
