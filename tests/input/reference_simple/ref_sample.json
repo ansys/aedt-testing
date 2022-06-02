@@ -1,0 +1,30 @@
+{
+  "name": "01_voltage_control",
+  "aedt_version": "193",
+  "error_exception": [],
+  "designs": {
+    "ctrl_prog": {
+      "report": {
+        "Plot_2V2S6O": {
+          "Current(Winding1)": {
+            "x_name": "Time",
+            "curves": {
+              "": {
+                "y_data": [
+                  1,
+                  0.0416939528629434
+                ],
+                "x_data": [
+                  0,
+                  0.001
+                ]
+              }
+            },
+            "y_unit": "A",
+            "x_unit": "s"
+          }
+        }
+      }
+    }
+  }
+}
