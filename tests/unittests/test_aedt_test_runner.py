@@ -1,4 +1,3 @@
-import json
 import os
 from io import StringIO
 from pathlib import Path
@@ -246,70 +245,17 @@ def test_execute_aedt(mock_mpi_path, mock_aedt_path, mock_platform, mock_call):
 
 
 class BaseElectronicsDesktopTester:
-    reference_sample = {
-        "error_exception": [],
-        "aedt_version": "193",
-        "projects": {
-            "01_voltage_control": {
-                "error_exception": [],
-                "designs": {
-                    "ctrl_prog": {
-                        "report": {
-                            "Plot_2V2S6O": {
-                                "Current(Winding1)": {
-                                    "x_name": "Time",
-                                    "curves": {
-                                        "": {
-                                            "y_data": [
-                                                1,
-                                                0.0416939528629434,
-                                            ],
-                                            "x_data": [
-                                                0,
-                                                0.001,
-                                            ],
-                                        }
-                                    },
-                                    "y_unit": "A",
-                                    "x_unit": "s",
-                                },
-                            }
-                        }
-                    }
-                },
-            }
-        },
-    }
-
-    config_sample = {
-        "just_winding": {
-            "distribution": {
-                "cores": 2,
-                "distribution_types": ["Variations", "Frequencies"],
-                "parametric_tasks": 1,
-                "multilevel_distribution_tasks": 0,
-                "single_node": True,
-            },
-            "path": "input\\just_winding.aedt",
-        },
-    }
-
     def setup(self):
-        with TemporaryDirectory() as tmp_dir:
-            ref_file = Path(tmp_dir) / "ref.json"
-            with open(ref_file, "w") as file:
-                json.dump(self.reference_sample, file)
-
-            self.aedt_tester = aedt_test_runner.ElectronicsDesktopTester(
-                version="212",
-                max_cores=9999,
-                max_parallel_projects=9999,
-                config_folder=TESTS_DIR / "input" / "config_simple",
-                out_dir=None,
-                save_projects=None,
-                only_reference=None,
-                reference_folder=ref_file,
-            )
+        self.aedt_tester = aedt_test_runner.ElectronicsDesktopTester(
+            version="212",
+            max_cores=9999,
+            max_parallel_projects=9999,
+            config_folder=TESTS_DIR / "input" / "config_simple",
+            out_dir=None,
+            save_projects=None,
+            only_reference=None,
+            reference_folder=TESTS_DIR / "input" / "reference_simple",
+        )
 
 
 class TestValidateConfig(BaseElectronicsDesktopTester):
@@ -320,18 +266,11 @@ class TestValidateConfig(BaseElectronicsDesktopTester):
         assert "Following projects defined in reference results: 01_voltage_control," in str(exc.value)
 
     def test_missing_in_reference(self):
-        self.aedt_tester.reference_data["projects"] = {}
-        with pytest.raises(KeyError) as exc:
-            self.aedt_tester.validate_config()
-
-        assert "Following projects defined in configuration file: just_winding," in str(exc.value)
-
-    def test_missing_projects(self):
         self.aedt_tester.reference_data = {}
         with pytest.raises(KeyError) as exc:
             self.aedt_tester.validate_config()
 
-        assert "'projects' key is not specified in Reference File" in str(exc.value)
+        assert "Following projects defined in configuration file: just_winding," in str(exc.value)
 
     def test_distribution(self):
         config = self.aedt_tester.project_tests_config
@@ -372,6 +311,7 @@ class TestElectronicsDesktopTester(BaseElectronicsDesktopTester):
     def test_initialize_results(self, time_mock):
         with TemporaryDirectory() as tmp_dir:
             self.aedt_tester.results_path = Path(tmp_dir)
+            self.aedt_tester.reference_folder = Path(tmp_dir) / "1"
             self.aedt_tester.initialize_results()
 
             assert self.aedt_tester.report_data == {
@@ -444,7 +384,7 @@ class TestCLIArgs:
         with mock.patch("sys.argv", self.default_argv):
             with pytest.raises(ValueError) as exc:
                 aedt_test_runner.parse_arguments()
-            assert "set --only-reference flag or provide path via --reference-file" in str(exc.value)
+            assert "set --only-reference flag or provide path via --reference-folder" in str(exc.value)
 
     def test_validation(self):
         self.default_argv += ["--only-reference", "--only-validate", "--suppress-validation"]
