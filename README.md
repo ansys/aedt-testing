@@ -82,7 +82,7 @@ aedt_test_runner --config-folder=examples/configs --aedt-version=193 --only-refe
 
 ##### Run comparison between versions
 ```bash
-aedt_test_runner --config-folder=examples/configs --aedt-version=222 --reference-file=input/reference_results.json
+aedt_test_runner --config-folder=examples/configs --aedt-version=222 --reference-file=reference_folder
 ```
 
 #### Slurm
@@ -103,7 +103,7 @@ sbatch \
   --partition ottc01 \
   --export "ALL,ANSYSEM_ROOT222=/ott/apps/software/ANSYS_EM_2022R2_211129/v222/Linux64,ANS_NODEPCHECK=1" \
   --nodes 2-2 --ntasks 56 \
-  --wrap "aedt_test_runner --config-folder=examples/configs --aedt-version=222 --reference-file=~/reference_results.json"
+  --wrap "aedt_test_runner --config-folder=examples/configs --aedt-version=222 --reference-file=~/reference_folder"
 ```
 
 ## Limitations
