@@ -35,6 +35,7 @@ classifiers = [
 dependencies = [
     "pyaedt==0.4.72",
     "Django==3.2.8",
+    "tomli>=1.0.0",
 ]
 
 # development dependencies
