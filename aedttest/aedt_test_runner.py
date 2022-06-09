@@ -660,7 +660,7 @@ def allocate_task(
 
     """
     if distribution_config["single_node"]:
-        return
+        return None
 
     allocated_machines = {}
     tasks = distribution_config["parametric_tasks"]
@@ -1099,7 +1099,9 @@ def read_configs(config_folder: Path) -> Dict[str, Any]:
         }
 
         merged = dict(default_config, **proj_conf)
-        merged["distribution"] = dict(default_config["distribution"], **proj_conf.get("distribution", {}))
+        merged["distribution"] = dict(
+            default_config["distribution"], **proj_conf.get("distribution", {})  # type: ignore[arg-type]
+        )
         project_tests_config[proj_name] = merged
 
     if not project_tests_config:
