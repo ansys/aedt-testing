@@ -84,58 +84,6 @@ def main() -> None:
         raise
 
 
-def read_configs(config_folder: Path) -> Dict[str, Any]:
-    """Reads configuration files.
-
-    Reads all .toml files from config_folder and prefills them with default configuration settings.
-
-    Parameters
-    ----------
-    config_folder : Path
-        Path to configuration folder.
-
-    Returns
-    -------
-    dict
-        Merged dictionary with all projects.
-
-    """
-    project_tests_config = {}
-    for config_file in config_folder.rglob("*.toml"):
-        logger.debug(f"Add config {config_file}")
-
-        with open(config_file, "rb") as file:
-            proj_conf = tomli.load(file)
-
-        try:
-            proj_conf = proj_conf["project"]
-            proj_name = proj_conf["name"]
-        except KeyError as exc:
-            raise KeyError("Configuration file misses project name or has incorrect format") from exc
-
-        default_config = {
-            "path": f"{proj_name}.aedt",
-            "dependencies": [],
-            "distribution": {
-                "cores": 1,
-                "distribution_types": ["default"],
-                "parametric_tasks": 1,
-                "multilevel_distribution_tasks": 0,
-                "single_node": False,
-                "auto": True,
-            },
-        }
-
-        merged = dict(default_config, **proj_conf)
-        merged["distribution"] = dict(default_config["distribution"], **proj_conf.get("distribution", {}))
-        project_tests_config[proj_name] = merged
-
-    if not project_tests_config:
-        raise ValueError("Project configuration files (.toml) were not found.")
-
-    return project_tests_config
-
-
 class ElectronicsDesktopTester:
     def __init__(
         self,
@@ -1108,6 +1056,58 @@ def compare_keys(
             continue
         if isinstance(val, dict):
             compare_keys(val, dict_2[key], exceptions_list, dict_path=f"{dict_path}{key}", results_type=results_type)
+
+
+def read_configs(config_folder: Path) -> Dict[str, Any]:
+    """Reads configuration files.
+
+    Reads all .toml files from config_folder and prefills them with default configuration settings.
+
+    Parameters
+    ----------
+    config_folder : Path
+        Path to configuration folder.
+
+    Returns
+    -------
+    dict
+        Merged dictionary with all projects.
+
+    """
+    project_tests_config = {}
+    for config_file in config_folder.rglob("*.toml"):
+        logger.debug(f"Add config {config_file}")
+
+        with open(config_file, "rb") as file:
+            proj_conf = tomli.load(file)
+
+        try:
+            proj_conf = proj_conf["project"]
+            proj_name = proj_conf["name"]
+        except KeyError as exc:
+            raise KeyError("Configuration file misses project name or has incorrect format") from exc
+
+        default_config = {
+            "path": f"{proj_name}.aedt",
+            "dependencies": [],
+            "distribution": {
+                "cores": 1,
+                "distribution_types": ["default"],
+                "parametric_tasks": 1,
+                "multilevel_distribution_tasks": 0,
+                "single_node": False,
+                "auto": True,
+            },
+        }
+
+        merged = dict(default_config, **proj_conf)
+        merged["distribution"] = dict(default_config["distribution"], **proj_conf.get("distribution", {}))
+        project_tests_config[proj_name] = merged
+
+    if not project_tests_config:
+        raise ValueError("Project configuration files (.toml) were not found.")
+
+    return project_tests_config
 
 
 def parse_arguments() -> argparse.Namespace:
