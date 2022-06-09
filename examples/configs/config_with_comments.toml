@@ -12,9 +12,10 @@ dependencies = ["input\\nested\\ctrl_prog"]
 
 # Distribution Configuration
 [project.distribution]
-cores = 4  # Number of cores used when this project is run
+# (OPTIONAL) (default: 1) Number of cores used when this project is run
+cores = 4
 
-# (OPTIONAL) (default: None) List of parallel distribution types.
+# (OPTIONAL) (default: 'default') List of parallel distribution types.
 # IMPORTANT: Ignored if auto is true.
 distribution_types = [
     "Variations",

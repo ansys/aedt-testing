@@ -123,12 +123,35 @@ class ElectronicsDesktopTester:
 
         self.machines_dict = {machine.hostname: machine.cores for machine in get_job_machines()}
 
-        self.project_tests_config = {}
+        self.project_tests_config = self.read_configs(config_folder)
+
+    def read_configs(self, config_folder):
+        project_tests_config = {}
         for config in config_folder.rglob("*.toml"):
             logger.debug(f"Add config {config}")
+            default_cfg = {
+                "project": {
+                    "path": "",
+                    "dependencies": [],
+                    "distribution": {
+                        "cores": 1,
+                        "distribution_types": ["default"],
+                        "parametric_tasks": 1,
+                        "multilevel_distribution_tasks": 0,
+                        "single_node": False,
+                        "auto": True,
+                    },
+                }
+            }
             with open(config, "rb") as file:
                 proj_conf = tomli.load(file)
-                self.project_tests_config[proj_conf["project"]["name"]] = proj_conf["project"]
+                default_cfg.update(proj_conf)
+                project_tests_config[proj_conf["project"]["name"]] = default_cfg["project"]
+
+        if not project_tests_config:
+            raise ValueError("Project configuration files (.toml) were not found.")
+
+        return project_tests_config
 
     def validate_config(self) -> None:
         """Make quick validation of --config-folder [and --reference-file if present].
@@ -666,7 +689,7 @@ def allocate_task(
 
     """
     if distribution_config.get("single_node", False):
-        return None
+        return
 
     allocated_machines = {}
     tasks = distribution_config.get("parametric_tasks", 1)
