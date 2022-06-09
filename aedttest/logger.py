@@ -42,8 +42,8 @@ def set_logger(logging_file, level=logging.DEBUG, pyaedt_module=None):
 
     if pyaedt_module is not None:
         if level > logging.DEBUG:
-            pyaedt_module.aedt_logger.ENABLE_LOGGER = False
+            pyaedt_module.settings.enable_logger = False
         else:
             # debug is requested
-            pyaedt_module.aedt_logger.FORMATTER = formatter
-            pyaedt_module.aedt_logger.DEFAULT_LOGGER_FILE = logging_file
+            pyaedt_module.settings.formatter = formatter
+            pyaedt_module.settings.logger_file_path = logging_file
