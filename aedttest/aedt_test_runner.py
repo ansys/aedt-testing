@@ -181,7 +181,7 @@ class ElectronicsDesktopTester:
 
                 logger.info(f"Start project {project_name}")
                 copy_dependencies(project_config, tmp_dir)
-                project_path = copy_proj(project_name, project_config, tmp_dir)
+                project_path = copy_proj(project_config, tmp_dir)
 
                 thread_kwargs = {
                     "project_path": project_path,
@@ -730,13 +730,11 @@ def allocate_task_within_node(
     return {}
 
 
-def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> Union[str, List[str]]:
+def copy_proj(project_config: Dict[str, Any], dst: str) -> Union[str, List[str]]:
     """Copy project to run location, temp by default.
 
     Parameters
     ----------
-    project_name : str
-        Name of the project to start.
     project_config : dict
         Configuration of project, distribution, etc.
     dst : str
