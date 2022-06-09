@@ -127,9 +127,9 @@ class ElectronicsDesktopTester:
 
     def read_configs(self, config_folder):
         project_tests_config = {}
-        for config in config_folder.rglob("*.toml"):
-            logger.debug(f"Add config {config}")
-            default_cfg = {
+        for config_file in config_folder.rglob("*.toml"):
+            logger.debug(f"Add config {config_file}")
+            config = {
                 "project": {
                     "path": "",
                     "dependencies": [],
@@ -143,10 +143,11 @@ class ElectronicsDesktopTester:
                     },
                 }
             }
-            with open(config, "rb") as file:
+
+            with open(config_file, "rb") as file:
                 proj_conf = tomli.load(file)
-                default_cfg.update(proj_conf)
-                project_tests_config[proj_conf["project"]["name"]] = default_cfg["project"]
+                config.update(proj_conf)
+                project_tests_config[proj_conf["project"]["name"]] = config["project"]
 
         if not project_tests_config:
             raise ValueError("Project configuration files (.toml) were not found.")
