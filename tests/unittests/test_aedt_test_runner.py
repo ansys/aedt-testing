@@ -16,22 +16,26 @@ def test_allocate_task_single():
     job_machines = aedt_test_runner.get_job_machines("host1:15,host2:10")
     machines_dict = {machine.hostname: machine.cores for machine in job_machines}
 
-    allocated_machines = aedt_test_runner.allocate_task({"cores": 17}, machines_dict)
+    default = {"single_node": False, "parametric_tasks": 1}
+
+    allocated_machines = aedt_test_runner.allocate_task(dict({"cores": 17}, **default), machines_dict)
     assert allocated_machines == {"host1": {"cores": 15, "tasks": 1}, "host2": {"cores": 2, "tasks": 1}}
 
-    allocated_machines = aedt_test_runner.allocate_task({"cores": 15}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task(dict({"cores": 15}, **default), machines_dict)
     assert allocated_machines == {"host1": {"cores": 15, "tasks": 1}}
 
-    allocated_machines = aedt_test_runner.allocate_task({"cores": 2}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task(dict({"cores": 2}, **default), machines_dict)
     assert allocated_machines == {"host1": {"cores": 2, "tasks": 1}}
 
-    allocated_machines = aedt_test_runner.allocate_task({"cores": 25}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task(dict({"cores": 25}, **default), machines_dict)
     assert allocated_machines == {"host1": {"cores": 15, "tasks": 1}, "host2": {"cores": 10, "tasks": 1}}
 
-    allocated_machines = aedt_test_runner.allocate_task({"cores": 26}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task(dict({"cores": 26}, **default), machines_dict)
     assert allocated_machines is None
 
-    allocated_machines = aedt_test_runner.allocate_task({"cores": 10, "single_node": True}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task(
+        dict(default, **{"cores": 10, "single_node": True}), machines_dict
+    )
     assert allocated_machines is None
 
 
@@ -41,43 +45,50 @@ def test_allocate_task_multiple():
     """
     job_machines = aedt_test_runner.get_job_machines("host1:20,host2:10")
     machines_dict = {machine.hostname: machine.cores for machine in job_machines}
+    default = {"single_node": False, "parametric_tasks": 2}
 
-    allocated_machines = aedt_test_runner.allocate_task({"cores": 16, "parametric_tasks": 2}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task(dict(default, **{"cores": 16}), machines_dict)
     assert allocated_machines == {"host1": {"cores": 16, "tasks": 2}}
 
-    allocated_machines = aedt_test_runner.allocate_task({"cores": 24, "parametric_tasks": 2}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task(dict(default, **{"cores": 24}), machines_dict)
     assert not allocated_machines
 
-    allocated_machines = aedt_test_runner.allocate_task({"cores": 10, "parametric_tasks": 2}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task(dict(default, **{"cores": 10}), machines_dict)
     assert allocated_machines == {"host1": {"cores": 10, "tasks": 2}}
 
-    allocated_machines = aedt_test_runner.allocate_task({"cores": 25, "parametric_tasks": 5}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task(
+        dict(default, **{"cores": 25, "parametric_tasks": 5}), machines_dict
+    )
     assert allocated_machines == {"host1": {"cores": 20, "tasks": 4}, "host2": {"cores": 5, "tasks": 1}}
 
     job_machines = aedt_test_runner.get_job_machines("host1:10,host2:15")
     machines_dict = {machine.hostname: machine.cores for machine in job_machines}
 
-    allocated_machines = aedt_test_runner.allocate_task({"cores": 26, "parametric_tasks": 2}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task(dict(default, **{"cores": 26}), machines_dict)
     assert not allocated_machines
 
-    allocated_machines = aedt_test_runner.allocate_task({"cores": 10, "parametric_tasks": 2}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task(dict(default, **{"cores": 10}), machines_dict)
     assert allocated_machines == {"host1": {"cores": 10, "tasks": 2}}
 
-    allocated_machines = aedt_test_runner.allocate_task({"cores": 25, "parametric_tasks": 5}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task(
+        dict(default, **{"cores": 25, "parametric_tasks": 5}), machines_dict
+    )
     assert allocated_machines == {"host1": {"cores": 10, "tasks": 2}, "host2": {"cores": 15, "tasks": 3}}
 
 
 def test_allocate_task_within_node():
+    default = {"single_node": False, "parametric_tasks": 1}
+
     job_machines = aedt_test_runner.get_job_machines("host1:15,host2:10")
     machines_dict = {machine.hostname: machine.cores for machine in job_machines}
 
-    allocated_machines = aedt_test_runner.allocate_task_within_node({"cores": 17}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task_within_node(dict(default, **{"cores": 17}), machines_dict)
     assert not allocated_machines
 
-    allocated_machines = aedt_test_runner.allocate_task_within_node({"cores": 15}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task_within_node(dict(default, **{"cores": 15}), machines_dict)
     assert allocated_machines == {"host1": {"cores": 15, "tasks": 1}}
 
-    allocated_machines = aedt_test_runner.allocate_task_within_node({"cores": 2}, machines_dict)
+    allocated_machines = aedt_test_runner.allocate_task_within_node(dict(default, **{"cores": 2}), machines_dict)
     assert allocated_machines == {"host1": {"cores": 2, "tasks": 1}}
 
 
@@ -90,7 +101,7 @@ def test_allocator():
         out_dir=None,
         save_projects=None,
         only_reference=True,
-        reference_folder="",
+        reference_folder=None,
     )
     job_machines = aedt_test_runner.get_job_machines("host1:28,host2:28,host3:28")
     aedt_tester.machines_dict = {machine.hostname: machine.cores for machine in job_machines}
