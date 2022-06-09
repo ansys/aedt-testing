@@ -42,7 +42,7 @@ def set_logger(logging_file, level=logging.DEBUG, pyaedt_module=None):
 
     if pyaedt_module is not None:
         if level > logging.DEBUG:
-            pyaedt_module.settings.enable_screen_logs = False
+            pyaedt_module.settings.enable_logger = False
         else:
             # debug is requested
             pyaedt_module.settings.formatter = formatter
