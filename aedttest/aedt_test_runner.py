@@ -129,9 +129,14 @@ class ElectronicsDesktopTester:
         project_tests_config = {}
         for config_file in config_folder.rglob("*.toml"):
             logger.debug(f"Add config {config_file}")
+
+            with open(config_file, "rb") as file:
+                proj_conf = tomli.load(file)
+            proj_name = proj_conf["project"]["name"]
+
             config = {
                 "project": {
-                    "path": "",
+                    "path": f"{proj_name}.aedt",
                     "dependencies": [],
                     "distribution": {
                         "cores": 1,
@@ -143,11 +148,8 @@ class ElectronicsDesktopTester:
                     },
                 }
             }
-
-            with open(config_file, "rb") as file:
-                proj_conf = tomli.load(file)
-                config.update(proj_conf)
-                project_tests_config[proj_conf["project"]["name"]] = config["project"]
+            config.update(proj_conf)
+            project_tests_config[proj_name] = config["project"]
 
         if not project_tests_config:
             raise ValueError("Project configuration files (.toml) were not found.")
@@ -242,8 +244,7 @@ class ElectronicsDesktopTester:
         for proj in self.project_tests_config:
             proj_cores = self.project_tests_config[proj]["distribution"]["cores"]
             if proj_cores > total_available_cores or (
-                self.project_tests_config[proj]["distribution"].get("single_node", False)
-                and proj_cores > max_machine_cores
+                self.project_tests_config[proj]["distribution"]["single_node"] and proj_cores > max_machine_cores
             ):
                 raise ValueError(f"{proj} requires {proj_cores} cores. Not enough resources to run")
 
@@ -689,11 +690,11 @@ def allocate_task(
         Allocated machines for the project or ``None`` if not allocated.
 
     """
-    if distribution_config.get("single_node", False):
+    if distribution_config["single_node"]:
         return
 
     allocated_machines = {}
-    tasks = distribution_config.get("parametric_tasks", 1)
+    tasks = distribution_config["parametric_tasks"]
     cores_per_task = int(distribution_config["cores"] / tasks)
     to_fill = distribution_config["cores"]
 
@@ -754,7 +755,7 @@ def allocate_task_within_node(
             return {
                 machine: {
                     "cores": distribution_config["cores"],
-                    "tasks": distribution_config.get("parametric_tasks", 1),
+                    "tasks": distribution_config["parametric_tasks"],
                 }
             }
     return {}
@@ -778,7 +779,7 @@ def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> Un
         Location where it was copied.
 
     """
-    src = project_config.get("path", project_name + ".aedt")
+    src = project_config["path"]
     return copy_path_to(src, dst)
 
 
@@ -793,7 +794,7 @@ def copy_dependencies(project_config: Dict[str, Any], dst: str) -> None:
         Path where to copy.
 
     """
-    deps = project_config.get("dependencies", None)
+    deps = project_config["dependencies"]
 
     if isinstance(deps, list):
         for dep in deps:
@@ -925,23 +926,22 @@ def execute_aedt(
     aedt_path = get_aedt_executable_path(version)
     command = [aedt_path]
 
-    if distribution_config.get("auto", True):
+    if distribution_config["auto"]:
         aedt_format_machines = ",".join([f"{name}:-1:{conf['cores']}:90%" for name, conf in machines.items()])
-        command += ["-auto", f"NumDistributedVariations={distribution_config.get('parametric_tasks', 1)}"]
+        command += ["-auto", f"NumDistributedVariations={distribution_config['parametric_tasks']}"]
     else:
         aedt_format_machines = ",".join(
             [f"{name}:{conf['tasks']}:{conf['cores']}:90%" for name, conf in machines.items()]
         )
 
-        if distribution_config.get("distribution_types", None):
-            command.append("-distributed")
-            dist_type_str = ",".join([dist_type for dist_type in distribution_config["distribution_types"]])
-            command.append(f"includetypes={dist_type_str}")
+        command.append("-distributed")
+        dist_type_str = ",".join([dist_type for dist_type in distribution_config["distribution_types"]])
+        command.append(f"includetypes={dist_type_str}")
 
-            tasks = distribution_config.get("multilevel_distribution_tasks", 0)
-            if tasks > 0:
-                command.append("maxlevels=2")
-                command.append(f"numlevel1={tasks}")
+        tasks = int(distribution_config["multilevel_distribution_tasks"])
+        if tasks > 0:
+            command.append("maxlevels=2")
+            command.append(f"numlevel1={tasks}")
 
     command += ["-machinelist", "list=" + aedt_format_machines]
 
