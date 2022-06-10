@@ -123,12 +123,7 @@ class ElectronicsDesktopTester:
 
         self.machines_dict = {machine.hostname: machine.cores for machine in get_job_machines()}
 
-        self.project_tests_config = {}
-        for config in config_folder.rglob("*.toml"):
-            logger.debug(f"Add config {config}")
-            with open(config, "rb") as file:
-                proj_conf = tomli.load(file)
-                self.project_tests_config[proj_conf["project"]["name"]] = proj_conf["project"]
+        self.project_tests_config = read_configs(config_folder)
 
     def validate_config(self) -> None:
         """Make quick validation of --config-folder [and --reference-file if present].
@@ -186,7 +181,7 @@ class ElectronicsDesktopTester:
 
                 logger.info(f"Start project {project_name}")
                 copy_dependencies(project_config, tmp_dir)
-                project_path = copy_proj(project_name, project_config, tmp_dir)
+                project_path = copy_proj(project_config, tmp_dir)
 
                 thread_kwargs = {
                     "project_path": project_path,
@@ -218,8 +213,7 @@ class ElectronicsDesktopTester:
         for proj in self.project_tests_config:
             proj_cores = self.project_tests_config[proj]["distribution"]["cores"]
             if proj_cores > total_available_cores or (
-                self.project_tests_config[proj]["distribution"].get("single_node", False)
-                and proj_cores > max_machine_cores
+                self.project_tests_config[proj]["distribution"]["single_node"] and proj_cores > max_machine_cores
             ):
                 raise ValueError(f"{proj} requires {proj_cores} cores. Not enough resources to run")
 
@@ -665,11 +659,11 @@ def allocate_task(
         Allocated machines for the project or ``None`` if not allocated.
 
     """
-    if distribution_config.get("single_node", False):
+    if distribution_config["single_node"]:
         return None
 
     allocated_machines = {}
-    tasks = distribution_config.get("parametric_tasks", 1)
+    tasks = distribution_config["parametric_tasks"]
     cores_per_task = int(distribution_config["cores"] / tasks)
     to_fill = distribution_config["cores"]
 
@@ -730,19 +724,17 @@ def allocate_task_within_node(
             return {
                 machine: {
                     "cores": distribution_config["cores"],
-                    "tasks": distribution_config.get("parametric_tasks", 1),
+                    "tasks": distribution_config["parametric_tasks"],
                 }
             }
     return {}
 
 
-def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> Union[str, List[str]]:
+def copy_proj(project_config: Dict[str, Any], dst: str) -> Union[str, List[str]]:
     """Copy project to run location, temp by default.
 
     Parameters
     ----------
-    project_name : str
-        Name of the project to start.
     project_config : dict
         Configuration of project, distribution, etc.
     dst : str
@@ -754,7 +746,7 @@ def copy_proj(project_name: str, project_config: Dict[str, Any], dst: str) -> Un
         Location where it was copied.
 
     """
-    src = project_config.get("path", project_name + ".aedt")
+    src = project_config["path"]
     return copy_path_to(src, dst)
 
 
@@ -769,7 +761,7 @@ def copy_dependencies(project_config: Dict[str, Any], dst: str) -> None:
         Path where to copy.
 
     """
-    deps = project_config.get("dependencies", None)
+    deps = project_config["dependencies"]
 
     if isinstance(deps, list):
         for dep in deps:
@@ -901,23 +893,22 @@ def execute_aedt(
     aedt_path = get_aedt_executable_path(version)
     command = [aedt_path]
 
-    if distribution_config.get("auto", True):
+    if distribution_config["auto"]:
         aedt_format_machines = ",".join([f"{name}:-1:{conf['cores']}:90%" for name, conf in machines.items()])
-        command += ["-auto", f"NumDistributedVariations={distribution_config.get('parametric_tasks', 1)}"]
+        command += ["-auto", f"NumDistributedVariations={distribution_config['parametric_tasks']}"]
     else:
         aedt_format_machines = ",".join(
             [f"{name}:{conf['tasks']}:{conf['cores']}:90%" for name, conf in machines.items()]
         )
 
-        if distribution_config.get("distribution_types", None):
-            command.append("-distributed")
-            dist_type_str = ",".join([dist_type for dist_type in distribution_config["distribution_types"]])
-            command.append(f"includetypes={dist_type_str}")
+        command.append("-distributed")
+        dist_type_str = ",".join([dist_type for dist_type in distribution_config["distribution_types"]])
+        command.append(f"includetypes={dist_type_str}")
 
-            tasks = distribution_config.get("multilevel_distribution_tasks", 0)
-            if tasks > 0:
-                command.append("maxlevels=2")
-                command.append(f"numlevel1={tasks}")
+        tasks = int(distribution_config["multilevel_distribution_tasks"])
+        if tasks > 0:
+            command.append("maxlevels=2")
+            command.append(f"numlevel1={tasks}")
 
     command += ["-machinelist", "list=" + aedt_format_machines]
 
@@ -1063,6 +1054,60 @@ def compare_keys(
             continue
         if isinstance(val, dict):
             compare_keys(val, dict_2[key], exceptions_list, dict_path=f"{dict_path}{key}", results_type=results_type)
+
+
+def read_configs(config_folder: Path) -> Dict[str, Any]:
+    """Reads configuration files.
+
+    Reads all .toml files from config_folder and prefills them with default configuration settings.
+
+    Parameters
+    ----------
+    config_folder : Path
+        Path to configuration folder.
+
+    Returns
+    -------
+    dict
+        Merged dictionary with all projects.
+
+    """
+    project_tests_config = {}
+    for config_file in config_folder.rglob("*.toml"):
+        logger.debug(f"Add config {config_file}")
+
+        with open(config_file, "rb") as file:
+            proj_conf = tomli.load(file)
+
+        try:
+            proj_conf = proj_conf["project"]
+            proj_name = proj_conf["name"]
+        except KeyError as exc:
+            raise KeyError("Configuration file misses project name or has incorrect format") from exc
+
+        default_config = {
+            "path": f"{proj_name}.aedt",
+            "dependencies": [],
+            "distribution": {
+                "cores": 1,
+                "distribution_types": ["default"],
+                "parametric_tasks": 1,
+                "multilevel_distribution_tasks": 0,
+                "single_node": False,
+                "auto": True,
+            },
+        }
+
+        merged = dict(default_config, **proj_conf)
+        merged["distribution"] = dict(
+            default_config["distribution"], **proj_conf.get("distribution", {})  # type: ignore[arg-type]
+        )
+        project_tests_config[proj_name] = merged
+
+    if not project_tests_config:
+        raise ValueError("Project configuration files (.toml) were not found.")
+
+    return project_tests_config
 
 
 def parse_arguments() -> argparse.Namespace:
