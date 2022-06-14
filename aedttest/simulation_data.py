@@ -105,16 +105,19 @@ def parse_profile_file(profile_file, design_name, variation, setup_name):
         Elapsed simulation time.
     """
     elapsed_time = ""
+    cell_number = 0
     with open(profile_file) as file:
         for line in file:
             if "elapsed time" in line.lower():
                 elapsed_time = line.lower()
+            if "cells" in line.lower():
+                cell_number = int(line.lower().split()[-2])
 
     if elapsed_time:
         split_line = elapsed_time.split("elapsed time")[1]
 
         simulation_time = re.findall(r"[0-9]*:[0-9][0-9]:[0-9][0-9]", split_line)[0]
-        return simulation_time
+        return simulation_time, cell_number
     else:
         PROJECT_DICT["error_exception"].append(
             ("Design:{} Variation:{} Setup:{} no elapsed time in file".format(design_name, variation, setup_name))
