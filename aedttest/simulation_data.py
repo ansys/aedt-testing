@@ -103,18 +103,23 @@ def parse_profile_file(profile_file, design_name, variation, setup_name):
     -------
     simulation_time : str
         Elapsed simulation time.
+    cell_number: int
+        number of cells for Icepak
     """
     elapsed_time = ""
+    cell_number = 0
     with open(profile_file) as file:
         for line in file:
             if "elapsed time" in line.lower():
                 elapsed_time = line.lower()
+            if "cells" in line.lower():
+                cell_number = int(line.lower().split()[-2])
 
     if elapsed_time:
         split_line = elapsed_time.split("elapsed time")[1]
 
         simulation_time = re.findall(r"[0-9]*:[0-9][0-9]:[0-9][0-9]", split_line)[0]
-        return simulation_time
+        return simulation_time, cell_number
     else:
         PROJECT_DICT["error_exception"].append(
             ("Design:{} Variation:{} Setup:{} no elapsed time in file".format(design_name, variation, setup_name))
@@ -270,15 +275,18 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
             if variation_name not in design_dict[design_name]["simulation_time"]:
                 design_dict[design_name]["simulation_time"][variation_name] = {}
 
-            mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
-            app.export_mesh_stats(setup, variation_string, mesh_stats_file)
-            mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_name, setup)
-            design_dict[design_name]["mesh"][variation_name][setup] = mesh_data
-
             profile_file = generate_unique_file_path(project_dir, ".prof")
             profile_file = app.export_profile(setup, variation_string, profile_file)
-            simulation_time = parse_profile_file(profile_file, design_name, variation_name, setup)
+            simulation_time, cell_number = parse_profile_file(profile_file, design_name, variation_name, setup)
             design_dict[design_name]["simulation_time"][variation_name][setup] = simulation_time
+
+            if app.design_type == "Icepak":
+                design_dict[design_name]["mesh"][variation_name][setup] = cell_number
+            else:
+                mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
+                app.export_mesh_stats(setup, variation_string, mesh_stats_file)
+                mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_name, setup)
+                design_dict[design_name]["mesh"][variation_name][setup] = mesh_data
 
     return design_dict
 

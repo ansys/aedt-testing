@@ -45,7 +45,7 @@ class TestParse(BaseTest):
         result = simulation_data.parse_value_with_unit("3.0")
         assert result == ("3.0", "")
 
-    @mock.patch("aedttest.simulation_data.parse_profile_file", return_value="10:00:00")
+    @mock.patch("aedttest.simulation_data.parse_profile_file", return_value=["10:00:00", 0])
     @mock.patch("aedttest.simulation_data.parse_mesh_stats", return_value=100)
     def test_extract_design_data(self, mock_parse_mesh, mock_parse_profile_file):
         mock_pyaedt_app = mock.Mock()
@@ -71,7 +71,7 @@ class TestParse(BaseTest):
 
     def test_parse_profile_2020r2(self):
 
-        result = simulation_data.parse_profile_file(
+        result, _ = simulation_data.parse_profile_file(
             profile_file=os.path.join(TESTS_DIR, "input", "2020R2_profile.prof"),
             design_name="test_design",
             variation="test_variation",
@@ -80,7 +80,7 @@ class TestParse(BaseTest):
         assert result == "00:00:09"
 
     def test_parse_profile_2021r2(self):
-        result = simulation_data.parse_profile_file(
+        result, _ = simulation_data.parse_profile_file(
             profile_file=os.path.join(TESTS_DIR, "input", "2021R2_profile.prof"),
             design_name="test_design",
             variation="test_variation",
@@ -89,7 +89,7 @@ class TestParse(BaseTest):
         assert result == "00:00:05"
 
     def test_parse_profile_2019r1(self):
-        result = simulation_data.parse_profile_file(
+        result, _ = simulation_data.parse_profile_file(
             profile_file=os.path.join(TESTS_DIR, "input", "R2019R1_profile.prof"),
             design_name="test_design",
             variation="test_variation",
@@ -98,13 +98,21 @@ class TestParse(BaseTest):
         assert result == "00:00:02"
 
     def test_parse_profile_mixed_case(self):
-        result = simulation_data.parse_profile_file(
+        result, _ = simulation_data.parse_profile_file(
             profile_file=os.path.join(TESTS_DIR, "input", "prof_test_mixed_case.prof"),
             design_name="test_design",
             variation="test_variation",
             setup_name="test_setup",
         )
         assert result == "00:00:50"
+
+    def test_parse_profile_icepak(self):
+        input_file = os.path.join(TESTS_DIR, "input", "icepak.prof")
+        simulation_time, cell_number = simulation_data.parse_profile_file(
+            profile_file=input_file, design_name="test_design", variation="test_variation", setup_name="test_setup"
+        )
+        assert simulation_time == "00:01:37"
+        assert cell_number == 268987
 
     def test_parse_mesh_stats_no_mesh(self):
 

@@ -1,0 +1,40 @@
+Icepak Profile
+  Project:           Workshop 01_220524
+  Design:            IcepakDesign1
+  Solution setup:    Setup1
+
+  Task                   Real Time  CPU Time  Memory  Information
+  ----                   ---------  --------  ------  -----------
+
+  Start                                               Time:  06/14/2022 12:16:36; Host: MADSLOPEZ1; Processor: 6; OS: NT 10.0; Icepak 2022.1.2
+                                                      Executing from C:\Program Files\AnsysEM\v221\Win64\ICEPAKCOMENGINE.exe
+                                                      HPC Enabled
+  Design Validation                                   Elapsed time : 00:00:00 , Icepak ComEngine Memory : 66.3 M
+                                                      Perform full validations
+                                                      
+  Meshing Process                                     
+  Global                 00:00:07   00:00:07  284 M   Mesh count: 318094 nodes, 99746 faces, 268987 cells
+                                                      Override min. gap - (7.500e-04, 1.000e-04, 1.200e-04)
+                                                      Total: Mesh count - 318094 nodes, 99746 faces, 268987 cells
+  Meshing Process                                     Elapsed time : 00:00:07
+                                                      
+  Populate Solver Input  00:00:03   00:00:11  414 M   
+  Solver Initialization  00:00:13   00:00:12  1.12 G  
+  Solve Flow             00:04:59   00:04:53  1.31 G  
+  Solve Energy           00:00:11   00:00:10  1.32 G  
+                                                      Time:  06/14/2022 12:22:24, Status: Normal Completion
+  Total                  00:05:33   00:05:33          Elapsed time : 00:05:48 , ComEngine Memory : 465 M
+                                                      
+  Start                                               Time:  06/14/2022 14:42:22; Host: MADSLOPEZ1; Processor: 6; OS: NT 10.0; Icepak 2022.1.2
+                                                      Executing from C:\Program Files\AnsysEM\v221\Win64\ICEPAKCOMENGINE.exe
+                                                      HPC Enabled
+  Design Validation                                   Elapsed time : 00:00:00 , Icepak ComEngine Memory : 63 M
+                                                      Perform full validations
+                                                      
+  Populate Solver Input  00:00:04   00:00:13  412 M   
+  Solver Initialization  00:00:14   00:00:13  1.2 G   
+  Solve Flow             00:01:00   00:00:59  1.28 G  
+  Solve Energy           00:00:08   00:00:08  1.31 G  
+                                                      Time:  06/14/2022 14:44:00, Status: Normal Completion
+  Total                  00:01:26   00:01:33          Elapsed time : 00:01:37 , ComEngine Memory : 462 M
+                                                      
