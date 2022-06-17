@@ -113,11 +113,8 @@ def parse_profile_file(profile_file, design_name, variation, setup_name):
             if "elapsed time" in line.lower():
                 elapsed_time = line.lower()
             if "cells" in line.lower():
-                cell = [x for x in line.strip().lower().split(",") if "cell" in x]
-                cell_number = cell[0].replace("total", "")
-                cell_number = cell_number.replace("cells", "")
-                cell_number = cell_number.replace(":", "")
-                cell_number = int(cell_number)
+                cells = re.findall(r"cells: \d+", line.lower()) or re.findall(r"\d+ cells", line.lower())
+                cell_number = int(re.findall(r"\d+", cells[0])[0])
 
     if elapsed_time:
         split_line = elapsed_time.split("elapsed time")[1]
