@@ -20,15 +20,21 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--pyaedt-path")
     parser.add_argument("--logfile-path")
+    parser.add_argument("--logging-level")
     args = parser.parse_args(shlex.split(arg_string))
     return args.pyaedt_path, args.logfile_path
 
 
 if not DEBUG:
-    pyaedt_path, logfile_path = parse_args()
+    pyaedt_path, logfile_path, logging_level = parse_args()
     sys.path.append(pyaedt_path)
     specified_version = None
-    log_level = logging.INFO
+
+    if logging_level == "debug":
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.INFO
+
 else:
     parser = argparse.ArgumentParser()
     parser.add_argument("--desktop-version", default="2022.1")
