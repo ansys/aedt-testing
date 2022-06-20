@@ -1,0 +1,30 @@
+Icepak Profile
+  Project:           Workshop 01_220524_debug _231
+  Design:            IcepakDesign1
+  Solution setup:    Setup1
+
+  Task                   Real Time  CPU Time  Memory  Information
+  ----                   ---------  --------  ------  -----------
+
+  Solution Process                                    Start Time: 06/16/2022 23:17:24, Host: KISBOYANG, Processor: 6, OS: NT 10.0, Product: Icepak 2023.1.0
+                                                      Executing From: C:\Program Files\AnsysEM\v231\Win64\ICEPAKCOMENGINE.exe
+                                                      
+  HPC                                                 Type: Manual, Distribution Types: Variations, Solver, Mesher
+  Machine                                             Name: KISBOYANG.win.ansys.com, Tasks: 1, Cores: 2
+                                                      
+  Design Validation                                   Elapsed time : 00:00:00 , Icepak ComEngine Memory : 67.1 M
+                                                      Perform full validations
+                                                      
+  Meshing Process                                     Time: 06/16/2022 23:17:25
+  Global                 00:00:09   00:00:08  286 M   Nodes: 318094, Faces: 99746, Cells: 268987, Override min. gap - (7.500e-04, 1.000e-04, 1.200e-04)
+  Meshing Process                                     Elapsed Time: 00:00:09
+                                                      Total Nodes: 318094, Total Faces: 99746, Total Cells: 268987
+                                                      
+  Populate Solver Input  00:00:07   00:00:12  394 M   
+  Solver Initialization  00:00:17   00:00:16  1.43 G  
+  Solve Flow             00:05:11   00:05:11  1.63 G  
+  Solve Energy           00:00:11   00:00:11  1.64 G  
+                                                      
+  Solution Process                                    Elapsed Time: 00:06:34, ComEngine Memory: 398 M
+                                                      Stop Time: 06/16/2022 23:23:58, Status: Normal Completion
+                                                      

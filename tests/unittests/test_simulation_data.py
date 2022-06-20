@@ -114,6 +114,14 @@ class TestParse(BaseTest):
         assert simulation_time == "00:01:37"
         assert cell_number == 268987
 
+    def test_parse_profile_icepak231(self):
+        input_file = os.path.join(TESTS_DIR, "input", "icepak_231.prof")
+        simulation_time, cell_number = simulation_data.parse_profile_file(
+            profile_file=input_file, design_name="test_design", variation="test_variation", setup_name="test_setup"
+        )
+        assert simulation_time == "00:06:34"
+        assert cell_number == 268987
+
     def test_parse_mesh_stats_no_mesh(self):
 
         result = simulation_data.parse_mesh_stats(
