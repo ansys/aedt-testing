@@ -20,17 +20,17 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--pyaedt-path")
     parser.add_argument("--logfile-path")
-    parser.add_argument("--logging-level")
+    parser.add_argument("--debug", action="store_true")
     args = parser.parse_args(shlex.split(arg_string))
-    return args.pyaedt_path, args.logfile_path
+    return args.pyaedt_path, args.logfile_path, args.debug
 
 
 if not DEBUG:
-    pyaedt_path, logfile_path, logging_level = parse_args()
+    pyaedt_path, logfile_path, debug = parse_args()
     sys.path.append(pyaedt_path)
     specified_version = None
 
-    if logging_level == "debug":
+    if debug:
         log_level = logging.DEBUG
     else:
         log_level = logging.INFO
@@ -43,12 +43,17 @@ else:
     logfile_path = os.path.join(MODULE_DIR_PARENT, "aedt_test_framework.log")
     log_level = logging.DEBUG
 
+try:
+    import pyaedt  # noqa: E402
+    from pyaedt import get_pyaedt_app  # noqa: E402
+    from pyaedt.desktop import Desktop  # noqa: E402
+    from pyaedt.generic.general_methods import generate_unique_name  # noqa: E402
+    from pyaedt.generic.report_file_parser import parse_rdat_file  # noqa: E402
+except Exception as exc:
+    set_logger(logging_file=logfile_path, level=log_level, pyaedt_module=None)
+    logger.exception(str(exc))
+    raise
 
-import pyaedt  # noqa: E402
-from pyaedt import get_pyaedt_app  # noqa: E402
-from pyaedt.desktop import Desktop  # noqa: E402
-from pyaedt.generic.general_methods import generate_unique_name  # noqa: E402
-from pyaedt.generic.report_file_parser import parse_rdat_file  # noqa: E402
 
 set_logger(logging_file=logfile_path, level=log_level, pyaedt_module=pyaedt)
 
