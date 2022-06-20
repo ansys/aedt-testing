@@ -113,7 +113,7 @@ def parse_profile_file(profile_file, design_name, variation, setup_name):
             if "elapsed time" in line.lower():
                 elapsed_time = line.lower()
             if "cells" in line.lower():
-                val = re.match(".*cells: (\d+)", line.lower()) or re.match(".* (\d+) cells", line.lower())  # noqa: W605
+                val = re.match(r".*cells: (\d+)", line.lower()) or re.match(r".* (\d+) cells", line.lower())
                 cell_number = int(val.group(1))
 
     if elapsed_time:
