@@ -320,6 +320,7 @@ class TestElectronicsDesktopTester(BaseElectronicsDesktopTester):
                 "all_delta": 1,
                 "projects": {
                     "just_winding": {
+                        "avg": 0,
                         "cores": 2,
                         "status": "queued",
                         "link": None,
@@ -331,7 +332,7 @@ class TestElectronicsDesktopTester(BaseElectronicsDesktopTester):
 
     @mock.patch(
         "aedttest.aedt_test_runner.ElectronicsDesktopTester.prepare_project_report",
-        wraps=lambda *a, **kw: {"error_exception": [], "slider_limit": 2},
+        wraps=lambda *a, **kw: {"error_exception": [], "slider_limit": 2, "max_avg": 3},
     )
     @mock.patch("aedttest.aedt_test_runner.ElectronicsDesktopTester.render_project_html", wraps=lambda *a, **kw: None)
     @mock.patch("aedttest.aedt_test_runner.ElectronicsDesktopTester.render_main_html", wraps=lambda *a, **kw: None)
@@ -346,7 +347,13 @@ class TestElectronicsDesktopTester(BaseElectronicsDesktopTester):
 
         assert self.aedt_tester.report_data == {
             "projects": {
-                "my_proj": {"time": "2021-12-31 20:16:04", "status": "success", "link": "my_proj.html", "delta": 2}
+                "my_proj": {
+                    "time": "2021-12-31 20:16:04",
+                    "status": "success",
+                    "link": "my_proj.html",
+                    "delta": 2,
+                    "avg": 3,
+                }
             }
         }
         assert self.aedt_tester.active_tasks == 4
