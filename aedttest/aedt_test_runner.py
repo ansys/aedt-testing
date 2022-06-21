@@ -662,11 +662,16 @@ def allocate_task(
     if distribution_config["single_node"]:
         return None
 
-    allocated_machines = {}
     tasks = distribution_config["parametric_tasks"]
+    if tasks <= 1 and not distribution_config["auto"]:
+        # should not split single task across nodes, if auto=false
+        # such configs must be always allocated by allocate_task_within_node()
+        return None
+
     cores_per_task = int(distribution_config["cores"] / tasks)
     to_fill = distribution_config["cores"]
 
+    allocated_machines = {}
     for machine, cores in machines_dict.items():
         if cores < 1:
             # skip machine if no cores available
@@ -894,6 +899,7 @@ def execute_aedt(
     command = [aedt_path]
 
     if distribution_config["auto"]:
+        # for auto number of tasks on host must be "-1"
         aedt_format_machines = ",".join([f"{name}:-1:{conf['cores']}:90%" for name, conf in machines.items()])
         command += ["-auto", f"NumDistributedVariations={distribution_config['parametric_tasks']}"]
     else:
