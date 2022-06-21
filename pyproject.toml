@@ -33,7 +33,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "pyaedt==0.4.81",
+    "pyaedt==0.4.86",
     "Django==3.2.8",
     "tomli>=2.0.0",
 ]
