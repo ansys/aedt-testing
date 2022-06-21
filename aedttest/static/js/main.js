@@ -2,10 +2,7 @@ function badge_change(limit) {
     if( $('#threshold-slider').length ) {
         // only if slider exists update slider limit
         $(".thresh-elem").each(function () {
-
-            if (($(this).hasClass("delta") && $(this).data('delta') <= limit) ||
-                $(this).data('avg') < 3
-            ) {
+            if (($(this).data('delta') <= limit) || $(this).data('avg') < 3) {
                 $(this).removeClass();
                 $(this).addClass("thresh-elem badge badge-primary");
             } else {
