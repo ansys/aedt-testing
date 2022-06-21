@@ -12,33 +12,6 @@ from aedttest.aedt_test_runner import LOGFOLDER_PATH
 TESTS_DIR = Path(__file__).resolve().parent.parent
 
 
-def test_allocate_task_single():
-    job_machines = aedt_test_runner.get_job_machines("host1:15,host2:10")
-    machines_dict = {machine.hostname: machine.cores for machine in job_machines}
-
-    default = {"single_node": False, "parametric_tasks": 1}
-
-    allocated_machines = aedt_test_runner.allocate_task(dict({"cores": 17}, **default), machines_dict)
-    assert allocated_machines == {"host1": {"cores": 15, "tasks": 1}, "host2": {"cores": 2, "tasks": 1}}
-
-    allocated_machines = aedt_test_runner.allocate_task(dict({"cores": 15}, **default), machines_dict)
-    assert allocated_machines == {"host1": {"cores": 15, "tasks": 1}}
-
-    allocated_machines = aedt_test_runner.allocate_task(dict({"cores": 2}, **default), machines_dict)
-    assert allocated_machines == {"host1": {"cores": 2, "tasks": 1}}
-
-    allocated_machines = aedt_test_runner.allocate_task(dict({"cores": 25}, **default), machines_dict)
-    assert allocated_machines == {"host1": {"cores": 15, "tasks": 1}, "host2": {"cores": 10, "tasks": 1}}
-
-    allocated_machines = aedt_test_runner.allocate_task(dict({"cores": 26}, **default), machines_dict)
-    assert allocated_machines is None
-
-    allocated_machines = aedt_test_runner.allocate_task(
-        dict(default, **{"cores": 10, "single_node": True}), machines_dict
-    )
-    assert allocated_machines is None
-
-
 def test_allocate_task_multiple():
     """
     Test all possible scenarios of job splitting. Every test is critical
@@ -51,7 +24,7 @@ def test_allocate_task_multiple():
     assert allocated_machines == {"host1": {"cores": 16, "tasks": 2}}
 
     allocated_machines = aedt_test_runner.allocate_task(dict(default, **{"cores": 24}), machines_dict)
-    assert not allocated_machines
+    assert allocated_machines is None
 
     allocated_machines = aedt_test_runner.allocate_task(dict(default, **{"cores": 10}), machines_dict)
     assert allocated_machines == {"host1": {"cores": 10, "tasks": 2}}
@@ -65,7 +38,7 @@ def test_allocate_task_multiple():
     machines_dict = {machine.hostname: machine.cores for machine in job_machines}
 
     allocated_machines = aedt_test_runner.allocate_task(dict(default, **{"cores": 26}), machines_dict)
-    assert not allocated_machines
+    assert allocated_machines is None
 
     allocated_machines = aedt_test_runner.allocate_task(dict(default, **{"cores": 10}), machines_dict)
     assert allocated_machines == {"host1": {"cores": 10, "tasks": 2}}
@@ -74,6 +47,24 @@ def test_allocate_task_multiple():
         dict(default, **{"cores": 25, "parametric_tasks": 5}), machines_dict
     )
     assert allocated_machines == {"host1": {"cores": 10, "tasks": 2}, "host2": {"cores": 15, "tasks": 3}}
+
+
+def test_allocate_one_task_not_split():
+    job_machines = aedt_test_runner.get_job_machines("host1:10,host2:10")
+    machines_dict = {machine.hostname: machine.cores for machine in job_machines}
+    default = {"single_node": False, "parametric_tasks": 1, "auto": False}
+
+    allocated_machines = aedt_test_runner.allocate_task(dict(default, **{"cores": 12}), machines_dict)
+    assert allocated_machines is None
+
+
+def test_allocate_one_task_split_if_auto():
+    job_machines = aedt_test_runner.get_job_machines("host1:10,host2:10")
+    machines_dict = {machine.hostname: machine.cores for machine in job_machines}
+    default = {"single_node": False, "parametric_tasks": 1, "auto": True}
+
+    allocated_machines = aedt_test_runner.allocate_task(dict(default, **{"cores": 12}), machines_dict)
+    assert allocated_machines == {"host1": {"cores": 10, "tasks": 1}, "host2": {"cores": 2, "tasks": 1}}
 
 
 def test_allocate_task_within_node():
