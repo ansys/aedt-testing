@@ -25,23 +25,20 @@ def parse_args():
     return args.pyaedt_path, args.logfile_path, args.debug
 
 
+log_level = logging.DEBUG
 if not DEBUG:
     pyaedt_path, logfile_path, debug = parse_args()
     sys.path.append(pyaedt_path)
     specified_version = None
 
-    if debug:
-        log_level = logging.DEBUG
-    else:
+    if not debug:
         log_level = logging.INFO
-
 else:
     parser = argparse.ArgumentParser()
     parser.add_argument("--desktop-version", default="2022.1")
     args = parser.parse_args()
     specified_version = args.desktop_version
     logfile_path = os.path.join(MODULE_DIR_PARENT, "aedt_test_framework.log")
-    log_level = logging.DEBUG
 
 try:
     import pyaedt  # noqa: E402
