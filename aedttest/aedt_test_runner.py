@@ -13,6 +13,7 @@ from distutils.dir_util import mkpath
 from distutils.dir_util import remove_tree
 from distutils.file_util import copy_file
 from pathlib import Path
+from statistics import mean
 from time import sleep
 from typing import Any
 from typing import Dict
@@ -238,12 +239,14 @@ class ElectronicsDesktopTester:
                 "status": "queued",
                 "link": None,
                 "delta": None,
+                "avg": None,
                 "time": time_now(),
             }
 
             if not self.only_reference:
                 # initialize integer for proper rendering
                 self.report_data["projects"][project_name]["delta"] = 0
+                self.report_data["projects"][project_name]["avg"] = 0
 
         self.render_main_html()
 
@@ -289,6 +292,7 @@ class ElectronicsDesktopTester:
             "mesh": project_report["mesh"],
             "sim_time": project_report["simulation_time"],
             "slider_limit": project_report["slider_limit"],
+            "max_avg": project_report["max_avg"],
             "has_reference": not self.only_reference,
         }
         data = PROJECT_PAGE_TEMPLATE.render(context=page_ctx)
@@ -349,6 +353,7 @@ class ElectronicsDesktopTester:
             {
                 "link": f"{project_name}.html",
                 "delta": project_report["slider_limit"],
+                "avg": project_report["max_avg"],
                 "time": time_now(),
                 "status": status,
             }
@@ -380,6 +385,7 @@ class ElectronicsDesktopTester:
             "mesh": [],
             "simulation_time": [],
             "slider_limit": 0,
+            "max_avg": 0,
         }
         project_data = self.check_all_results_present(project_report["error_exception"], report_file, project_name)
         project_data["aedt_version"] = self.version
@@ -499,6 +505,7 @@ class ElectronicsDesktopTester:
                         "y_axis_now": curve_data["y_data"],
                         "diff": [],
                         "delta": -1,
+                        "avg": -1,
                     }
 
                     if not self.only_reference:
@@ -522,15 +529,18 @@ class ElectronicsDesktopTester:
                                 # if 0, just skip, no sense for 'infinite' delta
                                 max_delta = max(max_delta, abs(1 - ref / actual))
                         max_delta_perc = round(max_delta * 100, 3)
+                        avg_perc = round(abs(1 - mean(y_ref_data) / mean(curve_data["y_data"])), 3)
 
                         # take always integer since ticks are integers, and +1 to allow to slide
                         project_report["slider_limit"] = max(project_report["slider_limit"], int(max_delta_perc) + 1)
+                        project_report["max_avg"] = max(project_report["max_avg"], int(avg_perc))
                         plot_data.update(
                             {
                                 "version_ref": self.reference_data[project_name]["aedt_version"],
                                 "y_axis_ref": y_ref_data,
                                 "diff": difference,
                                 "delta": max_delta_perc,
+                                "avg": avg_perc,
                             }
                         )
 

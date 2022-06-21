@@ -176,9 +176,10 @@
                                     data-toggle="collapse"
                                     data-target="#col{{ plot.id }}"
                                     data-delta="{{ plot.delta }}"
+                                    data-avg="{{ plot.avg }}"
                                     onclick="draw_{{ plot.id }}()">
                                 {% if has_reference %}
-                                    {{ plot.name }} [max&#916; {{ plot.delta }}%]
+                                    {{ plot.name }} [max&#916; {{ plot.delta }}%] [avg&#916; {{ plot.avg }}%]
                                 {% else %}
                                     {{ plot.name }}
                                 {% endif %}
