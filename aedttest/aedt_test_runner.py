@@ -72,6 +72,7 @@ def main() -> None:
             save_projects=cli_args.save_sim_data,
             only_reference=cli_args.only_reference,
             reference_folder=cli_args.reference_folder,
+            debug=cli_args.debug,
         )
         if not cli_args.suppress_validation:
             aedt_tester.validate_config()
@@ -96,6 +97,7 @@ class ElectronicsDesktopTester:
         save_projects: Optional[bool],
         only_reference: Optional[bool],
         reference_folder: Optional[Path],
+        debug: Optional[bool] = False,
     ) -> None:
         logger.info(f"Initialize new Electronics Desktop Test run. Configuration folder is {config_folder}")
         self.version = version
@@ -119,6 +121,9 @@ class ElectronicsDesktopTester:
 
         # logfile path will be appended dynamically later
         self.script_args = f"\"--pyaedt-path='{Path(_py_aedt_path).parent.parent}' --logfile-path='{{}}'\""
+
+        if debug:
+            self.script_args += " --debug"
 
         self.report_data: Dict[str, Any] = {}
 
