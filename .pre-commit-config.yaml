@@ -41,3 +41,5 @@ repos:
     rev: v2.7.1
     hooks:
       - id: prettier
+        # match all files except js-lib and css-lib folders
+        files: "aedttest\\/static\\/(?!.*js-lib|.*css-lib).*"
