@@ -58,7 +58,6 @@
             <!-- prettier-ignore -->
             {% endif %}
             {% if errors %}
-            <!-- prettier-ignore-end -->
             <div class="row">
               <div class="col-lg-8">
                 <div class="card">
@@ -84,7 +83,6 @@
             <!-- prettier-ignore -->
             {% endif %}
             {% if sim_time %}
-            <!-- prettier-ignore-end -->
             <div class="row">
               <div class="col-lg-8">
                 <div class="card">
@@ -123,7 +121,6 @@
             <!-- prettier-ignore -->
             {% endif %}
             {% if mesh %}
-            <!-- prettier-ignore-end -->
             <div class="row">
               <div class="col-lg-8">
                 <div class="card">
@@ -162,7 +159,6 @@
             <!-- prettier-ignore -->
             {% endif %}
             {% for plot in plots %}
-            <!-- prettier-ignore-end -->
             <div class="row">
               <div class="col-lg-6">
                 <div class="card">
@@ -181,7 +177,6 @@
                     {% else %}
                       {{ plot.name }}
                     {% endif %}
-                    <!-- prettier-ignore-end -->
                   </button>
                   <div id="col{{ plot.id }}" class="collapse">
                     <canvas id="{{ plot.id }}"></canvas>
