@@ -4,6 +4,7 @@ import json
 import os
 import platform
 import re
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -107,6 +108,7 @@ class ElectronicsDesktopTester:
         self.out_dir = Path(out_dir) if out_dir else CWD_DIR
         self.results_path = self.out_dir / f"results_{time_now(posix=True)}"
         self.reference_folder = self.results_path / "reference_folder"
+        self.reference_profiles = self.reference_folder / "profiles"
         self.proj_dir = self.out_dir if save_projects else self.results_path
         self.keep_sim_data = bool(save_projects)
         self.only_reference = only_reference
@@ -234,6 +236,7 @@ class ElectronicsDesktopTester:
         copy_path_to(str(MODULE_DIR / "static" / "css"), str(self.results_path))
         copy_path_to(str(MODULE_DIR / "static" / "js"), str(self.results_path))
         self.reference_folder.mkdir()
+        self.reference_profiles.mkdir()
 
         self.report_data["all_delta"] = 1 if not self.only_reference else None
         self.report_data["projects"] = {}
@@ -416,6 +419,19 @@ class ElectronicsDesktopTester:
                 )
                 # extract XY curve data
                 self.extract_curve_data(design_data, design_name, project_name, project_report)
+                # duplicate profile in reference folder
+                for variation_name, variation_data in design_data["profile_name"].items():
+                    for setup_name, profile_name in variation_data.items():
+                        if not os.path.exists(self.reference_profiles / profile_name):
+                            shutil.copy(report_file.parent / profile_name, self.reference_profiles / profile_name)
+                        else:
+                            num = 1
+                            name = os.path.splitext(profile_name)[0]
+                            new_profile_name = name + "_" + str(num) + ".prof"
+                            while os.path.exists(os.path.join(self.reference_profiles, new_profile_name)):
+                                num += 1
+                            shutil.copy(report_file.parent / profile_name, self.reference_profiles / new_profile_name)
+
         except Exception as exc:
             project_report["error_exception"].append(str(exc))
 
