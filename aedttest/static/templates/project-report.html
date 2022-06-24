@@ -55,7 +55,9 @@
                 />
               </div>
             </div>
-            {% endif %} {% if errors %}
+            <!-- prettier-ignore -->
+            {% endif %}
+            {% if errors %}
             <div class="row">
               <div class="col-lg-8">
                 <div class="card">
@@ -78,7 +80,9 @@
                 </div>
               </div>
             </div>
-            {% endif %} {% if sim_time %}
+            <!-- prettier-ignore -->
+            {% endif %}
+            {% if sim_time %}
             <div class="row">
               <div class="col-lg-8">
                 <div class="card">
@@ -114,7 +118,9 @@
                 </div>
               </div>
             </div>
-            {% endif %} {% if mesh %}
+            <!-- prettier-ignore -->
+            {% endif %}
+            {% if mesh %}
             <div class="row">
               <div class="col-lg-8">
                 <div class="card">
@@ -150,7 +156,9 @@
                 </div>
               </div>
             </div>
-            {% endif %} {% for plot in plots %}
+            <!-- prettier-ignore -->
+            {% endif %}
+            {% for plot in plots %}
             <div class="row">
               <div class="col-lg-6">
                 <div class="card">
@@ -163,9 +171,12 @@
                     data-avg="{{ plot.avg }}"
                     onclick="draw_{{ plot.id }}()"
                   >
-                    {% if has_reference %} {{ plot.name }} [max&#916; {{
-                    plot.delta }}%] [avg&#916; {{ plot.avg }}%] {% else %} {{
-                    plot.name }} {% endif %}
+                    <!-- prettier-ignore -->
+                    {% if has_reference %}
+                      {{ plot.name }} [max&#916;{{ plot.delta }}%] [avg&#916; {{ plot.avg }}%]
+                    {% else %}
+                      {{ plot.name }}
+                    {% endif %}
                   </button>
                   <div id="col{{ plot.id }}" class="collapse">
                     <canvas id="{{ plot.id }}"></canvas>
