@@ -1,149 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     {% if not finished %}
-        <meta http-equiv="refresh" content="10" />
+    <meta http-equiv="refresh" content="10" />
     {% endif %}
 
     <title>Ansys Electronics Desktop Testing Framework</title>
     <!-- ================= Favicon ================== -->
     <!-- Styles -->
-    <link href="css/css-lib/bootstrap.min.css" rel="stylesheet">
-    <link href="css/css-lib/bootstrap-slider.css" rel="stylesheet">
-    <link href="css/style.css" rel="stylesheet">
-</head>
+    <link href="css/css-lib/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/css-lib/bootstrap-slider.css" rel="stylesheet" />
+    <link href="css/style.css" rel="stylesheet" />
+  </head>
 
-<body>
-
+  <body>
     <div class="content-wrap">
-        <div class="main">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-lg-8 p-r-0 title-margin-right">
-                        <div class="page-header">
-                            <div class="page-title">
-                                <h1>Ansys Electronics Desktop Testing Framework</h1>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- /# column -->
-                    <div class="col-lg-4 p-l-0 title-margin-left">
-                        <div class="page-header">
-                            <div class="page-title">
-                                <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
-                                    <li class="breadcrumb-item active">Home</li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- /# column -->
+      <div class="main">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-lg-8 p-r-0 title-margin-right">
+              <div class="page-header">
+                <div class="page-title">
+                  <h1>Ansys Electronics Desktop Testing Framework</h1>
                 </div>
-                <!-- /# row -->
-                <section id="main-content">
-                    {% if has_reference %}
-                        <div class="row">
-                            <div class="col-lg-8">
-                                <div class="card-title pr">
-                                    <h4>Difference Threshold [%]</h4>
-                                </div>
-                                <input id="threshold-slider"
-                                       data-slider-id='threshold-slider-div'
-                                       type="text"
-                                       data-slider-min="0"
-                                       data-slider-max="0"
-                                       data-slider-value="0"
-                                />
-                            </div>
-                        </div>
-                    {% endif %}
-                    <div class="row">
-                        <div class="col-lg-8">
-                            <div class="card">
-                                <div class="card-title pr">
-                                    <h4>Progress Monitor</h4>
-                                </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table project-data-table m-t-20">
-                                            <thead>
-                                                <tr>
-                                                    <th>Project name</th>
-                                                    <th>Cores</th>
-                                                    <th>Date</th>
-                                                    {% if has_reference %}
-                                                        <th>max&#916; [%]</th>
-                                                        <th>avg&#916; [%]</th>
-                                                    {% endif %}
-                                                    <th>Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for project_name, project in projects.items %}
-                                                <tr>
-                                                    <td>
-                                                        {% if project.link %}
-                                                            <a href="{{ project.link }}">{{ project_name }}</a>
-                                                        {% else %}
-                                                            {{ project_name }}
-                                                        {% endif %}
-                                                    </td>
-                                                    <td>
-                                                        {{ project.cores }}
-                                                    </td>
-                                                    <td>
-                                                        {{ project.time }}
-                                                    </td>
-                                                    {% if has_reference %}
-                                                        <td>
-                                                            <span class="thresh-elem delta badge"
-                                                                  data-delta="{{ project.delta }}">
-                                                                {{ project.delta }}
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <span class="thresh-elem badge"
-                                                                  data-avg="{{ project.avg }}">
-                                                                {{ project.avg }}
-                                                            </span>
-                                                        </td>
-                                                    {% endif %}
-                                                    <td>
-                                                        {% if project.status == "queued" %}
-                                                            <span class="badge badge-warning">Queued</span>
-                                                        {% elif project.status == "running" %}
-                                                            <span class="badge badge-warning">Running</span>
-                                                        {% elif project.status == "fail" %}
-                                                            <span class="badge badge-danger">Errors</span>
-                                                        {% else %}
-                                                            <span class="badge badge-primary">Finished</span>
-                                                        {% endif %}
-                                                    </td>
-                                                </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- /# column -->
-                    </div>
-
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <div class="footer">
-                                <p>2021 &#xa9 Ansys Inc - <a href="https://www.ansys.com/">ansys.com</a></p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+              </div>
             </div>
+            <!-- /# column -->
+            <div class="col-lg-4 p-l-0 title-margin-left">
+              <div class="page-header">
+                <div class="page-title">
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Home</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+            <!-- /# column -->
+          </div>
+          <!-- /# row -->
+          <section id="main-content">
+            {% if has_reference %}
+            <div class="row">
+              <div class="col-lg-8">
+                <div class="card-title pr">
+                  <h4>Difference Threshold [%]</h4>
+                </div>
+                <input
+                  id="threshold-slider"
+                  data-slider-id="threshold-slider-div"
+                  type="text"
+                  data-slider-min="0"
+                  data-slider-max="0"
+                  data-slider-value="0"
+                />
+              </div>
+            </div>
+            {% endif %}
+            <div class="row">
+              <div class="col-lg-8">
+                <div class="card">
+                  <div class="card-title pr">
+                    <h4>Progress Monitor</h4>
+                  </div>
+                  <div class="card-body">
+                    <div class="table-responsive">
+                      <table class="table project-data-table m-t-20">
+                        <thead>
+                          <tr>
+                            <th>Project name</th>
+                            <th>Cores</th>
+                            <th>Date</th>
+                            {% if has_reference %}
+                            <th>max&#916; [%]</th>
+                            <th>avg&#916; [%]</th>
+                            {% endif %}
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for project_name, project in projects.items %}
+                          <tr>
+                            <td>
+                              {% if project.link %}
+                              <a href="{{ project.link }}"
+                                >{{ project_name }}</a
+                              >
+                              {% else %} {{ project_name }} {% endif %}
+                            </td>
+                            <td>{{ project.cores }}</td>
+                            <td>{{ project.time }}</td>
+                            {% if has_reference %}
+                            <td>
+                              <span
+                                class="thresh-elem delta badge"
+                                data-delta="{{ project.delta }}"
+                              >
+                                {{ project.delta }}
+                              </span>
+                            </td>
+                            <td>
+                              <span
+                                class="thresh-elem badge"
+                                data-avg="{{ project.avg }}"
+                              >
+                                {{ project.avg }}
+                              </span>
+                            </td>
+                            {% endif %}
+                            <td>
+                              {% if project.status == "queued" %}
+                              <span class="badge badge-warning">Queued</span>
+                              {% elif project.status == "running" %}
+                              <span class="badge badge-warning">Running</span>
+                              {% elif project.status == "fail" %}
+                              <span class="badge badge-danger">Errors</span>
+                              {% else %}
+                              <span class="badge badge-primary">Finished</span>
+                              {% endif %}
+                            </td>
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- /# column -->
+            </div>
+
+            <div class="row">
+              <div class="col-lg-12">
+                <div class="footer">
+                  <p>
+                    2021 &#xa9; Ansys Inc -
+                    <a href="https://www.ansys.com/">ansys.com</a>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
+      </div>
     </div>
 
     <!-- jquery vendor -->
@@ -154,7 +156,5 @@
     <script src="js/js-lib/bootstrap-slider.min.js"></script>
     <script src="js/main.js"></script>
     <script src="js/common.js"></script>
-
-</body>
-
+  </body>
 </html>

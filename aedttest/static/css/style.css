@@ -1,5 +1,5 @@
 #threshold-slider .slider-selection {
-	background: #BABABA;
+  background: #bababa;
 }
 
 .card-body {
@@ -24,7 +24,7 @@
   font-size: 18px;
 }
 .card-title p {
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
   margin-bottom: 12px;
 }
 .badge {
@@ -61,7 +61,7 @@ span.badge {
   margin: 15px 0;
 }
 .panel-body {
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
 }
 
 /*    Search box
@@ -88,13 +88,13 @@ span.badge {
   float: right;
 }
 .main .page-header .breadcrumb li.active {
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
   font-weight: normal;
   font-size: 14px;
 }
 .main .page-header .breadcrumb li a {
   font-size: 14px;
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
   display: block;
 }
 
@@ -185,11 +185,11 @@ thead tr th:last-child {
 }
 tbody tr th {
   color: #373757;
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
   font-weight: normal;
 }
 tbody tr td {
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
   color: #868e96;
 }
 tbody tr td:last-child {
@@ -232,7 +232,7 @@ tbody tr td:last-child {
   line-height: 1.2em;
 }
 #barChart {
-  height: 400px!important;
+  height: 400px !important;
 }
 
 .calendar {
@@ -263,15 +263,15 @@ tbody tr td:last-child {
   height: 300px;
 }
 body {
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
   background: rgba(88, 115, 254, 0.04);
   color: #868e96;
   font-size: 14px;
 }
 a,
 button {
-  outline: none!important;
-  text-decoration: none!important;
+  outline: none !important;
+  text-decoration: none !important;
   color: #868e96;
   transition: all 0.2s ease 0s;
 }
@@ -282,8 +282,8 @@ button:focus,
 a:hover,
 button:hover {
   color: #252525;
-  outline: none!important;
-  text-decoration: none!important;
+  outline: none !important;
+  text-decoration: none !important;
 }
 ul {
   padding: 0;
@@ -293,7 +293,7 @@ li {
   list-style: none;
 }
 p {
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
   color: #868e96;
 }
 

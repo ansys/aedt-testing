@@ -3,13 +3,13 @@ repos:
     rev: v1.1
     hooks:
       - id: autoflake
-        args: ['-i', '--remove-all-unused-imports']
+        args: ["-i", "--remove-all-unused-imports"]
   - repo: https://github.com/psf/black
     rev: 22.3.0
     hooks:
       - id: black
         language_version: python3
-        args: ['-l', '120']
+        args: ["-l", "120"]
   - repo: https://github.com/asottile/blacken-docs
     rev: v1.12.1
     hooks:
@@ -20,19 +20,26 @@ repos:
     hooks:
       - id: isort
         name: isort (python)
-        args: ['-sl', '--profile', 'black']
+        args: ["-sl", "--profile", "black"]
       - id: isort
         name: isort (pyi)
-        types: [ pyi ]
-        args: ['-sl', '--profile', 'black']
+        types: [pyi]
+        args: ["-sl", "--profile", "black"]
 
   - repo: https://github.com/pycqa/flake8
     rev: 3.9.2
     hooks:
       - id: flake8
-        args: ['--max-line-length', '120', '--max-doc-length', '120']
+        args: ["--max-line-length", "120", "--max-doc-length", "120"]
   - repo: https://github.com/Lucas-C/pre-commit-hooks-nodejs
     rev: v1.1.2
     hooks:
       - id: markdown-toc
         name: Table of Contents
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v2.7.1
+    hooks:
+      - id: prettier
+        # match all files except js-lib and css-lib folders
+        files: "aedttest\\/static\\/(?!.*js-lib|.*css-lib).*"
