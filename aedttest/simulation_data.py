@@ -28,7 +28,7 @@ def parse_args():
 log_level = logging.DEBUG
 if not DEBUG:
     pyaedt_path, logfile_path, debug = parse_args()
-    sys.path.append(pyaedt_path)
+    sys.path.insert(0, pyaedt_path)
     specified_version = None
 
     if not debug:
