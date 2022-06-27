@@ -4,7 +4,6 @@ import json
 import os
 import platform
 import re
-import shutil
 import subprocess
 import tempfile
 import threading
@@ -398,8 +397,6 @@ class ElectronicsDesktopTester:
         project_data = self.check_all_results_present(project_report["error_exception"], report_file, project_name)
         project_data["aedt_version"] = self.version
         project_data["name"] = project_name
-        with open(self.reference_folder / f"ref_{project_name}.json", "w") as file:
-            json.dump(project_data, file, indent=4)
 
         keys_missing = bool(project_report["error_exception"])
 
@@ -419,18 +416,9 @@ class ElectronicsDesktopTester:
                 )
                 # extract XY curve data
                 self.extract_curve_data(design_data, design_name, project_name, project_report)
-                # duplicate profile in reference folder
-                for variation_name, variation_data in design_data["profile_name"].items():
-                    for setup_name, profile_name in variation_data.items():
-                        if not os.path.exists(self.reference_profiles / profile_name):
-                            shutil.copy(report_file.parent / profile_name, self.reference_profiles / profile_name)
-                        else:
-                            num = 1
-                            name = os.path.splitext(profile_name)[0]
-                            new_profile_name = name + "_" + str(num) + ".prof"
-                            while os.path.exists(os.path.join(self.reference_profiles, new_profile_name)):
-                                num += 1
-                            shutil.copy(report_file.parent / profile_name, self.reference_profiles / new_profile_name)
+
+            with open(self.reference_folder / f"ref_{project_name}.json", "w") as file:
+                json.dump(project_data, file, indent=4)
 
         except Exception as exc:
             project_report["error_exception"].append(str(exc))
@@ -595,19 +583,38 @@ class ElectronicsDesktopTester:
         """
         for variation_name, variation_data in design_data[key_name].items():
             for setup_name, current_stat in variation_data.items():
+                link = None
+                if key_name == "mesh":
+                    new_path = copy_path_to(
+                        design_data["mesh_name"][variation_name][setup_name], str(self.reference_profiles)
+                    )
+                    design_data["mesh_name"][variation_name][setup_name] = new_path
+                    link = new_path
+                elif key_name == "simulation_time":
+                    new_path = copy_path_to(
+                        design_data["profile_name"][variation_name][setup_name], str(self.reference_profiles)
+                    )
+                    design_data["profile_name"][variation_name][setup_name] = new_path
+                    link = new_path
+
                 stat_dict = {
                     "name": f"{design_name}:{setup_name}:{variation_name}",
                     "current": current_stat,
+                    "link": link,
                 }
                 if not self.only_reference:
-                    reference_dict = self.reference_data[project_name]["designs"][design_name][key_name]
-                    if variation_name not in reference_dict:
+                    reference_dict = self.reference_data[project_name]["designs"][design_name]
+                    if variation_name not in reference_dict[key_name]:
                         project_report["error_exception"].append(
                             f"Variation ({variation_name}) wasn't found in reference results for design: {design_name}"
                         )
                         continue
 
-                    stat_dict["ref"] = reference_dict[variation_name][setup_name]
+                    stat_dict["ref"] = reference_dict[key_name][variation_name][setup_name]
+                    if key_name == "mesh":
+                        stat_dict["ref_link"] = reference_dict["mesh_name"][variation_name][setup_name]
+                    elif key_name == "simulation_time":
+                        stat_dict["ref_link"] = reference_dict["profile_name"][variation_name][setup_name]
 
                 project_report[key_name].append(stat_dict)
 

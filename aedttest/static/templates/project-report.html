@@ -106,9 +106,17 @@
                           <tr>
                             <td>{{ time.name }}</td>
                             {% if has_reference %}
-                            <td>{{ time.ref }}</td>
+                            <td>
+                              {% if time.ref_link %}
+                              <a href="{{ time.ref_link }}">{{ time.ref }}</a>
+                              {% else %} {{ time.ref }} {% endif %}
+                            </td>
                             {% endif %}
-                            <td>{{ time.current }}</td>
+                            <td>
+                              {% if time.link %}
+                              <a href="{{ time.link }}">{{ time.current }}</a>
+                              {% else %} {{ time.current }} {% endif %}
+                            </td>
                           </tr>
                           {% endfor %}
                         </tbody>
@@ -144,9 +152,21 @@
                           <tr>
                             <td>{{ mesh_data.name }}</td>
                             {% if has_reference %}
-                            <td>{{ mesh_data.ref }}</td>
+                            <td>
+                              {% if mesh_data.ref_link %}
+                              <a href="{{ mesh_data.ref_link }}"
+                                >{{ mesh_data.ref }}</a
+                              >
+                              {% else %} {{ mesh_data.ref }} {% endif %}
+                            </td>
                             {% endif %}
-                            <td>{{ mesh_data.current }}</td>
+                            <td>
+                              {% if mesh_data.link %}
+                              <a href="{{ mesh_data.link }}"
+                                >{{ mesh_data.current }}</a
+                              >
+                              {% else %} {{ mesh_data.current }} {% endif %}
+                            </td>
                           </tr>
                           {% endfor %}
                         </tbody>
