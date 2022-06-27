@@ -605,10 +605,8 @@ class ElectronicsDesktopTester:
                         continue
 
                     stat_dict["ref"] = reference_dict[key_name][variation_name][setup_name]
-                    if key_name == "mesh":
-                        stat_dict["ref_link"] = reference_dict["mesh_name"][variation_name][setup_name]
-                    elif key_name == "simulation_time":
-                        stat_dict["ref_link"] = reference_dict["profile_name"][variation_name][setup_name]
+                    stat_dict["ref_link"] = reference_dict[extract][variation_name][setup_name]
+
 
                 project_report[key_name].append(stat_dict)
 
