@@ -586,9 +586,7 @@ class ElectronicsDesktopTester:
                 assert key_name in ["mesh", "simulation_time"]
                 extract = "mesh_name" if key_name == "mesh" else "profile_name"
 
-                new_path = copy_path_to(
-                    design_data[extract][variation_name][setup_name], str(self.reference_profiles)
-                )
+                new_path = copy_path_to(design_data[extract][variation_name][setup_name], str(self.reference_profiles))
                 design_data["profile_name"][variation_name][setup_name] = new_path
 
                 stat_dict = {
@@ -606,7 +604,6 @@ class ElectronicsDesktopTester:
 
                     stat_dict["ref"] = reference_dict[key_name][variation_name][setup_name]
                     stat_dict["ref_link"] = reference_dict[extract][variation_name][setup_name]
-
 
                 project_report[key_name].append(stat_dict)
 
