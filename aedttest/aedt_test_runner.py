@@ -583,19 +583,13 @@ class ElectronicsDesktopTester:
         """
         for variation_name, variation_data in design_data[key_name].items():
             for setup_name, current_stat in variation_data.items():
-                link = None
-                if key_name == "mesh":
-                    new_path = copy_path_to(
-                        design_data["mesh_name"][variation_name][setup_name], str(self.reference_profiles)
-                    )
-                    design_data["mesh_name"][variation_name][setup_name] = new_path
-                    link = new_path
-                elif key_name == "simulation_time":
-                    new_path = copy_path_to(
-                        design_data["profile_name"][variation_name][setup_name], str(self.reference_profiles)
-                    )
-                    design_data["profile_name"][variation_name][setup_name] = new_path
-                    link = new_path
+                assert key_name in ["mesh", "simulation_time"]
+                extract = "mesh_name" if key_name == "mesh" else "profile_name"
+
+                new_path = copy_path_to(
+                    design_data[extract][variation_name][setup_name], str(self.reference_profiles)
+                )
+                design_data["profile_name"][variation_name][setup_name] = new_path
 
                 stat_dict = {
                     "name": f"{design_name}:{setup_name}:{variation_name}",
