@@ -58,14 +58,19 @@ class TestParse(BaseTest):
             design_name="only_winding2",
             setup_dict={"Setup1": "Setup1 : LastAdaptive"},
             project_dir="/tmp",
-            design_dict={"only_winding2": {"mesh": {}, "simulation_time": {}, "report": {}}},
+            design_dict={
+                "only_winding2": {"mesh": {}, "simulation_time": {}, "report": {}, "profile_name": {}, "mesh_name": {}}
+            },
         )
-
+        mesh1 = result_dict["only_winding2"]["mesh_name"]["Ia=30A"]["Setup1"]
+        mesh2 = result_dict["only_winding2"]["mesh_name"]["Ia=20A"]["Setup1"]
         assert result_dict == {
             "only_winding2": {
                 "mesh": {"Ia=30A": {"Setup1": 100}, "Ia=20A": {"Setup1": 100}},
                 "simulation_time": {"Ia=30A": {"Setup1": "10:00:00"}, "Ia=20A": {"Setup1": "10:00:00"}},
                 "report": {},
+                "profile_name": {"Ia=30A": {"Setup1": None}, "Ia=20A": {"Setup1": None}},
+                "mesh_name": {"Ia=30A": {"Setup1": mesh1}, "Ia=20A": {"Setup1": mesh2}},
             }
         }
 
