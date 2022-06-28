@@ -314,6 +314,7 @@ class TestElectronicsDesktopTester(BaseElectronicsDesktopTester):
         with TemporaryDirectory() as tmp_dir:
             self.aedt_tester.results_path = Path(tmp_dir)
             self.aedt_tester.reference_folder = Path(tmp_dir) / "1"
+            self.aedt_tester.reference_profiles = self.aedt_tester.reference_folder / "profiles"
             self.aedt_tester.initialize_results()
 
             assert self.aedt_tester.report_data == {

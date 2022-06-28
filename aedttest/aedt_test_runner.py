@@ -107,6 +107,7 @@ class ElectronicsDesktopTester:
         self.out_dir = Path(out_dir) if out_dir else CWD_DIR
         self.results_path = self.out_dir / f"results_{time_now(posix=True)}"
         self.reference_folder = self.results_path / "reference_folder"
+        self.reference_profiles = self.reference_folder / "profiles"
         self.proj_dir = self.out_dir if save_projects else self.results_path
         self.keep_sim_data = bool(save_projects)
         self.only_reference = only_reference
@@ -234,6 +235,7 @@ class ElectronicsDesktopTester:
         copy_path_to(str(MODULE_DIR / "static" / "css"), str(self.results_path))
         copy_path_to(str(MODULE_DIR / "static" / "js"), str(self.results_path))
         self.reference_folder.mkdir()
+        self.reference_profiles.mkdir()
 
         self.report_data["all_delta"] = 1 if not self.only_reference else None
         self.report_data["projects"] = {}
@@ -395,8 +397,6 @@ class ElectronicsDesktopTester:
         project_data = self.check_all_results_present(project_report["error_exception"], report_file, project_name)
         project_data["aedt_version"] = self.version
         project_data["name"] = project_name
-        with open(self.reference_folder / f"ref_{project_name}.json", "w") as file:
-            json.dump(project_data, file, indent=4)
 
         keys_missing = bool(project_report["error_exception"])
 
@@ -416,6 +416,10 @@ class ElectronicsDesktopTester:
                 )
                 # extract XY curve data
                 self.extract_curve_data(design_data, design_name, project_name, project_report)
+
+            with open(self.reference_folder / f"ref_{project_name}.json", "w") as file:
+                json.dump(project_data, file, indent=4)
+
         except Exception as exc:
             project_report["error_exception"].append(str(exc))
 
@@ -579,19 +583,27 @@ class ElectronicsDesktopTester:
         """
         for variation_name, variation_data in design_data[key_name].items():
             for setup_name, current_stat in variation_data.items():
+                assert key_name in ["mesh", "simulation_time"]
+                extract = "mesh_name" if key_name == "mesh" else "profile_name"
+
+                new_path = copy_path_to(design_data[extract][variation_name][setup_name], str(self.reference_profiles))
+                design_data["profile_name"][variation_name][setup_name] = new_path
+
                 stat_dict = {
                     "name": f"{design_name}:{setup_name}:{variation_name}",
                     "current": current_stat,
+                    "link": new_path,
                 }
                 if not self.only_reference:
-                    reference_dict = self.reference_data[project_name]["designs"][design_name][key_name]
-                    if variation_name not in reference_dict:
+                    reference_dict = self.reference_data[project_name]["designs"][design_name]
+                    if variation_name not in reference_dict[key_name]:
                         project_report["error_exception"].append(
                             f"Variation ({variation_name}) wasn't found in reference results for design: {design_name}"
                         )
                         continue
 
-                    stat_dict["ref"] = reference_dict[variation_name][setup_name]
+                    stat_dict["ref"] = reference_dict[key_name][variation_name][setup_name]
+                    stat_dict["ref_link"] = reference_dict[extract][variation_name][setup_name]
 
                 project_report[key_name].append(stat_dict)
 

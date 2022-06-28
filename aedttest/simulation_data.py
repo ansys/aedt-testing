@@ -198,7 +198,9 @@ def extract_data(desktop, project_dir, project_name, design_names):
     oDesktop = desktop._main.oDesktop
 
     for design_name in design_names:
-        design_dict = {design_name: {"mesh": {}, "simulation_time": {}, "report": {}}}
+        design_dict = {
+            design_name: {"mesh": {}, "simulation_time": {}, "report": {}, "profile_name": {}, "mesh_name": {}}
+        }
         app = get_pyaedt_app(design_name=design_name)
         setups_names = app.setup_names
         if not setups_names:
@@ -283,6 +285,10 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
                 design_dict[design_name]["mesh"][variation_name] = {}
             if variation_name not in design_dict[design_name]["simulation_time"]:
                 design_dict[design_name]["simulation_time"][variation_name] = {}
+            if variation_name not in design_dict[design_name]["profile_name"]:
+                design_dict[design_name]["profile_name"][variation_name] = {}
+            if variation_name not in design_dict[design_name]["mesh_name"]:
+                design_dict[design_name]["mesh_name"][variation_name] = {}
 
             profile_file = generate_unique_file_path(project_dir, ".prof")
             profile_file = app.export_profile(setup, variation_string, profile_file)
@@ -296,6 +302,9 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
                 app.export_mesh_stats(setup, variation_string, mesh_stats_file)
                 mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_name, setup)
                 design_dict[design_name]["mesh"][variation_name][setup] = mesh_data
+
+            design_dict[design_name]["profile_name"][variation_name][setup] = profile_file
+            design_dict[design_name]["mesh_name"][variation_name][setup] = mesh_stats_file
 
     return design_dict
 
