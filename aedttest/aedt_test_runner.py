@@ -587,7 +587,7 @@ class ElectronicsDesktopTester:
                 extract = "mesh_name" if key_name == "mesh" else "profile_name"
 
                 new_path = copy_path_to(design_data[extract][variation_name][setup_name], str(self.reference_profiles))
-                design_data["profile_name"][variation_name][setup_name] = new_path
+                design_data[extract][variation_name][setup_name] = new_path
 
                 stat_dict = {
                     "name": f"{design_name}:{setup_name}:{variation_name}",
