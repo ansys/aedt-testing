@@ -255,7 +255,7 @@ class ElectronicsDesktopTester:
                 # initialize integer for proper rendering
                 self.report_data["projects"][project_name]["delta"] = 0
                 self.report_data["projects"][project_name]["avg"] = 0
-                if project_name in self.reference_data.items():
+                if project_name in self.reference_data.keys():
                     copy_path_to(
                         os.path.join(self.reference_data[project_name]["filepath"], "profiles"),
                         str(self.reference_folder),
@@ -602,13 +602,14 @@ class ElectronicsDesktopTester:
                     cont += 1
                 os.rename(absolute_path, new_absolute_path)
 
-                new_path = copy_path_to(str(new_absolute_path), str(self.reference_profiles))
+                new_path = Path(
+                    str(copy_path_to(str(new_absolute_path), str(self.reference_profiles))).replace("\\", "/")
+                )
                 design_data[extract][variation_name][setup_name] = new_path
-
                 stat_dict = {
                     "name": f"{design_name}:{setup_name}:{variation_name}",
                     "current": current_stat,
-                    "link": os.path.relpath(new_path, self.proj_dir),
+                    "link": os.path.join(*new_path.parts[-3:]),
                 }
                 if not self.only_reference:
                     reference_dict = self.reference_data[project_name]["designs"][design_name]
