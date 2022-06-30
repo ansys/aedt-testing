@@ -605,7 +605,7 @@ class ElectronicsDesktopTester:
                 new_path = Path(
                     str(copy_path_to(str(new_absolute_path), str(self.reference_profiles))).replace("\\", "/")
                 )
-                design_data[extract][variation_name][setup_name] = new_path
+                design_data[extract][variation_name][setup_name] = str(new_path)
                 stat_dict = {
                     "name": f"{design_name}:{setup_name}:{variation_name}",
                     "current": current_stat,
