@@ -117,6 +117,7 @@ class ElectronicsDesktopTester:
                 with open(ref) as file:
                     data = json.load(file)
                 self.reference_data[data["name"]] = data
+                self.reference_data[data["name"]]["filepath"] = reference_folder
 
         self.script = str(MODULE_DIR / "simulation_data.py")
 
@@ -254,6 +255,9 @@ class ElectronicsDesktopTester:
                 # initialize integer for proper rendering
                 self.report_data["projects"][project_name]["delta"] = 0
                 self.report_data["projects"][project_name]["avg"] = 0
+                copy_path_to(
+                    os.path.join(self.reference_data[project_name]["filepath"], "profiles"), str(self.reference_folder)
+                )
 
         self.render_main_html()
 
@@ -585,14 +589,26 @@ class ElectronicsDesktopTester:
             for setup_name, current_stat in variation_data.items():
                 assert key_name in ["mesh", "simulation_time"]
                 extract = "mesh_name" if key_name == "mesh" else "profile_name"
+                absolute_path = design_data[extract][variation_name][setup_name]
 
-                new_path = copy_path_to(design_data[extract][variation_name][setup_name], str(self.reference_profiles))
+                # Check if profile exists already to avoid duplicates
+                cont = 1
+                filename = os.path.splitext(os.path.basename(absolute_path))
+                new_absolute_path = absolute_path
+                while os.path.exists(os.path.join(str(self.reference_profiles), "".join(filename))):
+                    new_absolute_path = os.path.join(
+                        os.path.dirname(absolute_path), filename[0] + str(cont) + filename[1]
+                    )
+                    filename = os.path.splitext(os.path.basename(new_absolute_path))
+                os.rename(absolute_path, new_absolute_path)
+
+                new_path = copy_path_to(new_absolute_path, str(self.reference_profiles))
                 design_data[extract][variation_name][setup_name] = new_path
 
                 stat_dict = {
                     "name": f"{design_name}:{setup_name}:{variation_name}",
                     "current": current_stat,
-                    "link": new_path,
+                    "link": os.path.relpath(new_path, self.proj_dir),
                 }
                 if not self.only_reference:
                     reference_dict = self.reference_data[project_name]["designs"][design_name]
