@@ -255,9 +255,11 @@ class ElectronicsDesktopTester:
                 # initialize integer for proper rendering
                 self.report_data["projects"][project_name]["delta"] = 0
                 self.report_data["projects"][project_name]["avg"] = 0
-                copy_path_to(
-                    os.path.join(self.reference_data[project_name]["filepath"], "profiles"), str(self.reference_folder)
-                )
+                if project_name in self.reference_data.items():
+                    copy_path_to(
+                        os.path.join(self.reference_data[project_name]["filepath"], "profiles"),
+                        str(self.reference_folder),
+                    )
 
         self.render_main_html()
 
@@ -593,16 +595,14 @@ class ElectronicsDesktopTester:
 
                 # Check if profile exists already to avoid duplicates
                 cont = 1
-                filename = os.path.splitext(os.path.basename(absolute_path))
-                new_absolute_path = absolute_path
-                while os.path.exists(os.path.join(str(self.reference_profiles), "".join(filename))):
-                    new_absolute_path = os.path.join(
-                        os.path.dirname(absolute_path), filename[0] + str(cont) + filename[1]
-                    )
-                    filename = os.path.splitext(os.path.basename(new_absolute_path))
+                filepath = Path(absolute_path)
+                new_absolute_path = filepath
+                while Path.exists(self.reference_profiles.joinpath(new_absolute_path.name)):
+                    new_absolute_path = filepath.parent.joinpath(filepath.stem + str(cont) + filepath.suffix)
+                    cont += 1
                 os.rename(absolute_path, new_absolute_path)
 
-                new_path = copy_path_to(new_absolute_path, str(self.reference_profiles))
+                new_path = copy_path_to(str(new_absolute_path), str(self.reference_profiles))
                 design_data[extract][variation_name][setup_name] = new_path
 
                 stat_dict = {
