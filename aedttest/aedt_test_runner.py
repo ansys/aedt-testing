@@ -255,7 +255,7 @@ class ElectronicsDesktopTester:
                 # initialize integer for proper rendering
                 self.report_data["projects"][project_name]["delta"] = 0
                 self.report_data["projects"][project_name]["avg"] = 0
-                if project_name in self.reference_data.keys():
+                if project_name in self.reference_data:
                     copy_path_to(
                         os.path.join(self.reference_data[project_name]["filepath"], "profiles"),
                         str(self.reference_folder),
