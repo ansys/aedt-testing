@@ -258,7 +258,7 @@ class ElectronicsDesktopTester:
                 if project_name in self.reference_data:
                     copy_path_to(
                         Path(self.reference_data[project_name]["filepath"], "profiles"),
-                        str(self.reference_folder),
+                        self.reference_folder,
                     )
 
         self.render_main_html()
@@ -594,10 +594,9 @@ class ElectronicsDesktopTester:
 
                 # Check if profile exists already to avoid duplicates
                 cont = 1
-                filepath = Path(absolute_path)
-                new_absolute_path = filepath
+                filepath = new_absolute_path = Path(absolute_path)
                 while (self.reference_profiles / new_absolute_path.name).exists():
-                    new_absolute_path = filepath.parent.joinpath(filepath.stem + str(cont) + filepath.suffix)
+                    new_absolute_path = filepath.parent / f"{filepath.stem}{cont}{filepath.suffix}"
                     cont += 1
                 filepath.rename(new_absolute_path)
 
