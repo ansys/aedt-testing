@@ -45,6 +45,8 @@ test = [
     "mypy==0.960",
     "pytest==6.2.5",
     "pytest-cov==3.0.0",
+    "webdriver-manager",
+    "selenium>4",
 ]
 
 deploy = [
