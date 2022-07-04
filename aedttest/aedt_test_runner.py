@@ -605,7 +605,7 @@ class ElectronicsDesktopTester:
                 stat_dict = {
                     "name": f"{design_name}:{setup_name}:{variation_name}",
                     "current": current_stat,
-                    "link": Path(new_path).relative_to(self.proj_dir),
+                    "link": str(Path(new_path).relative_to(self.proj_dir)),
                 }
                 if not self.only_reference:
                     reference_dict = self.reference_data[project_name]["designs"][design_name]
