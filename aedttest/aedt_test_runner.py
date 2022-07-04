@@ -820,10 +820,10 @@ def copy_path_to(src: Union[str, Path], dst: Union[str, Path]) -> Union[str, Lis
         Path to copied file or list with paths if folder is copied.
 
     """
-    if isinstance(dst, str):
-        dst = Path(dst.replace("\\", "/"))
     if isinstance(src, str):
         src = Path(src.replace("\\", "/"))
+    if isinstance(dst, str):
+        dst = Path(dst.replace("\\", "/"))
 
     if not src.is_absolute() and len(src.parents) > 1:
         unpack_dst = dst / src.parents[0]
