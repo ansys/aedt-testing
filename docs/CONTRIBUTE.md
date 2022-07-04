@@ -3,7 +3,7 @@
 <!-- toc -->
 
 - [Configure your enviornment](#configure-your-enviornment)
-- [Validate types](#validate-types)
+- [Run all tests and validations via tox](#run-all-tests-and-validations-via-tox)
 - [Build package](#build-package)
 
 <!-- tocstop -->
@@ -19,9 +19,11 @@ Install pre-commit
 pre-commit install
 ```
 
-## Validate types
+Install tox globally on your machine. See [tox installation](https://tox.wiki/en/latest/install.html)
+
+## Run all tests and validations via tox
 ```bash
-mypy --config-file=./mypy.ini -p aedttest
+tox
 ```
 
 
