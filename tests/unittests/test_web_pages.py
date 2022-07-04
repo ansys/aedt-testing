@@ -27,7 +27,7 @@ class TestProjectWebPage(BaseElectronicsDesktopTester):
         self.aedt_tester.initialize_results()
         self.aedt_tester.render_project_html("just_winding_221", proj_dict)
 
-        self.webpage = self.aedt_tester.results_path / "just_winding_221.html"
+        self.webpage = f"file:///{self.aedt_tester.results_path / 'just_winding_221.html'}"
         self.rel_path = str(self.aedt_tester.results_path).lower()
         driver.get(str(self.webpage))
 
