@@ -3,13 +3,17 @@ from pathlib import Path
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from webdriver_manager.firefox import GeckoDriverManager
 
 from .test_aedt_test_runner import TESTS_DIR
 from .test_aedt_test_runner import BaseElectronicsDesktopTester
 
-driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))
+options = FirefoxOptions()
+options.headless = True
+
+driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
 
 
 class TestProjectWebPage(BaseElectronicsDesktopTester):
