@@ -802,16 +802,16 @@ def copy_dependencies(project_config: Dict[str, Any], dst: str) -> None:
         copy_path_to(deps, dst)
 
 
-def copy_path_to(src: str, dst: str) -> Union[str, List[str]]:
+def copy_path_to(src: Union[str, Path], dst: Union[str, Path]) -> Union[str, List[str]]:
     """Copy path from src to dst.
 
     If ``src`` is a relative path, preserves relative folder tree.
 
     Parameters
     ----------
-    src : str
+    src : str or Path
         Path with copy target, relative or absolute.
-    dst : str
+    dst : str or Path
         Path where to copy.
 
     Returns
@@ -820,28 +820,32 @@ def copy_path_to(src: str, dst: str) -> Union[str, List[str]]:
         Path to copied file or list with paths if folder is copied.
 
     """
-    src_path = Path(src.replace("\\", "/"))
-    if not src_path.is_absolute() and len(src_path.parents) > 1:
-        unpack_dst = Path(dst) / src_path.parents[0]
-        if not src_path.is_file():
-            unpack_dst /= src_path.name
-    elif not src_path.is_file():
-        unpack_dst = Path(dst) / src_path.name
-    else:
-        unpack_dst = Path(dst)
+    if isinstance(dst, str):
+        dst = Path(dst.replace("\\", "/"))
+    if isinstance(src, str):
+        src = Path(src.replace("\\", "/"))
 
-    src_path = src_path.expanduser().resolve()
-    if not src_path.exists():
-        raise FileExistsError(f"File {src_path} doesn't exist")
+    if not src.is_absolute() and len(src.parents) > 1:
+        unpack_dst = dst / src.parents[0]
+        if not src.is_file():
+            unpack_dst /= src.name
+    elif not src.is_file():
+        unpack_dst = dst / src.name
+    else:
+        unpack_dst = dst
+
+    src = src.expanduser().resolve()
+    if not src.exists():
+        raise FileExistsError(f"File {src} doesn't exist")
 
     dst = str(unpack_dst)
     mkpath(dst)
 
-    if src_path.is_file():
-        file_path = copy_file(str(src_path), dst)
+    if src.is_file():
+        file_path = copy_file(str(src), dst)
         return file_path[0]
     else:
-        return copy_tree(str(src_path), dst)
+        return copy_tree(str(src), dst)
 
 
 def mkdtemp_persistent(*args: Any, persistent: bool = True, **kwargs: Any) -> Any:
