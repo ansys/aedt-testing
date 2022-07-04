@@ -589,7 +589,6 @@ class ElectronicsDesktopTester:
         """
         for variation_name, variation_data in design_data[key_name].items():
             for setup_name, current_stat in variation_data.items():
-                assert key_name in ["mesh", "simulation_time"]
                 extract = "mesh_name" if key_name == "mesh" else "profile_name"
                 absolute_path = design_data[extract][variation_name][setup_name]
 
@@ -597,19 +596,17 @@ class ElectronicsDesktopTester:
                 cont = 1
                 filepath = Path(absolute_path)
                 new_absolute_path = filepath
-                while Path.exists(self.reference_profiles.joinpath(new_absolute_path.name)):
+                while (self.reference_profiles / new_absolute_path.name).exists():
                     new_absolute_path = filepath.parent.joinpath(filepath.stem + str(cont) + filepath.suffix)
                     cont += 1
-                Path(absolute_path).rename(new_absolute_path)
+                filepath.rename(new_absolute_path)
 
-                new_path = Path(
-                    str(copy_path_to(str(new_absolute_path), str(self.reference_profiles))).replace("\\", "/")
-                )
-                design_data[extract][variation_name][setup_name] = str(new_path)
+                new_path = str(copy_path_to(new_absolute_path, self.reference_profiles))
+                design_data[extract][variation_name][setup_name] = new_path
                 stat_dict = {
                     "name": f"{design_name}:{setup_name}:{variation_name}",
                     "current": current_stat,
-                    "link": Path(*new_path.parts[-3:]),
+                    "link": Path(*Path(new_path).parts[-3:]),
                 }
                 if not self.only_reference:
                     reference_dict = self.reference_data[project_name]["designs"][design_name]
