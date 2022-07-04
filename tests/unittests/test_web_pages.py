@@ -44,7 +44,7 @@ class TestProjectWebPage(BaseElectronicsDesktopTester):
         assert simtime_link.text == "00:00:07"
 
         profile_path = Path(simtime_link.get_attribute("href").replace("file:///", ""))
-        assert profile_path.relative_to(self.rel_path) == Path(r"reference_folder\profiles\_VMG6BS.prof")
+        assert profile_path.relative_to(self.rel_path) == Path("reference_folder", "profiles", "_VMG6BS.prof")
 
     def test_sim_name(self):
         sim_name = driver.find_element(
@@ -59,7 +59,7 @@ class TestProjectWebPage(BaseElectronicsDesktopTester):
         assert mesh_link.text == "133"
 
         profile_path = Path(mesh_link.get_attribute("href").replace("file:///", ""))
-        assert profile_path.relative_to(self.rel_path) == Path(r"reference_folder\profiles\_7GWPCH.mstat")
+        assert profile_path.relative_to(self.rel_path) == Path("reference_folder", "profiles", "_7GWPCH.mstat")
 
     def test_mesh_name(self):
         mesh_name = driver.find_element(
