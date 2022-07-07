@@ -595,7 +595,7 @@ class ElectronicsDesktopTester:
                 # Check if profile exists already to avoid duplicates
                 cont = 1
                 filepath = new_absolute_path = Path(absolute_path)
-                reference_profiles = Path(self.reference_folder, project_name)
+                reference_profiles = Path(self.reference_folder, project_name, "prof")
                 while (reference_profiles / new_absolute_path.name).exists():
                     new_absolute_path = filepath.parent / f"{filepath.stem}{cont}{filepath.suffix}"
                     cont += 1
