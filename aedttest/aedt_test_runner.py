@@ -237,8 +237,7 @@ class ElectronicsDesktopTester:
         self.reference_folder.mkdir()
         if self.only_reference:
             for project_name in self.project_tests_config:
-                profile_path = Path(self.reference_folder, project_name)
-                profile_path.mkdir()
+                Path(self.reference_folder, project_name).mkdir()
         self.report_data["all_delta"] = 1 if not self.only_reference else None
         self.report_data["projects"] = {}
 
