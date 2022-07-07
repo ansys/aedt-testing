@@ -238,6 +238,7 @@ class ElectronicsDesktopTester:
         if self.only_reference:
             for project_name in self.project_tests_config:
                 Path(self.reference_folder, project_name).mkdir()
+                Path(self.reference_folder, project_name, "prof").mkdir()
         self.report_data["all_delta"] = 1 if not self.only_reference else None
         self.report_data["projects"] = {}
 
@@ -600,12 +601,14 @@ class ElectronicsDesktopTester:
                     new_absolute_path = filepath.parent / f"{filepath.stem}{cont}{filepath.suffix}"
                     cont += 1
                 filepath.rename(new_absolute_path)
+
                 new_path = str(copy_path_to(new_absolute_path, reference_profiles))
-                design_data[extract][variation_name][setup_name] = new_path
+                new_path_relative = str(Path(new_path).relative_to(self.proj_dir)).replace("\\", "/")
+                design_data[extract][variation_name][setup_name] = new_path_relative
                 stat_dict = {
                     "name": f"{design_name}:{setup_name}:{variation_name}",
                     "current": current_stat,
-                    "link": str(Path(new_path).relative_to(self.proj_dir)),
+                    "link": new_path_relative,
                 }
                 if not self.only_reference:
                     reference_dict = self.reference_data[project_name]["designs"][design_name]
