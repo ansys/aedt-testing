@@ -107,7 +107,6 @@ class ElectronicsDesktopTester:
         self.out_dir = Path(out_dir) if out_dir else CWD_DIR
         self.results_path = self.out_dir / f"results_{time_now(posix=True)}"
         self.reference_folder = self.results_path / "reference_folder"
-        self.reference_profiles = self.reference_folder / "profiles"
         self.proj_dir = self.out_dir if save_projects else self.results_path
         self.keep_sim_data = bool(save_projects)
         self.only_reference = only_reference
@@ -236,8 +235,9 @@ class ElectronicsDesktopTester:
         copy_path_to(str(MODULE_DIR / "static" / "css"), str(self.results_path))
         copy_path_to(str(MODULE_DIR / "static" / "js"), str(self.results_path))
         self.reference_folder.mkdir()
-        self.reference_profiles.mkdir()
-
+        if self.only_reference:
+            for project_name in self.project_tests_config:
+                Path(self.reference_folder, project_name, "prof").mkdir(parents=True, exist_ok=True)
         self.report_data["all_delta"] = 1 if not self.only_reference else None
         self.report_data["projects"] = {}
 
@@ -257,7 +257,7 @@ class ElectronicsDesktopTester:
                 self.report_data["projects"][project_name]["avg"] = 0
                 if project_name in self.reference_data:
                     copy_path_to(
-                        Path(self.reference_data[project_name]["filepath"], "profiles"),
+                        Path(self.reference_data[project_name]["filepath"], project_name),
                         self.reference_folder,
                     )
 
@@ -595,17 +595,19 @@ class ElectronicsDesktopTester:
                 # Check if profile exists already to avoid duplicates
                 cont = 1
                 filepath = new_absolute_path = Path(absolute_path)
-                while (self.reference_profiles / new_absolute_path.name).exists():
+                reference_profiles = Path(self.reference_folder, project_name, "prof")
+                while (reference_profiles / new_absolute_path.name).exists():
                     new_absolute_path = filepath.parent / f"{filepath.stem}{cont}{filepath.suffix}"
                     cont += 1
                 filepath.rename(new_absolute_path)
 
-                new_path = str(copy_path_to(new_absolute_path, self.reference_profiles))
-                design_data[extract][variation_name][setup_name] = new_path
+                new_path = str(copy_path_to(new_absolute_path, reference_profiles))
+                new_path_relative = str(Path(new_path).relative_to(self.proj_dir)).replace("\\", "/")
+                design_data[extract][variation_name][setup_name] = new_path_relative
                 stat_dict = {
                     "name": f"{design_name}:{setup_name}:{variation_name}",
                     "current": current_stat,
-                    "link": str(Path(new_path).relative_to(self.proj_dir)),
+                    "link": new_path_relative,
                 }
                 if not self.only_reference:
                     reference_dict = self.reference_data[project_name]["designs"][design_name]
