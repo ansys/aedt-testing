@@ -30,7 +30,18 @@ repos:
     rev: 3.9.2
     hooks:
       - id: flake8
+        name: flake8-py3
         args: ["--max-line-length", "120", "--max-doc-length", "120"]
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 3.9.2
+    hooks:
+      - id: flake8
+        name: flake8-py27
+        language_version: python2.7
+        files: "simulation_data.py$"
+        args: [ "--max-line-length", "120", "--max-doc-length", "120" ]
+
   - repo: https://github.com/Lucas-C/pre-commit-hooks-nodejs
     rev: v1.1.2
     hooks:
