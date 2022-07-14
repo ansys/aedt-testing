@@ -75,7 +75,7 @@ class TestParse(BaseTest):
         }
 
     @mock.patch("aedttest.simulation_data.parse_profile_file", return_value=["10:00:00", 100])
-    def test_extract_design_data_Icepak(self, mock_parse_profile_file):
+    def test_extract_design_data_icepak(self, mock_parse_profile_file):
         mock_pyaedt_app = mock.Mock()
         mock_pyaedt_app.available_variations.get_variation_strings.return_value = ["Ia='30'A", "Ia='20'A"]
         mock_pyaedt_app.export_mesh_stats.return_value = None
