@@ -297,6 +297,7 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
 
             if app.design_type == "Icepak":
                 design_dict[design_name]["mesh"][variation_name][setup] = cell_number
+                mesh_stats_file = profile_file
             else:
                 mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
                 app.export_mesh_stats(setup, variation_string, mesh_stats_file)

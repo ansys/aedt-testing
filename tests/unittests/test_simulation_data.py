@@ -74,6 +74,35 @@ class TestParse(BaseTest):
             }
         }
 
+    @mock.patch("aedttest.simulation_data.parse_profile_file", return_value=["10:00:00", 100])
+    def test_extract_design_data_icepak(self, mock_parse_profile_file):
+        mock_pyaedt_app = mock.Mock()
+        mock_pyaedt_app.available_variations.get_variation_strings.return_value = ["Ia='30'A", "Ia='20'A"]
+        mock_pyaedt_app.export_mesh_stats.return_value = None
+        mock_pyaedt_app.export_profile.return_value = None
+        mock_pyaedt_app.design_type = "Icepak"
+
+        result_dict = simulation_data.extract_design_data(
+            app=mock_pyaedt_app,
+            design_name="only_winding2",
+            setup_dict={"Setup1": "Setup1 : LastAdaptive"},
+            project_dir="/tmp",
+            design_dict={
+                "only_winding2": {"mesh": {}, "simulation_time": {}, "report": {}, "profile_name": {}, "mesh_name": {}}
+            },
+        )
+        mesh1 = result_dict["only_winding2"]["mesh_name"]["Ia=30A"]["Setup1"]
+        mesh2 = result_dict["only_winding2"]["mesh_name"]["Ia=20A"]["Setup1"]
+        assert result_dict == {
+            "only_winding2": {
+                "mesh": {"Ia=30A": {"Setup1": 100}, "Ia=20A": {"Setup1": 100}},
+                "simulation_time": {"Ia=30A": {"Setup1": "10:00:00"}, "Ia=20A": {"Setup1": "10:00:00"}},
+                "report": {},
+                "profile_name": {"Ia=30A": {"Setup1": None}, "Ia=20A": {"Setup1": None}},
+                "mesh_name": {"Ia=30A": {"Setup1": mesh1}, "Ia=20A": {"Setup1": mesh2}},
+            }
+        }
+
     def test_parse_profile_2020r2(self):
 
         result, _ = simulation_data.parse_profile_file(
