@@ -350,6 +350,8 @@ class ElectronicsDesktopTester:
 
         except OSError as exc:
             errors = str(exc)
+        except subprocess.CalledProcessError as exc:
+            errors = f"Electronics Desktop crashed. Most probably design is not valid. Log: {exc}"
         finally:
             # return cores back
             for machine in allocated_machines:
