@@ -6,6 +6,7 @@ from typing import Optional
 DEBUG: bool
 
 def parse_args() -> str: ...
+def parse_args_debug() -> str: ...
 
 pyaedt_path: str
 specified_version: Optional[str]
