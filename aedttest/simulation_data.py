@@ -178,7 +178,7 @@ def extract_data(desktop, project_dir, project_name, design_names):
 
     Parameters
     ----------
-    desktop : object
+    desktop : pyaedt.desktop.Desktop
         ``pyaedt`` ``Desktop`` object.
     project_dir : str
         Path to the project.
@@ -195,7 +195,6 @@ def extract_data(desktop, project_dir, project_name, design_names):
     """
 
     designs_dict = {}
-    oDesktop = desktop._main.oDesktop
 
     for design_name in design_names:
         design_dict = {
@@ -221,7 +220,7 @@ def extract_data(desktop, project_dir, project_name, design_names):
         if not analyze_success:
             logger.error("design {} 'analyze_all' failed".format(design_name))
 
-            error_messages = oDesktop.GetMessages(project_name, design_name, 1)
+            error_messages = app.logger.get_messages(project_name, design_name, level=1, aedt_messages=True)
             message = str(error_messages).replace("[error]", "")
             message = "{}: {}".format(design_name, message)
             logger.error(message)
@@ -256,7 +255,7 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
 
     Parameters
     ----------
-    app : object
+    app : pyaedt.application.AedtObjects
         ``pyaedt`` Electronics Desktop application object.
     design_name : str
         Name of the design
@@ -344,7 +343,7 @@ def extract_reports_data(app, design_name, project_dir, report_names):
 
     Parameters
     ----------
-    app : object
+    app : pyaedt.application.AedtObjects
         Any ``pyaedt`` Electronics Desktop application object.
     design_name : str
         Name of the design.
