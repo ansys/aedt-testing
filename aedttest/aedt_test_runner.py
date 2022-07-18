@@ -538,20 +538,23 @@ class ElectronicsDesktopTester:
                             project_report["error_exception"].append(msg)
                             continue
 
-                        max_delta = 0.0
+                        max_delta = 0
                         difference = []
                         for ref, actual in zip(y_ref_data, curve_data["y_data"]):
                             difference.append(ref - actual)
                             epsilon = 0
                             if actual == 0:
                                 epsilon = 1e-10
+                                actual = float(actual)
                             max_delta = max(max_delta, abs(1 - ref / (actual + epsilon)))
 
                         max_delta_perc = round(max_delta * 100, 3)
-                        epsilon = 0.0
+                        epsilon = 0
+                        mean_curve_data = mean(curve_data["y_data"])
                         if mean(curve_data["y_data"]) == 0:
                             epsilon = 1e-10
-                        avg_perc = round(abs(1 - mean(y_ref_data) / (mean(curve_data["y_data"]) + epsilon)), 3)
+                            mean_curve_data = float(mean_curve_data)
+                        avg_perc = round(abs(1 - mean(y_ref_data) / (mean_curve_data + epsilon)), 3)
 
                         # take always integer since ticks are integers, and +1 to allow to slide
                         project_report["slider_limit"] = max(project_report["slider_limit"], int(max_delta_perc) + 1)
