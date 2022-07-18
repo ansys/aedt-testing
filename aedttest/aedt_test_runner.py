@@ -542,10 +542,8 @@ class ElectronicsDesktopTester:
                         difference = []
                         for ref, actual in zip(y_ref_data, curve_data["y_data"]):
                             difference.append(ref - actual)
-                            epsilon = 0.0
-                            if actual == 0.0:
-                                epsilon = 1e-10
-                            max_delta = max(max_delta, abs(1 - ref / (actual + epsilon)))
+                            # avoid division by zero by using small tolerance of 1e-20
+                            max_delta = max(max_delta, abs(1 - ref / (actual or 1e-20)))
 
                         max_delta_perc = round(max_delta * 100, 3)
                         epsilon = 0.0
