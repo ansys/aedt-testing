@@ -546,7 +546,14 @@ class ElectronicsDesktopTester:
                                 # if 0, just skip, no sense for 'infinite' delta
                                 max_delta = max(max_delta, abs(1 - ref / actual))
                         max_delta_perc = round(max_delta * 100, 3)
-                        avg_perc = round(abs(1 - mean(y_ref_data) / mean(curve_data["y_data"])), 3)
+                        if mean(curve_data["y_data"]) == 0:
+                            avg_perc = round(
+                                abs(mean(y_ref_data) - mean(curve_data["y_data"]))
+                                / (1 + abs(mean(curve_data["y_data"]))),
+                                3,
+                            )
+                        else:
+                            avg_perc = round(abs(1 - mean(y_ref_data) / mean(curve_data["y_data"])), 3)
 
                         # take always integer since ticks are integers, and +1 to allow to slide
                         project_report["slider_limit"] = max(project_report["slider_limit"], int(max_delta_perc) + 1)
