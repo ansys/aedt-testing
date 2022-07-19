@@ -16,6 +16,7 @@ from aedttest.logger import set_logger  # noqa: E402
 
 
 def parse_args():
+    """Parse arguments that were provided to the script when executed with RunScriptAndExit."""
     arg_string = ScriptArgument.replace('"', "")  # noqa: F821
     parser = argparse.ArgumentParser()
     parser.add_argument("--pyaedt-path")
@@ -23,6 +24,15 @@ def parse_args():
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args(shlex.split(arg_string))
     return args.pyaedt_path, args.logfile_path, args.debug
+
+
+def parse_args_debug():
+    """Parse arguments that were provided to the script when the script is executed directly."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--desktop-version", default="2022.1")
+    args = parser.parse_args()
+
+    return args.desktop_version
 
 
 log_level = logging.DEBUG
@@ -34,10 +44,7 @@ if not DEBUG:
     if not debug:
         log_level = logging.INFO
 else:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--desktop-version", default="2022.1")
-    args = parser.parse_args()
-    specified_version = args.desktop_version
+    specified_version = parse_args_debug()
     logfile_path = os.path.join(MODULE_DIR_PARENT, "aedt_test_framework.log")
 
 try:
