@@ -241,9 +241,9 @@ class ElectronicsDesktopTester:
         self.report_data["all_delta"] = 1 if not self.only_reference else None
         self.report_data["projects"] = {}
 
-        for project_name, project_config in self.project_tests_config.items():
+        for project_name in sorted(self.project_tests_config):
             self.report_data["projects"][project_name] = {
-                "cores": project_config["distribution"]["cores"],
+                "cores": self.project_tests_config[project_name]["distribution"]["cores"],
                 "status": "queued",
                 "link": None,
                 "delta": None,
