@@ -457,7 +457,7 @@ class ElectronicsDesktopTester:
             Dictionary loaded from .json file.
 
         """
-        project_data: Dict[str, Any] = {}
+        project_data: Dict[str, Any] = {"error_exception": []}
         if not report_file.exists():
             project_exceptions.append(f"Project report for {project_name} does not exist")
             return project_data
