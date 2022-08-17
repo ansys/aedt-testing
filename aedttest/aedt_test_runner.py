@@ -511,7 +511,7 @@ class ElectronicsDesktopTester:
         """
         for report_name, report_data in design_data["report"].items():
             for trace_name, trace_data in report_data.items():
-                if not trace_data["curves"].items():
+                if not trace_data["curves"]:
                     msg = f"{design_name}:{report_name}:{trace_name} is empty"
                     project_report["error_exception"].append(msg)
                     continue

@@ -227,7 +227,7 @@ def extract_data(desktop, project_dir, project_name, design_names):
         if not analyze_success:
             logger.error("design {} 'analyze_all' failed".format(design_name))
             error_messages = app.logger.get_messages(project_name, design_name, level=1, aedt_messages=True)
-            messages = error_messages.design_level
+            messages = error_messages.design_level + error_messages.project_level + error_messages.global_level
             for message in messages:
                 log_message = "{}: {}".format(design_name, message)
                 logger.error(log_message)
