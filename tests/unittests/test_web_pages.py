@@ -1,4 +1,5 @@
 import json
+import shutil
 from pathlib import Path
 
 from selenium import webdriver
@@ -36,6 +37,7 @@ class TestProjectWebPage(BaseElectronicsDesktopTester):
 
     def teardown_class(self):
         self.driver.close()
+        shutil.rmtree(self.aedt_tester.results_path)
 
     def test_title(self):
         assert self.driver.title == "just_winding_221"
@@ -107,6 +109,7 @@ class TestMainWebPage(BaseElectronicsDesktopTester):
 
     def teardown_class(self):
         self.driver.close()
+        shutil.rmtree(self.aedt_tester.results_path)
 
     def test_projects_order(self):
         project_names = ["01_voltage_control", "19", "2019R1", "expression_excitation", "just_winding"]
