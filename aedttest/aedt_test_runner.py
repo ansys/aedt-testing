@@ -394,6 +394,8 @@ class ElectronicsDesktopTester:
 
         """
         report_file = Path(project_path).parent / f"{project_name}.json"
+        if not report_file.exists():
+            report_file = Path(project_path).parent / f"{project_name}_parasolid.json"
         project_report: Dict[str, Union[List[Any], Any]] = {
             "plots": [],
             "error_exception": [],

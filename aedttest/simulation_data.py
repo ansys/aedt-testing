@@ -226,14 +226,12 @@ def extract_data(desktop, project_dir, project_name, design_names):
 
         if not analyze_success:
             logger.error("design {} 'analyze_all' failed".format(design_name))
-
             error_messages = app.logger.get_messages(project_name, design_name, level=1, aedt_messages=True)
-            message = str(error_messages).replace("[error]", "")
-            message = "{}: {}".format(design_name, message)
-            logger.error(message)
-            PROJECT_DICT["error_exception"].append(message)
-
-            continue
+            messages = error_messages.design_level
+            for message in messages:
+                log_message = "{}: {}".format(design_name, message)
+                logger.error(log_message)
+                PROJECT_DICT["error_exception"].append(log_message)
         else:
             logger.info("design {} 'analyze_all' success".format(design_name))
 
