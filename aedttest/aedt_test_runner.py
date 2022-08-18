@@ -394,8 +394,6 @@ class ElectronicsDesktopTester:
 
         """
         report_file = Path(project_path).parent / f"{project_name}.json"
-        if not report_file.exists():
-            report_file = Path(project_path).parent / f"{project_name}_parasolid.json"
         project_report: Dict[str, Union[List[Any], Any]] = {
             "plots": [],
             "error_exception": [],
@@ -952,6 +950,9 @@ def execute_aedt(
     """
     aedt_path = get_aedt_executable_path(version)
     command = [aedt_path]
+
+    if int(version) >= 231:
+        os.environ["ANSYSEM_GEOM_KERN_FORCE_OVERWRITE_ORIG_PROJECT"] = "1"
 
     if distribution_config["auto"]:
         # for auto number of tasks on host must be "-1"
