@@ -509,6 +509,10 @@ class ElectronicsDesktopTester:
         """
         for report_name, report_data in design_data["report"].items():
             for trace_name, trace_data in report_data.items():
+                if not trace_data["curves"]:
+                    msg = f"{design_name}:{report_name}:{trace_name} is empty"
+                    project_report["error_exception"].append(msg)
+                    continue
                 for curve_name, curve_data in trace_data["curves"].items():
                     plot_data = {
                         "name": f"{design_name}:{report_name}:{trace_name}:{curve_name}",
@@ -946,6 +950,9 @@ def execute_aedt(
     """
     aedt_path = get_aedt_executable_path(version)
     command = [aedt_path]
+
+    if int(version) >= 231:
+        os.environ["ANSYSEM_GEOM_KERN_FORCE_OVERWRITE_ORIG_PROJECT"] = "1"
 
     if distribution_config["auto"]:
         # for auto number of tasks on host must be "-1"

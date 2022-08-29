@@ -2,13 +2,13 @@
 
 <!-- toc -->
 
-- [Configure your enviornment](#configure-your-enviornment)
+- [Configure your environment](#configure-your-environment)
 - [Run all tests and validations via tox](#run-all-tests-and-validations-via-tox)
 - [Build package](#build-package)
 
 <!-- tocstop -->
 
-## Configure your enviornment
+## Configure your environment
 Install all dependencies
 ```bash
 pip install .[test]
