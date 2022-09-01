@@ -19,6 +19,7 @@ Ansys Electronics Desktop products, eg HFSS, Maxwell, Icepak, Q3D, etc
 authors = [
     {name = "Maksim Beliaev", email = "maksim.beliaev@ansys.com"},
     {name = "Bo Yang", email = "bo.yang@ansys.com"},
+    {name = "Samuel Lopez", email = "samuel.lopez@ansys.com"},
 ]
 readme = "README.md"
 requires-python = ">=3.7"
