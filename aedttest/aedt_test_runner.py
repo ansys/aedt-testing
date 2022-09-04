@@ -255,8 +255,8 @@ class ElectronicsDesktopTester:
                 # initialize integer for proper rendering
                 self.report_data["projects"][project_name]["delta"] = 0
                 self.report_data["projects"][project_name]["avg"] = 0
-                reference_path = Path(self.reference_data[project_name]["filepath"], project_name)
                 if project_name in self.reference_data:
+                    reference_path = Path(self.reference_data[project_name]["filepath"], project_name)
                     copy_path_to(
                         reference_path.resolve(),
                         self.reference_folder,
