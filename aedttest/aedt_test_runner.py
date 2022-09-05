@@ -256,8 +256,9 @@ class ElectronicsDesktopTester:
                 self.report_data["projects"][project_name]["delta"] = 0
                 self.report_data["projects"][project_name]["avg"] = 0
                 if project_name in self.reference_data:
+                    reference_path = Path(self.reference_data[project_name]["filepath"], project_name)
                     copy_path_to(
-                        Path(self.reference_data[project_name]["filepath"], project_name),
+                        reference_path.resolve(),
                         self.reference_folder,
                     )
 
