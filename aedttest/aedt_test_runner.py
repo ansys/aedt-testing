@@ -802,6 +802,9 @@ def copy_proj(project_config: Dict[str, Any], dst: str) -> Union[str, List[str]]
 
     """
     src = project_config["path"]
+    src_aedb = src.replace(".aedt", ".aedb")
+    if os.path.isdir(src_aedb):
+        copy_path_to(src_aedb, dst)
     return copy_path_to(src, dst)
 
 
