@@ -279,7 +279,10 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
     """
 
     for setup, sweep in setup_dict.items():
-        variation_strings = app.available_variations.get_variation_strings(sweep)
+        if app.design_type == "HFSS 3D Layout Design":
+            variation_strings = app.list_of_variations(setup, sweep.lstrip(setup + " : "))
+        else:
+            variation_strings = app.available_variations.get_variation_strings(sweep)
         if not variation_strings:
             continue
         for variation_string in variation_strings:
