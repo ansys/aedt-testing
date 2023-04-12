@@ -13,5 +13,5 @@ jobs:
         python-version: "3.7"
     - name: downgrade pip
       run: |
-        python -m pip install pip==18.0 --upgrade
+        python -m pip install pip==18.0
     - uses: pre-commit/action@v2.0.3
