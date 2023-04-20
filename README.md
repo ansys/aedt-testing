@@ -134,7 +134,7 @@ if __name__ == '__main__':
     main()
 ```
 
-[Example Project](examples/via_transition)
+[Example Project](examples/hfss_3dlayout_via_transition)
 
 ## Limitations
 Currently, project does not support or partially supports following features:
