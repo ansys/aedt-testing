@@ -121,7 +121,7 @@ if __name__ == '__main__':
     main()
 
 ```
-#### Run comprison between versions
+#### Run comparison between versions
 ```python
 import sys
 from aedttest.aedt_test_runner import main
