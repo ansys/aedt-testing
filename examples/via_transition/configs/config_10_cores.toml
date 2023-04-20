@@ -1,0 +1,11 @@
+[project]
+name = "via_transition_2023r1"
+path = "input\\via_transition_2023r1.aedt"
+
+[project.distribution]
+cores = 10
+distribution_types = ["default"]
+parametric_tasks = 1
+multilevel_distribution_tasks = 0
+single_node = false
+auto = true

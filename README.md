@@ -70,23 +70,23 @@ To expose the available commands use the following command line
 aedt_test_runner -h
 ```
 
-### Examples
+## Examples
 
-#### Local machine
+### Local machine
 To start test on local machine use following command line
 
-##### Generate only reference results
+#### Generate only reference results
 ```bash
 aedt_test_runner --config-folder=examples/configs --aedt-version=193 --only-reference
 ```
 
-##### Run comparison between versions
+#### Run comparison between versions
 ```bash
 aedt_test_runner --config-folder=examples/configs --aedt-version=231 --reference-folder=reference_folder
 ```
 
-#### Slurm
-##### Generate only reference results
+### Slurm
+#### Generate only reference results
 ```bash
 sbatch \
   --job-name aedttest \
@@ -96,7 +96,7 @@ sbatch \
   --wrap "aedt_test_runner --config-folder=examples/configs --aedt-version=193 --only-reference"
 ```
 
-##### Run comparison between versions
+#### Run comparison between versions
 ```bash
 sbatch \
   --job-name aedttest \
@@ -105,6 +105,35 @@ sbatch \
   --nodes 2-2 --ntasks 56 \
   --wrap "aedt_test_runner --config-folder=examples/configs --aedt-version=222 --reference-folder=~/reference_folder"
 ```
+
+### Run on dev code on local machine
+#### Generate reference results only
+```python
+import sys
+from aedttest.aedt_test_runner import main
+
+if __name__ == '__main__':
+    sys.argv.extend([r"--config-folder=configs",
+                     "--aedt-version=231",
+                     "--only-reference"
+                     ])
+    main()
+
+```
+#### Run comprison between versions
+```python
+import sys
+from aedttest.aedt_test_runner import main
+
+if __name__ == '__main__':
+    sys.argv.extend([r"--config-folder=configs",
+                     "--aedt-version=232",
+                     r"--reference-folder=results_2023r1_2023_04_19_17_37_02\reference_folder"
+                     ])
+    main()
+```
+
+[Example Project](examples/via_transition)
 
 ## Limitations
 Currently, project does not support or partially supports following features:
