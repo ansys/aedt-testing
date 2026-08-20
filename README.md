@@ -7,6 +7,7 @@ This project aims to provide an Automated Framework to test Ansys Electronics De
 Users can set up a suite of tests to validate stability/regression of results between 
 different versions of Ansys Electronics Desktop.
 
+> **Requires Python 3.10+ and pyaedt >= 1.2.0**
 
 ## Table of Contents
 
@@ -47,6 +48,10 @@ To install the package use:
 ```bash
 pip install aedttest
 ```
+
+> **Note:** `pyaedt >= 1.2.0` uses the `ansys.aedt.core` package namespace.  
+> On Python 3.10, `tomli` is installed automatically as a backport for TOML parsing.  
+> On Python 3.11+, the built-in `tomllib` module is used instead.
 
 ## Usage
 Electronics Desktop testing framework automatically identifies environment where it was launched. In this chapter we 
@@ -110,6 +115,7 @@ sbatch \
 Currently, project does not support or partially supports following features:
 * Automatic results creation is possible only for versions 2019R1+
 * LS-DSO is not supported
+* Python < 3.10 is not supported
 
 ## Contributors
 If you would like to contribute to this project, please see [CONTRIBUTE](docs/CONTRIBUTE.md).

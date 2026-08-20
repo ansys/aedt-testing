@@ -4,10 +4,8 @@ import json
 import logging
 import os
 import re
-import shlex
 import sys
 
-DEBUG = False if "oDesktop" in dir() else True
 MODULE_DIR_PARENT = os.path.dirname(os.path.dirname(__file__))
 sys.path.append(MODULE_DIR_PARENT)
 
@@ -16,43 +14,43 @@ from aedttest.logger import set_logger  # noqa: E402
 
 
 def parse_args():
-    """Parse arguments that were provided to the script when executed with RunScriptAndExit."""
-    arg_string = ScriptArgument.replace('"', "")  # noqa: F821
+    """Parse command-line arguments when simulation_data.py is executed via CPython.
+
+    This replaces the old IronPython-specific ScriptArgument-based parsing.
+    The script is now always launched by launcher.py via subprocess, so standard
+    sys.argv argument parsing is used.
+    """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pyaedt-path")
-    parser.add_argument("--logfile-path")
+    parser.add_argument("--logfile-path", default=None)
+    parser.add_argument("--aedt-version", default=None,
+                        help="AEDT version to connect to (e.g. '2025.1'), must match the outer -RunScriptAndExit process")
     parser.add_argument("--debug", action="store_true")
-    args = parser.parse_args(shlex.split(arg_string))
-    return args.pyaedt_path, args.logfile_path, args.debug
-
-
-def parse_args_debug():
-    """Parse arguments that were provided to the script when the script is executed directly."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--desktop-version", default="2022.1")
+    parser.add_argument("--port", type=int, default=0,
+                        help="gRPC port of the running AEDT session (passed by launcher.py)")
+    parser.add_argument("--project-path", default=None,
+                        help="Full path to the .aedt project file being tested")
+    parser.add_argument("--design-names", default=None,
+                        help="Comma-separated design names extracted by launcher.py via IronPython oDesktop")
     args = parser.parse_args()
-
-    return args.desktop_version
+    logfile_path = args.logfile_path or os.path.join(MODULE_DIR_PARENT, "aedt_test_framework.log")
+    return logfile_path, args.debug, args.port, args.project_path, args.design_names, args.aedt_version
 
 
 log_level = logging.DEBUG
-if not DEBUG:
-    pyaedt_path, logfile_path, debug = parse_args()
-    sys.path.insert(0, pyaedt_path)
-    specified_version = None
-
-    if not debug:
-        log_level = logging.INFO
-else:
-    specified_version = parse_args_debug()
-    logfile_path = os.path.join(MODULE_DIR_PARENT, "aedt_test_framework.log")
+logfile_path, debug, grpc_port, project_path_arg, design_names_arg, specified_version = parse_args()
+# specified_version must match the AEDT version of the outer -RunScriptAndExit
+# process (passed by launcher.py via --aedt-version), since we connect to an
+# already running session (new_desktop=False).
+if not debug:
+    log_level = logging.INFO
 
 try:
-    import pyaedt  # noqa: E402
-    from pyaedt import get_pyaedt_app  # noqa: E402
-    from pyaedt.desktop import Desktop  # noqa: E402
-    from pyaedt.generic.general_methods import generate_unique_name  # noqa: E402
-    from pyaedt.generic.report_file_parser import parse_rdat_file  # noqa: E402
+    # NEW:
+    import ansys.aedt.core as pyaedt
+    from ansys.aedt.core import get_pyaedt_app
+    from ansys.aedt.core import Desktop
+    from ansys.aedt.core.generic.file_utils import generate_unique_name
+    from ansys.aedt.core.visualization.advanced.misc import parse_rdat_file
 except Exception as exc:
     set_logger(logging_file=logfile_path, level=log_level, pyaedt_module=None)
     logger.exception(str(exc))
@@ -207,7 +205,7 @@ def extract_data(desktop, project_dir, project_name, design_names):
         design_dict = {
             design_name: {"mesh": {}, "simulation_time": {}, "report": {}, "profile_name": {}, "mesh_name": {}}
         }
-        app = get_pyaedt_app(design_name=design_name)
+        app = get_pyaedt_app(project_name=project_name, design_name=design_name, desktop=desktop)
         setups_names = app.setup_names
         if not setups_names:
             PROJECT_DICT["error_exception"].append("Design {} has no setups".format(design_name))
@@ -222,12 +220,28 @@ def extract_data(desktop, project_dir, project_name, design_names):
                     setup_dict[setups] = sweep
                     break
 
-        analyze_success = desktop.analyze_all(design=design_name)
+        logger.info("START ANALYZE: {}".format(design_name))
+        try:
+            analyze_success = desktop.analyze_all(design=design_name)
+        except Exception as exc:
+            # analyze_all is wrapped by pyaedt_function_handler which may re-raise
+            # instead of returning False. Treat any exception as a failed analysis
+            # so we still capture messages and write partial results instead of
+            # crashing the whole script.
+            logger.error("design {} 'analyze_all' raised exception: {}".format(design_name, exc))
+            analyze_success = False
+        logger.info("END ANALYZE: {}".format(design_name))
 
         if not analyze_success:
             logger.error("design {} 'analyze_all' failed".format(design_name))
-            error_messages = app.logger.get_messages(project_name, design_name, level=1, aedt_messages=True)
-            messages = error_messages.design_level + error_messages.project_level + error_messages.global_level
+            try:
+                error_messages = app.logger.get_messages(project_name, design_name, level=1, aedt_messages=True)
+                messages = error_messages.design_level + error_messages.project_level + error_messages.global_level
+            except Exception as exc:
+                # get_messages() can itself crash (e.g. internal desktop handle is None
+                # after a failed analyze_all). Don't let that abort the whole script.
+                logger.error("get_messages() also failed: {}".format(exc))
+                messages = []
             for message in messages:
                 log_message = "{}: {}".format(design_name, message)
                 logger.error(log_message)
@@ -253,6 +267,22 @@ def extract_data(desktop, project_dir, project_name, design_names):
         designs_dict.update(design_dict)
 
     return designs_dict
+
+
+def _flatten_variation_to_string(variation_string):
+    """Flatten a (possibly nested) list of variation tokens into a single string.
+
+    pyaedt 1.3.0's available_variations.variations() may return each variation
+    as a nested list of "var='val'" tokens instead of a single space-joined
+    string (older API behavior, e.g. "Ia='30'A"). This recursively flattens
+    any nested list/tuple structure and joins everything with spaces.
+    """
+    if isinstance(variation_string, (list, tuple)):
+        flat_parts = []
+        for item in variation_string:
+            flat_parts.append(_flatten_variation_to_string(item))
+        return " ".join(flat_parts)
+    return str(variation_string) if variation_string is not None else ""
 
 
 def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
@@ -282,10 +312,17 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
         if app.design_type == "HFSS 3D Layout Design":
             variation_strings = app.list_of_variations(setup, sweep.lstrip(setup + " : "))
         else:
-            variation_strings = app.available_variations.get_variation_strings(sweep)
+            variation_strings = app.available_variations.variations(setup_sweep=sweep)
         if not variation_strings:
             continue
         for variation_string in variation_strings:
+            # pyaedt 1.3.0's available_variations.variations() may return each
+            # variation as a (possibly nested) list of "var='val'" tokens instead
+            # of a single space-joined string (older API behavior). Flatten and
+            # join to a string so downstream code (compose_variation_string,
+            # export_profile, export_mesh_stats) keeps working unchanged.
+            variation_string = _flatten_variation_to_string(variation_string)
+
             variation_name = "nominal" if not variation_string else compose_variation_string(variation_string)
 
             if variation_name not in design_dict[design_name]["mesh"]:
@@ -429,14 +466,8 @@ def check_nan(data_dict):
             curves_dict = data_dict[plot_name][trace_name]["curves"]
             for curve_name in list(curves_dict.keys()):
 
-                if sys.version_info.major == 3:
-                    number_types = (float, int)
-                else:
-                    # need to handle "long" data type in python 2
-                    number_types = (float, int, long)  # noqa: F821
-
-                if any(not isinstance(x, number_types) for x in curves_dict[curve_name]["x_data"]) or any(
-                    not isinstance(x, number_types) for x in curves_dict[curve_name]["y_data"]
+                if any(not isinstance(x, (float, int)) for x in curves_dict[curve_name]["x_data"]) or any(
+                    not isinstance(x, (float, int)) for x in curves_dict[curve_name]["y_data"]
                 ):
                     curves_dict.pop(curve_name)
 
@@ -469,16 +500,84 @@ def generate_unique_file_path(project_dir, extension):
     return file_path
 
 
-def main():
-    desktop = Desktop(specified_version=specified_version, non_graphical=False, new_desktop_session=False)
+def parse_design_names_from_aedt_file(aedt_file_path):
+    """Extract design names by parsing the .aedt project file directly.
 
-    project_name = desktop.project_list().pop()
-    project_dir = desktop.project_path(project_name=project_name)
-    project_path = os.path.join(project_dir, project_name + ".aedt")
-    design_names = desktop.design_list()
+    Needed because in -auto -machinelist batch mode, neither IronPython's
+    oDesktop.GetActiveProject() nor gRPC's desktop.design_list() can see
+    the project (confirmed empty in both cases).
+
+    Parameters
+    ----------
+    aedt_file_path : str
+        Path to the .aedt project file.
+
+    Returns
+    -------
+    design_names : list
+        List of design names found in the project file.
+    """
+    design_names = []
+    pattern = re.compile(r"DesignName\s*=\s*'([^']+)'", re.IGNORECASE)
+    try:
+        with open(aedt_file_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+        for m in pattern.finditer(content):
+            if m.group(1) not in design_names:
+                design_names.append(m.group(1))
+    except Exception as e:
+        logger.warning("Could not parse .aedt file for design names: {}".format(e))
+    return design_names
+
+
+def main():
+    # Derive project name and dir directly from the --project-path argument.
+    # This avoids querying desktop.project_list which is unreliable in
+    # non-graphical -RunScriptAndExit mode with pyaedt 1.3.0 gRPC.
+    if project_path_arg:
+        project_path = project_path_arg
+        project_name = os.path.splitext(os.path.basename(project_path))[0]
+        project_dir = os.path.dirname(project_path)
+    else:
+        raise RuntimeError("--project-path argument is required but was not provided")
+
+    logger.info("Start extraction for {}".format(project_path))
+
+    # Connect to the running AEDT session via gRPC.
+    desktop = Desktop(
+        version=specified_version,
+        machine="localhost",
+        port=grpc_port,
+        non_graphical=False,
+        new_desktop=False,
+    )
+
+    # design_names_arg is passed from launcher.py via IronPython oDesktop.GetActiveProject()
+    # This is the only reliable source in -RunScriptAndExit batch mode.
+    # gRPC-based design_list() always returns [] in this mode.
+    if design_names_arg:
+        design_names = [d.strip() for d in design_names_arg.split(",") if d.strip()]
+        logger.info("design_names from launcher.py (IronPython): {}".format(design_names))
+    else:
+        # Fallback: try gRPC (may return [] in RunScriptAndExit mode)
+        design_names = desktop.design_list()
+        logger.info("design_names via gRPC fallback: {}".format(design_names))
+
+    if not design_names:
+        # Last resort: parse the .aedt project file directly (no AEDT API needed at all)
+        design_names = parse_design_names_from_aedt_file(project_path)
+        logger.info("design_names from .aedt file parsing: {}".format(design_names))
+
+    # The AEDT session started via -RunScriptAndExit does NOT automatically open
+    # the project passed on the command line before the script executes (confirmed:
+    # oDesktop.GetActiveProject() and desktop.project_list are both empty at this point).
+    # Explicitly open the project ourselves using the native AEDT scripting API.
+    if project_name not in list(desktop.project_list):
+        logger.info("Project not open yet, opening explicitly: {}".format(project_path))
+        desktop.odesktop.OpenProject(project_path)
+        logger.info("project_list after OpenProject: {}".format(list(desktop.project_list)))
 
     if design_names:
-        logger.info("Start extraction for {}".format(project_path))
         designs_dict = extract_data(desktop, project_dir, project_name, design_names)
         PROJECT_DICT["designs"].update(designs_dict)
     else:

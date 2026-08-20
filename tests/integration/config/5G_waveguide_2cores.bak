@@ -1,0 +1,10 @@
+[project]
+name = "5G_waveguide_2cores"
+path = "tests/integration/projects/5G_26GHzBand_substrate_integrated_waveguide.aedt"
+
+[project.distribution]
+cores = 2
+parametric_tasks = 1
+single_node = true
+auto = false
+distribution_types = ["Variations", "Frequencies"]

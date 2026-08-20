@@ -4,24 +4,26 @@ from pathlib import Path
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
 
 from aedttest import aedt_test_runner
 
 from .test_aedt_test_runner import TESTS_DIR
 from .test_aedt_test_runner import BaseElectronicsDesktopTester
 
-options = FirefoxOptions()
-options.headless = True
+options = ChromeOptions()
+options.add_argument("--headless")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
 
 html_base_path = "/html/body/div/div/div/section"
 
 
 class TestProjectWebPage(BaseElectronicsDesktopTester):
     def setup_class(self):
-        super().setup(self)
+        super().setup_method(self)
         self.aedt_tester.only_reference = True
 
         with open(TESTS_DIR / "input" / "project_report.json") as file:
@@ -32,7 +34,7 @@ class TestProjectWebPage(BaseElectronicsDesktopTester):
 
         self.webpage = f"file:///{self.aedt_tester.results_path / 'just_winding_221.html'}"
         self.rel_path = str(self.aedt_tester.results_path).lower()
-        self.driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
+        self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
         self.driver.get(str(self.webpage))
 
     def teardown_class(self):
@@ -104,7 +106,7 @@ class TestMainWebPage(BaseElectronicsDesktopTester):
 
         self.webpage = f"file:///{self.aedt_tester.results_path / 'main.html'}"
         self.rel_path = str(self.aedt_tester.results_path).lower()
-        self.driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
+        self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
         self.driver.get(str(self.webpage))
 
     def teardown_class(self):

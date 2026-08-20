@@ -4,14 +4,16 @@ import json
 import os
 import platform
 import re
+import shutil
+import socket
 import subprocess
 import tempfile
 import threading
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib  # Python 3.10 fallback
 from contextlib import contextmanager
-from distutils.dir_util import copy_tree
-from distutils.dir_util import mkpath
-from distutils.dir_util import remove_tree
-from distutils.file_util import copy_file
 from pathlib import Path
 from statistics import mean
 from time import sleep
@@ -23,8 +25,6 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-
-import tomli
 from django import setup as django_setup
 from django.conf import settings as django_settings
 from django.template.loader import get_template
@@ -33,12 +33,19 @@ from aedttest.clusters.job_hosts import get_job_machines
 from aedttest.logger import logger
 from aedttest.logger import set_logger
 
-from pyaedt import __file__ as _py_aedt_path  # isort: skip
-
 MODULE_DIR = Path(__file__).resolve().parent
 CWD_DIR = Path.cwd()
 LOGFOLDER_PATH = CWD_DIR / "logs"
 LOGFILE_PATH = LOGFOLDER_PATH / "aedt_test_framework.log"
+
+# Thread-safety for concurrent gRPC port allocation across parallel project threads.
+# Without this, two threads could both call find_free_port() and receive the
+# SAME port number, because the socket is closed (freeing the OS-level port)
+# before AEDT actually binds to it - a classic TOCTOU race condition that
+# caused sporadic "Failed to execute gRPC AEDT command: OpenProject" errors
+# when running multiple projects in parallel.
+_allocated_ports_lock = threading.Lock()
+_allocated_ports: set = set()
 
 # configure Django templates
 django_settings.configure(
@@ -118,10 +125,11 @@ class ElectronicsDesktopTester:
                 self.reference_data[data["name"]] = data
                 self.reference_data[data["name"]]["filepath"] = reference_folder
 
-        self.script = str(MODULE_DIR / "simulation_data.py")
+        self.script = str(MODULE_DIR / "launcher.py")
 
-        # logfile path will be appended dynamically later
-        self.script_args = f"\"--pyaedt-path='{Path(_py_aedt_path).parent.parent}' --logfile-path='{{}}'\""
+        # logfile path and project path will be appended dynamically later
+        # {0} = logfile path, {1} = project path
+        self.script_args = "\"--logfile-path='{}' --project-path='{}'\""
 
         if debug:
             self.script_args += " --debug"
@@ -231,7 +239,7 @@ class ElectronicsDesktopTester:
 
         """
         if self.results_path.exists():
-            remove_tree(str(self.results_path))
+            shutil.rmtree(str(self.results_path))
         copy_path_to(str(MODULE_DIR / "static" / "css"), str(self.results_path))
         copy_path_to(str(MODULE_DIR / "static" / "js"), str(self.results_path))
         self.reference_folder.mkdir()
@@ -344,7 +352,7 @@ class ElectronicsDesktopTester:
                 allocated_machines,
                 distribution_config=project_config["distribution"],
                 script=self.script,
-                script_args=self.script_args.format(log_file),
+                script_args=self.script_args.format(log_file, project_path),
                 project_path=project_path,
             )
             logger.debug(f"Project {project_name} analyses finished. Prepare report.")
@@ -687,6 +695,18 @@ class ElectronicsDesktopTester:
                 self.active_tasks += 1
                 yield proj_name, allocated_machines
 
+                # Local single-host testing only: when multiple projects share
+                # the SAME hostname (e.g. no real SLURM/cluster allocation,
+                # just "localhost"), AEDT's own internal host-reservation
+                # mechanism can race if two ansysedt.exe processes try to
+                # register the same host almost simultaneously, causing
+                # sporadic "Failed to execute gRPC AEDT command: OpenProject"
+                # errors. A short stagger avoids that collision. On a real
+                # cluster, each project gets distinct node names, so this
+                # delay is a no-op in practice (no collision condition exists).
+                if len(set(self.machines_dict.keys())) == 1:
+                    sleep(15)
+
 
 def allocate_task(
     distribution_config: Dict[str, int], machines_dict: Dict[str, int]
@@ -865,13 +885,15 @@ def copy_path_to(src: Union[str, Path], dst: Union[str, Path]) -> Union[str, Lis
         raise FileExistsError(f"File {src} doesn't exist")
 
     dst = str(unpack_dst)
-    mkpath(dst)
+    os.makedirs(dst, exist_ok=True)
 
     if src.is_file():
-        file_path = copy_file(str(src), dst)
-        return file_path[0]
+        file_path = shutil.copy2(str(src), dst)
+        return file_path
     else:
-        return copy_tree(str(src), dst)
+        dst_tree = os.path.join(dst, src.name) if not str(unpack_dst).endswith(src.name) else dst
+        shutil.copytree(str(src), dst_tree, dirs_exist_ok=True)
+        return dst_tree
 
 
 def mkdtemp_persistent(*args: Any, persistent: bool = True, **kwargs: Any) -> Any:
@@ -924,6 +946,25 @@ def unique_id() -> str:
 
     """
     return next(id_generator)
+
+
+def find_free_port() -> int:
+    """Find a free TCP port on localhost.
+
+    Thread-safe: tracks already-handed-out ports in this process so that
+    concurrent calls (one per parallel project thread) never return the
+    same port, even though the OS may still report it as available due to
+    the delay between closing our probe socket and AEDT actually binding it.
+    """
+    with _allocated_ports_lock:
+        for _ in range(50):  # retry a reasonable number of times
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(("", 0))
+                port = s.getsockname()[1]
+            if port not in _allocated_ports:
+                _allocated_ports.add(port)
+                return port
+        raise RuntimeError("Could not find a free port not already allocated to another running task.")
 
 
 def execute_aedt(
@@ -979,16 +1020,19 @@ def execute_aedt(
     command += ["-machinelist", "list=" + aedt_format_machines]
 
     if script is not None:
+        grpc_port = find_free_port()
         command += [
             "-ng",
             "-features=SF6694_NON_GRAPHICAL_COMMAND_EXECUTION",
+            "-grpcsrv", str(grpc_port),
             "-RunScriptAndExit",
             script,
         ]
         if script_args is not None:
+            script_args_with_port = script_args + f" --port {grpc_port}"
             command += [
                 "-ScriptArgs",
-                f'"{script_args}"',
+                f'"{script_args_with_port}"',
             ]
 
     if project_path is not None:
@@ -1143,7 +1187,7 @@ def read_configs(config_folder: Path) -> Dict[str, Any]:
         logger.debug(f"Add config {config_file}")
 
         with open(config_file, "rb") as file:
-            proj_conf = tomli.load(file)
+            proj_conf = tomllib.load(file)
 
         try:
             proj_conf = proj_conf["project"]
@@ -1234,7 +1278,7 @@ def parse_arguments() -> argparse.Namespace:
     if cli_args.suppress_validation and cli_args.only_validate:
         raise ValueError("--only-validate and --suppress-validation are mutually exclusive")
 
-    if not (cli_args.max_cores or cli_args.max_tasks):
+    if not (cli_args.max_cores or cli_args.max_projects):
         logger.warning(
             "No limits are specified for current job. This may lead to failure if you lack of license or resources"
         )

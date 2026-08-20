@@ -41,9 +41,17 @@ def set_logger(logging_file, level=logging.DEBUG, pyaedt_module=None):
     logger.addHandler(stream_handler)
 
     if pyaedt_module is not None:
-        if level > logging.DEBUG:
-            pyaedt_module.settings.enable_logger = False
-        else:
-            # debug is requested
-            pyaedt_module.settings.formatter = formatter
-            pyaedt_module.settings.logger_file_path = logging_file
+        try:
+            from ansys.aedt.core.generic.settings import settings as aedt_settings
+            if level > logging.DEBUG:
+                aedt_settings.enable_logger = False
+            else:
+                # debug is requested
+                aedt_settings.logger_file_path = logging_file
+        except ImportError:
+            # fallback for older pyaedt API
+            if level > logging.DEBUG:
+                pyaedt_module.settings.enable_logger = False
+            else:
+                pyaedt_module.settings.formatter = formatter
+                pyaedt_module.settings.logger_file_path = logging_file

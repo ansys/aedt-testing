@@ -196,11 +196,12 @@ def test_get_aedt_executable_path():
         assert "Environment variable ANSYSEM_ROOT212" in str(exc.value)
 
 
+@mock.patch("aedttest.aedt_test_runner.find_free_port", return_value=50051)
 @mock.patch("aedttest.aedt_test_runner.subprocess.check_output", wraps=lambda *a, **kw: b"output")
 @mock.patch("aedttest.aedt_test_runner.platform.system", return_value="Linux")
 @mock.patch("aedttest.aedt_test_runner.get_aedt_executable_path", return_value="aedt/install/path")
 @mock.patch("aedttest.aedt_test_runner.get_intel_mpi_path", return_value="aedt/install/path/mpiexec")
-def test_execute_aedt(mock_mpi_path, mock_aedt_path, mock_platform, mock_call):
+def test_execute_aedt(mock_mpi_path, mock_aedt_path, mock_platform, mock_call, mock_free_port):
 
     aedt_test_runner.execute_aedt(
         version="212",
@@ -214,7 +215,7 @@ def test_execute_aedt(mock_mpi_path, mock_aedt_path, mock_platform, mock_call):
             "auto": False,
         },
         script="my/script/path.py",
-        script_args="arg1",
+        script_args="arg1 my/script/arg.aedt",
         project_path="custom/pr.aedt",
     )
 
@@ -236,10 +237,12 @@ def test_execute_aedt(mock_mpi_path, mock_aedt_path, mock_platform, mock_call):
         "list=host1:2:10:90%,host2:3:15:90%",
         "-ng",
         "-features=SF6694_NON_GRAPHICAL_COMMAND_EXECUTION",
+        "-grpcsrv",
+        "50051",
         "-RunScriptAndExit",
         "my/script/path.py",
         "-ScriptArgs",
-        '"arg1"',
+        '"arg1 my/script/arg.aedt --port 50051"',
         "-LogFile",
         str(LOGFOLDER_PATH / "pr.log"),
         "custom/pr.aedt",
@@ -247,7 +250,7 @@ def test_execute_aedt(mock_mpi_path, mock_aedt_path, mock_platform, mock_call):
 
 
 class BaseElectronicsDesktopTester:
-    def setup(self):
+    def setup_method(self):
         self.aedt_tester = aedt_test_runner.ElectronicsDesktopTester(
             version="212",
             max_cores=9999,
@@ -363,7 +366,7 @@ class TestElectronicsDesktopTester(BaseElectronicsDesktopTester):
 
 
 class TestCLIArgs:
-    def setup(self):
+    def setup_method(self):
         self.default_argv = ["aedt_test_runner.py", "--aedt-version=212", r"--config-folder=file/path"]
 
     @mock.patch("sys.stderr", new_callable=StringIO)

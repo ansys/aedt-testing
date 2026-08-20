@@ -8,14 +8,14 @@ except ImportError:
     # py27
     import mock
 
-with mock.patch("argparse.ArgumentParser.parse_args", return_value=Namespace(desktop_version="2021.1")):
+with mock.patch("argparse.ArgumentParser.parse_args", return_value=Namespace(logfile_path=None, debug=False, port=0, project_path=None, design_names=None, aedt_version=None)):
     from aedttest import simulation_data
 
 TESTS_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
 class BaseTest:
-    def teardown(self):
+    def teardown_method(self):
         simulation_data.PROJECT_DICT = {"error_exception": [], "designs": {}}
 
 
@@ -49,7 +49,7 @@ class TestParse(BaseTest):
     @mock.patch("aedttest.simulation_data.parse_mesh_stats", return_value=100)
     def test_extract_design_data(self, mock_parse_mesh, mock_parse_profile_file):
         mock_pyaedt_app = mock.Mock()
-        mock_pyaedt_app.available_variations.get_variation_strings.return_value = ["Ia='30'A", "Ia='20'A"]
+        mock_pyaedt_app.available_variations.variations.return_value = ["Ia='30'A", "Ia='20'A"]
         mock_pyaedt_app.export_mesh_stats.return_value = None
         mock_pyaedt_app.export_profile.return_value = None
 
@@ -77,7 +77,7 @@ class TestParse(BaseTest):
     @mock.patch("aedttest.simulation_data.parse_profile_file", return_value=["10:00:00", 100])
     def test_extract_design_data_icepak(self, mock_parse_profile_file):
         mock_pyaedt_app = mock.Mock()
-        mock_pyaedt_app.available_variations.get_variation_strings.return_value = ["Ia='30'A", "Ia='20'A"]
+        mock_pyaedt_app.available_variations.variations.return_value = ["Ia='30'A", "Ia='20'A"]
         mock_pyaedt_app.export_mesh_stats.return_value = None
         mock_pyaedt_app.export_profile.return_value = None
         mock_pyaedt_app.design_type = "Icepak"
@@ -183,7 +183,7 @@ class TestParse(BaseTest):
 
 
 class TestCheck(BaseTest):
-    def setup(self):
+    def setup_method(self):
         # output of pyaedt parse_rdat_file
         self.input_dat_dict = {
             "L Plot 1": {
