@@ -263,7 +263,21 @@ def extract_data(desktop, project_dir, project_name, design_names):
             design_dict=design_dict,
         )
 
-        report_names = app.post.all_report_names
+        try:
+            report_names = app.post.all_report_names
+        except Exception as exc:
+            # pyaedt's app.post lazy-initializes a PostProcessor, which
+            # internally accesses self.design_name -> self._design_name.
+            # For some Icepak designs without variables this internal cache
+            # ends up None, crashing on `";" in self._design_name`
+            # (TypeError: argument of type 'NoneType' is not iterable).
+            # Treat this the same as "no reports available" instead of
+            # crashing the whole extraction for this design.
+            msg = "Design:{} app.post.all_report_names failed: {}".format(design_name, exc)
+            logger.warning(msg)
+            PROJECT_DICT["error_exception"].append(msg)
+            report_names = []
+
         reports_dict = extract_reports_data(
             app=app, design_name=design_name, project_dir=project_dir, report_names=report_names
         )
@@ -318,7 +332,20 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
         if app.design_type == "HFSS 3D Layout Design":
             variation_strings = app.list_of_variations(setup, sweep.lstrip(setup + " : "))
         else:
-            variation_strings = app.available_variations.variations(setup_sweep=sweep)
+            try:
+                variation_strings = app.available_variations.variations(setup_sweep=sweep)
+            except Exception as exc:
+                # pyaedt's available_variations.variations() raises
+                # "Error in splitting the variation variable." when the design
+                # has no parametric/design variables at all (e.g. a typical
+                # single-point Icepak SteadyState setup). In that case there is
+                # only the nominal variation, so fall back to a single empty
+                # variation string instead of crashing the whole extraction.
+                logger.warning(
+                    "available_variations.variations() failed for design {} setup {}: {}. "
+                    "Falling back to nominal variation only.".format(design_name, setup, exc)
+                )
+                variation_strings = [""]
         if not variation_strings:
             continue
         for variation_string in variation_strings:
@@ -340,8 +367,30 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
             if variation_name not in design_dict[design_name]["mesh_name"]:
                 design_dict[design_name]["mesh_name"][variation_name] = {}
 
-            profile_file = generate_unique_file_path(project_dir, ".prof")
-            profile_file = app.export_profile(setup, variation_string, profile_file)
+            try:
+                profile_file = generate_unique_file_path(project_dir, ".prof")
+                profile_file = app.export_profile(setup, variation_string, profile_file)
+            except Exception as exc:
+                # pyaedt's export_profile() -> nominal_variation() ->
+                # variable_manager.variables crashes with
+                # "'NoneType' object is not iterable" when the design/project
+                # has NO variables at all (GetVariables() COM call returns
+                # None instead of an empty list, and pyaedt does not guard
+                # against that). This typically happens together with the
+                # available_variations.variations() bug above, for fully
+                # non-parametric designs (single nominal operating point).
+                # Log and skip this variation instead of crashing the script.
+                msg = "Design:{} Variation:{} Setup:{} export_profile failed: {}".format(
+                    design_name, variation_name, setup, exc
+                )
+                logger.warning(msg)
+                PROJECT_DICT["error_exception"].append(msg)
+                design_dict[design_name]["simulation_time"][variation_name][setup] = None
+                design_dict[design_name]["mesh"][variation_name][setup] = None
+                design_dict[design_name]["profile_name"][variation_name][setup] = None
+                design_dict[design_name]["mesh_name"][variation_name][setup] = None
+                continue
+
             simulation_time, cell_number = parse_profile_file(profile_file, design_name, variation_name, setup)
             design_dict[design_name]["simulation_time"][variation_name][setup] = simulation_time
 
@@ -349,9 +398,20 @@ def extract_design_data(app, design_name, setup_dict, project_dir, design_dict):
                 design_dict[design_name]["mesh"][variation_name][setup] = cell_number
                 mesh_stats_file = profile_file
             else:
-                mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
-                app.export_mesh_stats(setup, variation_string, mesh_stats_file)
-                mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_name, setup)
+                try:
+                    mesh_stats_file = generate_unique_file_path(project_dir, ".mstat")
+                    app.export_mesh_stats(setup, variation_string, mesh_stats_file)
+                    mesh_data = parse_mesh_stats(mesh_stats_file, design_name, variation_name, setup)
+                except Exception as exc:
+                    # Same class of pyaedt bug as export_profile() above can
+                    # also hit export_mesh_stats() for variable-less designs.
+                    msg = "Design:{} Variation:{} Setup:{} export_mesh_stats failed: {}".format(
+                        design_name, variation_name, setup, exc
+                    )
+                    logger.warning(msg)
+                    PROJECT_DICT["error_exception"].append(msg)
+                    mesh_stats_file = None
+                    mesh_data = None
                 design_dict[design_name]["mesh"][variation_name][setup] = mesh_data
 
             design_dict[design_name]["profile_name"][variation_name][setup] = profile_file

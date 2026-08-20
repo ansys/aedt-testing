@@ -611,6 +611,19 @@ class ElectronicsDesktopTester:
                 extract = "mesh_name" if key_name == "mesh" else "profile_name"
                 absolute_path = design_data[extract][variation_name][setup_name]
 
+                if absolute_path is None:
+                    # Export of the underlying .prof/.mstat file failed upstream
+                    # (e.g. pyaedt crashes on Icepak designs with no variables
+                    # at all). There is no file to link, so just record the
+                    # (already-None) stat without trying to build a Path/link.
+                    stat_dict = {
+                        "name": f"{design_name}:{setup_name}:{variation_name}",
+                        "current": current_stat,
+                        "link": None,
+                    }
+                    project_report[key_name].append(stat_dict)
+                    continue
+
                 # Check if profile exists already to avoid duplicates
                 cont = 1
                 filepath = new_absolute_path = Path(absolute_path)
