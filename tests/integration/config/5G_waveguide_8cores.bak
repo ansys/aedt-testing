@@ -1,6 +1,6 @@
 [project]
-name = "5G_26GHzBand_substrate_integrated_waveguide"
-path = "tests/integration/projects/5G_26GHzBand_substrate_integrated_waveguide.aedt"
+name = "5G_waveguide_8cores"
+path = "tests/integration/projects/5G_waveguide_8cores.aedt"
 
 [project.distribution]
 cores = 8
