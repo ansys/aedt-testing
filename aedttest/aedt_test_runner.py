@@ -479,7 +479,7 @@ class ElectronicsDesktopTester:
 
         if not self.only_reference:
             if project_name not in self.reference_data:
-                project_exceptions.append(f"Project report for {project_name} does exist not in reference file")
+                project_exceptions.append(f"Project report for {project_name} does not exist in reference file")
             else:
                 compare_keys(
                     self.reference_data[project_name]["designs"],
@@ -1177,7 +1177,7 @@ def compare_keys(
 
     for key, val in dict_1.items():
         if key not in dict_2:
-            exceptions_list.append(f"Key '{dict_path}{key}' does exist not in {results_type} results")
+            exceptions_list.append(f"Key '{dict_path}{key}' does not exist in {results_type} results")
             continue
         if isinstance(val, dict):
             compare_keys(val, dict_2[key], exceptions_list, dict_path=f"{dict_path}{key}", results_type=results_type)

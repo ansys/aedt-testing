@@ -91,9 +91,7 @@ except Exception:
     pass  # simulation_data.py will fall back to default=None
 
 # Build command and execute - blocks until simulation_data.py finishes.
-_cmd_parts = [_venv_python, _simulation_script] + shlex.split(
-    _script_args + _design_names_arg + _aedt_version_arg
-)
+_cmd_parts = [_venv_python, _simulation_script] + shlex.split(_script_args + _design_names_arg + _aedt_version_arg)
 _quoted_cmd = " ".join('"{}"'.format(p) if " " in p else p for p in _cmd_parts)
 _ret = os.system(_quoted_cmd)
 
