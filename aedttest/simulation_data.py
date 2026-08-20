@@ -22,15 +22,21 @@ def parse_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--logfile-path", default=None)
-    parser.add_argument("--aedt-version", default=None,
-                        help="AEDT version to connect to (e.g. '2025.1'), must match the outer -RunScriptAndExit process")
+    parser.add_argument(
+        "--aedt-version",
+        default=None,
+        help="AEDT version to connect to (e.g. '2025.1'), must match the outer -RunScriptAndExit process",
+    )
     parser.add_argument("--debug", action="store_true")
-    parser.add_argument("--port", type=int, default=0,
-                        help="gRPC port of the running AEDT session (passed by launcher.py)")
-    parser.add_argument("--project-path", default=None,
-                        help="Full path to the .aedt project file being tested")
-    parser.add_argument("--design-names", default=None,
-                        help="Comma-separated design names extracted by launcher.py via IronPython oDesktop")
+    parser.add_argument(
+        "--port", type=int, default=0, help="gRPC port of the running AEDT session (passed by launcher.py)"
+    )
+    parser.add_argument("--project-path", default=None, help="Full path to the .aedt project file being tested")
+    parser.add_argument(
+        "--design-names",
+        default=None,
+        help="Comma-separated design names extracted by launcher.py via IronPython oDesktop",
+    )
     args = parser.parse_args()
     logfile_path = args.logfile_path or os.path.join(MODULE_DIR_PARENT, "aedt_test_framework.log")
     return logfile_path, args.debug, args.port, args.project_path, args.design_names, args.aedt_version
@@ -47,8 +53,8 @@ if not debug:
 try:
     # NEW:
     import ansys.aedt.core as pyaedt
-    from ansys.aedt.core import get_pyaedt_app
     from ansys.aedt.core import Desktop
+    from ansys.aedt.core import get_pyaedt_app
     from ansys.aedt.core.generic.file_utils import generate_unique_name
     from ansys.aedt.core.visualization.advanced.misc import parse_rdat_file
 except Exception as exc:

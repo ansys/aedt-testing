@@ -43,6 +43,7 @@ def set_logger(logging_file, level=logging.DEBUG, pyaedt_module=None):
     if pyaedt_module is not None:
         try:
             from ansys.aedt.core.generic.settings import settings as aedt_settings
+
             if level > logging.DEBUG:
                 aedt_settings.enable_logger = False
             else:

@@ -9,10 +9,12 @@ import socket
 import subprocess
 import tempfile
 import threading
+
 try:
     import tomllib
 except ModuleNotFoundError:
     import tomli as tomllib  # Python 3.10 fallback
+
 from contextlib import contextmanager
 from pathlib import Path
 from statistics import mean
@@ -25,6 +27,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+
 from django import setup as django_setup
 from django.conf import settings as django_settings
 from django.template.loader import get_template
@@ -170,7 +173,7 @@ class ElectronicsDesktopTester:
             if not_found_in_conf:
                 msg = (
                     f"Following projects defined in reference results: {', '.join(list(not_found_in_conf))}"
-                    ", but not specified in current configuration file"
+                    ", but specified not in current configuration file"
                 )
                 raise KeyError(msg)
 
@@ -178,7 +181,7 @@ class ElectronicsDesktopTester:
             if not_found_in_ref:
                 msg = (
                     f"Following projects defined in configuration file: {', '.join(list(not_found_in_ref))}"
-                    ", but not found in reference results file"
+                    ", but found not in reference results file"
                 )
                 raise KeyError(msg)
 
@@ -476,7 +479,7 @@ class ElectronicsDesktopTester:
 
         if not self.only_reference:
             if project_name not in self.reference_data:
-                project_exceptions.append(f"Project report for {project_name} does not exist in reference file")
+                project_exceptions.append(f"Project report for {project_name} does exist not in reference file")
             else:
                 compare_keys(
                     self.reference_data[project_name]["designs"],
@@ -1024,7 +1027,8 @@ def execute_aedt(
         command += [
             "-ng",
             "-features=SF6694_NON_GRAPHICAL_COMMAND_EXECUTION",
-            "-grpcsrv", str(grpc_port),
+            "-grpcsrv",
+            str(grpc_port),
             "-RunScriptAndExit",
             script,
         ]
@@ -1160,7 +1164,7 @@ def compare_keys(
 
     for key, val in dict_1.items():
         if key not in dict_2:
-            exceptions_list.append(f"Key '{dict_path}{key}' does not exist in {results_type} results")
+            exceptions_list.append(f"Key '{dict_path}{key}' does exist not in {results_type} results")
             continue
         if isinstance(val, dict):
             compare_keys(val, dict_2[key], exceptions_list, dict_path=f"{dict_path}{key}", results_type=results_type)
