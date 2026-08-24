@@ -11,7 +11,18 @@ except ImportError:
 with mock.patch(
     "argparse.ArgumentParser.parse_args",
     return_value=Namespace(
-        logfile_path=None, debug=False, port=0, project_path=None, design_names=None, aedt_version=None
+        logfile_path=None,
+        debug=False,
+        port=0,
+        project_path=None,
+        design_names=None,
+        aedt_version=None,
+        machine="localhost",
+        cores=None,
+        tasks=None,
+        num_variations=None,
+        distribution_types="Variations",
+        use_auto_settings=False,
     ),
 ):
     from aedttest import simulation_data

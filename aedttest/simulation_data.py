@@ -16,37 +16,81 @@ from aedttest.logger import set_logger  # noqa: E402
 def parse_args():
     """Parse command-line arguments when simulation_data.py is executed via CPython.
 
-    This replaces the old IronPython-specific ScriptArgument-based parsing.
-    The script is now always launched by launcher.py via subprocess, so standard
-    sys.argv argument parsing is used.
+    The script is launched directly by aedt_test_runner.py as a CPython
+    subprocess and connects to an already running AEDT gRPC session.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--logfile-path", default=None)
     parser.add_argument(
         "--aedt-version",
         default=None,
-        help="AEDT version to connect to (e.g. '2025.1'), must match the outer -RunScriptAndExit process",
+        help="AEDT version to connect to (e.g. '2025.1'), must match the running AEDT session",
     )
     parser.add_argument("--debug", action="store_true")
     parser.add_argument(
-        "--port", type=int, default=0, help="gRPC port of the running AEDT session (passed by launcher.py)"
+        "--port", type=int, default=0, help="gRPC port of the running AEDT session (passed by aedt_test_runner.py)"
+    )
+    parser.add_argument(
+        "--machine",
+        default="localhost",
+        help="Host on which the AEDT gRPC session is running",
     )
     parser.add_argument("--project-path", default=None, help="Full path to the .aedt project file being tested")
     parser.add_argument(
         "--design-names",
         default=None,
-        help="Comma-separated design names extracted by launcher.py via IronPython oDesktop",
+        help="Optional comma-separated design names; parsed from the .aedt file when omitted",
+    )
+    parser.add_argument("--cores", type=int, default=None, help="Total number of cores for the analysis")
+    parser.add_argument("--tasks", type=int, default=None, help="Total number of simulation tasks (NumEngines)")
+    parser.add_argument(
+        "--num-variations", type=int, default=None, help="Number of variations to distribute (parametric_tasks)"
+    )
+    parser.add_argument(
+        "--distribution-types",
+        default="Variations",
+        help="Comma-separated list of allowed distribution types",
+    )
+    parser.add_argument(
+        "--use-auto-settings",
+        action="store_true",
+        help="Use AEDT auto HPC settings (maps to distribution_config['auto'] in the TOML config)",
     )
     args = parser.parse_args()
     logfile_path = args.logfile_path or os.path.join(MODULE_DIR_PARENT, "aedt_test_framework.log")
-    return logfile_path, args.debug, args.port, args.project_path, args.design_names, args.aedt_version
+    return (
+        logfile_path,
+        args.debug,
+        args.port,
+        args.project_path,
+        args.design_names,
+        args.aedt_version,
+        args.machine,
+        args.cores,
+        args.tasks,
+        args.num_variations,
+        [t.strip() for t in args.distribution_types.split(",") if t.strip()],
+        args.use_auto_settings,
+    )
 
 
 log_level = logging.DEBUG
-logfile_path, debug, grpc_port, project_path_arg, design_names_arg, specified_version = parse_args()
-# specified_version must match the AEDT version of the outer -RunScriptAndExit
-# process (passed by launcher.py via --aedt-version), since we connect to an
-# already running session (new_desktop=False).
+(
+    logfile_path,
+    debug,
+    grpc_port,
+    project_path_arg,
+    design_names_arg,
+    specified_version,
+    grpc_machine,
+    cores_arg,
+    tasks_arg,
+    num_variations_arg,
+    distribution_types_arg,
+    use_auto_settings_arg,
+) = parse_args()
+# specified_version must match the AEDT version of the running session,
+# since we connect to it instead of starting a new one (new_desktop=False).
 if not debug:
     log_level = logging.INFO
 
@@ -207,10 +251,21 @@ def extract_data(desktop, project_dir, project_name, design_names):
 
     designs_dict = {}
 
+    oproject = desktop.odesktop.GetActiveProject()
+
     for design_name in design_names:
         design_dict = {
             design_name: {"mesh": {}, "simulation_time": {}, "report": {}, "profile_name": {}, "mesh_name": {}}
         }
+        # Make sure the design we are about to query/analyze is the active one.
+        # On a bare gRPC session (no -RunScriptAndExit) nothing is active by
+        # default, and pyaedt calls below hang indefinitely on the gRPC channel
+        # if there is no active design.
+        try:
+            oproject.SetActiveDesign(design_name)
+        except Exception as exc:
+            logger.warning("SetActiveDesign({}) failed: {}".format(design_name, exc))
+
         app = get_pyaedt_app(project_name=project_name, design_name=design_name, desktop=desktop)
         setups_names = app.setup_names
         if not setups_names:
@@ -228,18 +283,32 @@ def extract_data(desktop, project_dir, project_name, design_names):
 
         logger.info("START ANALYZE: {}".format(design_name))
         try:
-            analyze_success = desktop.analyze_all(design=design_name)
+            # Use PyAEDT's own supported HPC configuration mechanism instead of
+            # AEDT-side CLI batch-solve flags (-auto/-distributed/-machinelist).
+            # analyze_setup() internally writes/applies an ACF registry file via
+            # oDesktop.SetRegistryFromFile() - the same mechanism used by AEDT's
+            # own HPC options dialog - which is the officially supported way to
+            # configure distribution while driving a live scripting/gRPC session.
+            analyze_success = app.analyze_setup(
+                name=None,  # analyze all setups of this design
+                cores=cores_arg,
+                tasks=tasks_arg,
+                use_auto_settings=use_auto_settings_arg,
+                num_variations_to_distribute=num_variations_arg,
+                allowed_distribution_types=distribution_types_arg,
+                blocking=True,
+            )
         except Exception as exc:
-            # analyze_all is wrapped by pyaedt_function_handler which may re-raise
+            # analyze_setup is wrapped by pyaedt_function_handler which may re-raise
             # instead of returning False. Treat any exception as a failed analysis
             # so we still capture messages and write partial results instead of
             # crashing the whole script.
-            logger.error("design {} 'analyze_all' raised exception: {}".format(design_name, exc))
+            logger.error("design {} 'analyze_setup' raised exception: {}".format(design_name, exc))
             analyze_success = False
         logger.info("END ANALYZE: {}".format(design_name))
 
         if not analyze_success:
-            logger.error("design {} 'analyze_all' failed".format(design_name))
+            logger.error("design {} 'analyze_setup' failed".format(design_name))
             try:
                 error_messages = app.logger.get_messages(project_name, design_name, level=1, aedt_messages=True)
                 messages = error_messages.design_level + error_messages.project_level + error_messages.global_level
@@ -566,96 +635,73 @@ def generate_unique_file_path(project_dir, extension):
     return file_path
 
 
-def parse_design_names_from_aedt_file(aedt_file_path):
-    """Extract design names by parsing the .aedt project file directly.
-
-    Needed because in -auto -machinelist batch mode, neither IronPython's
-    oDesktop.GetActiveProject() nor gRPC's desktop.design_list() can see
-    the project (confirmed empty in both cases).
-
-    Parameters
-    ----------
-    aedt_file_path : str
-        Path to the .aedt project file.
-
-    Returns
-    -------
-    design_names : list
-        List of design names found in the project file.
-    """
-    design_names = []
-    pattern = re.compile(r"DesignName\s*=\s*'([^']+)'", re.IGNORECASE)
-    try:
-        with open(aedt_file_path, "r", encoding="utf-8", errors="ignore") as f:
-            content = f.read()
-        for m in pattern.finditer(content):
-            if m.group(1) not in design_names:
-                design_names.append(m.group(1))
-    except Exception as e:
-        logger.warning("Could not parse .aedt file for design names: {}".format(e))
-    return design_names
-
-
 def main():
-    # Derive project name and dir directly from the --project-path argument.
-    # This avoids querying desktop.project_list which is unreliable in
-    # non-graphical -RunScriptAndExit mode with pyaedt 1.3.0 gRPC.
-    if project_path_arg:
-        project_path = project_path_arg
-        project_name = os.path.splitext(os.path.basename(project_path))[0]
-        project_dir = os.path.dirname(project_path)
-    else:
+    """Attach to the running AEDT gRPC session, open the project, extract data.
+
+    Straight-line flow, no fallbacks:
+    Attach -> open project (if needed) -> activate project -> read design
+    names from AEDT itself -> extract/analyze -> dump JSON -> release.
+    """
+    if not project_path_arg:
         raise RuntimeError("--project-path argument is required but was not provided")
 
-    logger.info("Start extraction for {}".format(project_path))
+    project_path = os.path.abspath(project_path_arg)
+    project_name = os.path.splitext(os.path.basename(project_path))[0]
+    project_dir = os.path.dirname(project_path)
 
-    # Connect to the running AEDT session via gRPC.
-    desktop = Desktop(
-        version=specified_version,
-        machine="localhost",
-        port=grpc_port,
-        non_graphical=False,
-        new_desktop=False,
-    )
+    desktop_kwargs = {
+        "version": specified_version,
+        "port": grpc_port,
+        "non_graphical": True,
+        "new_desktop": False,
+        "close_on_exit": False,
+    }
+    if grpc_machine not in ("", "localhost", "127.0.0.1"):
+        desktop_kwargs["machine"] = grpc_machine
 
-    # design_names_arg is passed from launcher.py via IronPython oDesktop.GetActiveProject()
-    # This is the only reliable source in -RunScriptAndExit batch mode.
-    # gRPC-based design_list() always returns [] in this mode.
-    if design_names_arg:
-        design_names = [d.strip() for d in design_names_arg.split(",") if d.strip()]
-        logger.info("design_names from launcher.py (IronPython): {}".format(design_names))
-    else:
-        # Fallback: try gRPC (may return [] in RunScriptAndExit mode)
-        design_names = desktop.design_list()
-        logger.info("design_names via gRPC fallback: {}".format(design_names))
+    logger.info("CONNECTING to AEDT gRPC session (port={}, machine={})".format(grpc_port, grpc_machine or "localhost"))
+    desktop = Desktop(**desktop_kwargs)
+    logger.info("CONNECTED")
 
-    if not design_names:
-        # Last resort: parse the .aedt project file directly (no AEDT API needed at all)
-        design_names = parse_design_names_from_aedt_file(project_path)
-        logger.info("design_names from .aedt file parsing: {}".format(design_names))
+    try:
+        logger.info("PROJECTS: {}".format(list(desktop.project_list)))
 
-    # The AEDT session started via -RunScriptAndExit does NOT automatically open
-    # the project passed on the command line before the script executes (confirmed:
-    # oDesktop.GetActiveProject() and desktop.project_list are both empty at this point).
-    # Explicitly open the project ourselves using the native AEDT scripting API.
-    if project_name not in list(desktop.project_list):
-        logger.info("Project not open yet, opening explicitly: {}".format(project_path))
-        desktop.odesktop.OpenProject(project_path)
-        logger.info("project_list after OpenProject: {}".format(list(desktop.project_list)))
+        if project_name not in list(desktop.project_list):
+            logger.info("Project not open yet, loading: {}".format(project_path))
+            desktop.load_project(project_path)
 
-    if design_names:
+        desktop.odesktop.SetActiveProject(project_name)
+        oproject = desktop.odesktop.GetActiveProject()
+
+        if design_names_arg:
+            design_names = [d.strip() for d in design_names_arg.split(",") if d.strip()]
+        else:
+            design_names = list(oproject.GetTopDesignList())
+
+        if not design_names:
+            raise RuntimeError("No designs found after opening {}".format(project_path))
+
+        logger.info("DESIGNS: {}".format(design_names))
+
         designs_dict = extract_data(desktop, project_dir, project_name, design_names)
         PROJECT_DICT["designs"].update(designs_dict)
-    else:
-        PROJECT_DICT["error_exception"].append("Project has no design")
 
-    logger.info("Finished extraction for {}".format(project_path))
+        logger.info("Finished extraction for {}".format(project_path))
 
-    results_json = os.path.join(project_dir, project_name + ".json")
-    with open(results_json, "w") as outfile:
-        json.dump(PROJECT_DICT, outfile, indent=4)
+        results_json = os.path.join(project_dir, project_name + ".json")
+        with open(results_json, "w") as outfile:
+            json.dump(PROJECT_DICT, outfile, indent=4)
 
-    logger.debug("JSON dumped to {}".format(results_json))
+        logger.debug("JSON dumped to {}".format(results_json))
+
+    finally:
+        # Shut the session down so that aedt_test_runner.py can reap the process
+        # and free the allocated cores.
+        logger.info("RELEASING desktop")
+        try:
+            desktop.release_desktop(close_projects=True, close_on_exit=True)
+        except Exception as exc:
+            logger.warning("release_desktop() failed: {}".format(exc))
 
 
 if __name__ == "__main__":

@@ -1,4 +1,6 @@
 import os
+import socket
+import sys
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -196,57 +198,178 @@ def test_get_aedt_executable_path():
         assert "Environment variable ANSYSEM_ROOT212" in str(exc.value)
 
 
-@mock.patch("aedttest.aedt_test_runner.find_free_port", return_value=50051)
-@mock.patch("aedttest.aedt_test_runner.subprocess.check_output", wraps=lambda *a, **kw: b"output")
-@mock.patch("aedttest.aedt_test_runner.platform.system", return_value="Linux")
+@mock.patch("aedttest.aedt_test_runner.subprocess.Popen", wraps=lambda *a, **kw: "process")
 @mock.patch("aedttest.aedt_test_runner.get_aedt_executable_path", return_value="aedt/install/path")
-@mock.patch("aedttest.aedt_test_runner.get_intel_mpi_path", return_value="aedt/install/path/mpiexec")
-def test_execute_aedt(mock_mpi_path, mock_aedt_path, mock_platform, mock_call, mock_free_port):
+def test_execute_aedt(mock_aedt_path, mock_popen):
+    """AEDT is started bare and non-blocking as a gRPC server.
 
-    aedt_test_runner.execute_aedt(
+    No -auto/-distributed/-machinelist/-RunScriptAndExit are passed: those
+    batch-solve flags are not compatible with a live scripting/gRPC session
+    (confirmed to hang SetActiveDesign/analyze_all). Distribution is
+    configured later from simulation_data.py via analyze_setup(cores=, tasks=).
+    """
+    process = aedt_test_runner.execute_aedt(
         version="212",
-        machines={"host1": {"cores": 10, "tasks": 2}, "host2": {"cores": 15, "tasks": 3}},
-        distribution_config={
-            "cores": 2,
-            "distribution_types": ["Variations", "Frequencies"],
-            "parametric_tasks": 3,
-            "multilevel_distribution_tasks": 4,
-            "single_node": False,
-            "auto": False,
-        },
-        script="my/script/path.py",
-        script_args="arg1 my/script/arg.aedt",
-        project_path="custom/pr.aedt",
+        grpc_port=50051,
+        project_log_path=str(LOGFOLDER_PATH / "pr.log"),
     )
 
+    assert process == "process"
     assert mock_aedt_path.call_args[0][0] == "212"
-
-    assert mock_call.call_args[0][0] == [
-        "aedt/install/path/mpiexec",
-        "-envall",
-        "-n",
-        "1",
-        "-hosts",
-        "host1",
+    assert mock_popen.call_args[0][0] == [
         "aedt/install/path",
-        "-distributed",
-        "includetypes=Variations,Frequencies",
-        "maxlevels=2",
-        "numlevel1=4",
-        "-machinelist",
-        "list=host1:2:10:90%,host2:3:15:90%",
         "-ng",
-        "-features=SF6694_NON_GRAPHICAL_COMMAND_EXECUTION",
         "-grpcsrv",
         "50051",
-        "-RunScriptAndExit",
-        "my/script/path.py",
-        "-ScriptArgs",
-        '"arg1 my/script/arg.aedt --port 50051"',
         "-LogFile",
         str(LOGFOLDER_PATH / "pr.log"),
-        "custom/pr.aedt",
     ]
+    # no batch-solve / IronPython-shim flags whatsoever
+    for forbidden in ("-auto", "-distributed", "-machinelist", "-RunScriptAndExit", "-ScriptArgs"):
+        assert forbidden not in mock_popen.call_args[0][0]
+
+
+def test_aedt_version_to_pyaedt():
+    assert aedt_test_runner.aedt_version_to_pyaedt("212") == "2021.2"
+    assert aedt_test_runner.aedt_version_to_pyaedt("251") == "2025.1"
+    assert aedt_test_runner.aedt_version_to_pyaedt("2611") == "2026.11"
+
+
+def test_wait_for_grpc_server_process_died():
+    process = mock.MagicMock()
+    process.poll.return_value = 1
+    process.returncode = 1
+    process.stdout.read.return_value = b"crash details"
+
+    with pytest.raises(OSError) as exc:
+        aedt_test_runner.wait_for_grpc_server("localhost", 50051, process)
+
+    assert "terminated before the gRPC server was available" in str(exc.value)
+    assert "crash details" in str(exc.value)
+
+
+def test_wait_for_grpc_server_timeout():
+    process = mock.MagicMock()
+    process.poll.return_value = None
+
+    with mock.patch("aedttest.aedt_test_runner.sleep"):
+        with pytest.raises(OSError) as exc:
+            # port 0 is never connectable, timeout=0 exits the loop immediately
+            aedt_test_runner.wait_for_grpc_server("localhost", 0, process, timeout=0)
+
+    assert "did not start" in str(exc.value)
+    assert process.kill.called
+
+
+def test_wait_for_grpc_server_success():
+    """Open a real socket so that the connect probe succeeds."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = server.getsockname()[1]
+
+        process = mock.MagicMock()
+        process.poll.return_value = None
+
+        aedt_test_runner.wait_for_grpc_server("localhost", port, process)
+
+
+@mock.patch("aedttest.aedt_test_runner.subprocess.run")
+@mock.patch("aedttest.aedt_test_runner.wait_for_grpc_server")
+@mock.patch("aedttest.aedt_test_runner.execute_aedt")
+@mock.patch("aedttest.aedt_test_runner.find_free_port", return_value=50051)
+def test_run_aedt_with_extraction(mock_port, mock_execute, mock_wait, mock_run):
+    process = mock.MagicMock()
+    mock_execute.return_value = process
+
+    aedt_test_runner.run_aedt_with_extraction(
+        version="251",
+        machines={"localhost": {"cores": 4, "tasks": 2}},
+        distribution_config={
+            "auto": True,
+            "parametric_tasks": 2,
+            "distribution_types": ["Variations", "Frequencies"],
+        },
+        project_path="my/proj.aedt",
+        extraction_script="my/simulation_data.py",
+        log_file="my/log.log",
+        debug=True,
+    )
+
+    assert mock_execute.call_args[1]["grpc_port"] == 50051
+    assert mock_run.call_args[0][0] == [
+        sys.executable,
+        "my/simulation_data.py",
+        "--logfile-path",
+        "my/log.log",
+        "--project-path",
+        "my/proj.aedt",
+        "--port",
+        "50051",
+        "--machine",
+        "localhost",
+        "--aedt-version",
+        "2025.1",
+        "--cores",
+        "4",
+        "--tasks",
+        "2",
+        "--num-variations",
+        "2",
+        "--distribution-types",
+        "Variations,Frequencies",
+        "--use-auto-settings",
+        "--debug",
+    ]
+    assert mock_run.call_args[1]["timeout"] == aedt_test_runner.EXTRACTION_TIMEOUT
+    assert mock_run.call_args[1]["check"] is True
+    assert process.wait.called
+
+
+@mock.patch("aedttest.aedt_test_runner.subprocess.run")
+@mock.patch("aedttest.aedt_test_runner.wait_for_grpc_server")
+@mock.patch("aedttest.aedt_test_runner.execute_aedt")
+@mock.patch("aedttest.aedt_test_runner.find_free_port", return_value=50051)
+def test_run_aedt_with_extraction_timeout(mock_port, mock_execute, mock_wait, mock_run):
+    """A hung extraction (e.g. no active design) must not block the framework forever."""
+    process = mock.MagicMock()
+    mock_execute.return_value = process
+    mock_run.side_effect = aedt_test_runner.subprocess.TimeoutExpired("python", 1)
+
+    with pytest.raises(OSError) as exc:
+        aedt_test_runner.run_aedt_with_extraction(
+            version="251",
+            machines={"localhost": {"cores": 4, "tasks": 1}},
+            distribution_config={"auto": True, "parametric_tasks": 1},
+            project_path="my/proj.aedt",
+            extraction_script="my/simulation_data.py",
+            log_file="my/log.log",
+        )
+
+    assert "did not finish within" in str(exc.value)
+    # AEDT must still be reaped even though extraction hung
+    assert process.wait.called
+
+
+@mock.patch("aedttest.aedt_test_runner.subprocess.run")
+@mock.patch("aedttest.aedt_test_runner.wait_for_grpc_server")
+@mock.patch("aedttest.aedt_test_runner.execute_aedt")
+@mock.patch("aedttest.aedt_test_runner.find_free_port", return_value=50051)
+def test_run_aedt_with_extraction_kills_hanging_desktop(mock_port, mock_execute, mock_wait, mock_run):
+    process = mock.MagicMock()
+    process.wait.side_effect = [aedt_test_runner.subprocess.TimeoutExpired("aedt", 1), 0]
+    mock_execute.return_value = process
+
+    aedt_test_runner.run_aedt_with_extraction(
+        version="251",
+        machines={"localhost": {"cores": 4, "tasks": 1}},
+        distribution_config={"auto": True, "parametric_tasks": 1},
+        project_path="my/proj.aedt",
+        extraction_script="my/simulation_data.py",
+        log_file="my/log.log",
+    )
+
+    assert process.kill.called
 
 
 class BaseElectronicsDesktopTester:
@@ -340,7 +463,7 @@ class TestElectronicsDesktopTester(BaseElectronicsDesktopTester):
     )
     @mock.patch("aedttest.aedt_test_runner.ElectronicsDesktopTester.render_project_html", wraps=lambda *a, **kw: None)
     @mock.patch("aedttest.aedt_test_runner.ElectronicsDesktopTester.render_main_html", wraps=lambda *a, **kw: None)
-    @mock.patch("aedttest.aedt_test_runner.execute_aedt", wraps=lambda *a, **kw: None)
+    @mock.patch("aedttest.aedt_test_runner.run_aedt_with_extraction", wraps=lambda *a, **kw: None)
     @mock.patch("aedttest.aedt_test_runner.time_now", wraps=lambda *a, **kw: "2021-12-31 20:16:04")
     def test_task_runner(self, time_mock, aedt_execute_mock, render_main_mock, render_project_mock, prep_proj_mock):
         self.aedt_tester.active_tasks = 5

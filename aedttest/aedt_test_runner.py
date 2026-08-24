@@ -7,6 +7,7 @@ import re
 import shutil
 import socket
 import subprocess
+import sys
 import tempfile
 import threading
 
@@ -18,6 +19,7 @@ except ModuleNotFoundError:
 from contextlib import contextmanager
 from pathlib import Path
 from statistics import mean
+from time import monotonic
 from time import sleep
 from typing import Any
 from typing import Dict
@@ -40,6 +42,15 @@ MODULE_DIR = Path(__file__).resolve().parent
 CWD_DIR = Path.cwd()
 LOGFOLDER_PATH = CWD_DIR / "logs"
 LOGFILE_PATH = LOGFOLDER_PATH / "aedt_test_framework.log"
+
+# Maximum time to wait until the AEDT gRPC server accepts connections [s].
+GRPC_STARTUP_TIMEOUT = int(os.environ.get("AEDTTEST_GRPC_TIMEOUT", 600))
+# Maximum time for the simulation_data.py extraction subprocess to finish,
+# including the actual solve triggered via analyze_setup() [s]. Guards against
+# a hung gRPC call blocking the whole framework forever.
+EXTRACTION_TIMEOUT = int(os.environ.get("AEDTTEST_EXTRACTION_TIMEOUT", 3600 * 6))
+# Maximum time to wait for AEDT to exit after release_desktop() [s].
+AEDT_SHUTDOWN_TIMEOUT = int(os.environ.get("AEDTTEST_SHUTDOWN_TIMEOUT", 300))
 
 # Thread-safety for concurrent gRPC port allocation across parallel project threads.
 # Without this, two threads could both call find_free_port() and receive the
@@ -128,14 +139,10 @@ class ElectronicsDesktopTester:
                 self.reference_data[data["name"]] = data
                 self.reference_data[data["name"]]["filepath"] = reference_folder
 
-        self.script = str(MODULE_DIR / "launcher.py")
-
-        # logfile path and project path will be appended dynamically later
-        # {0} = logfile path, {1} = project path
-        self.script_args = "\"--logfile-path='{}' --project-path='{}'\""
-
-        if debug:
-            self.script_args += " --debug"
+        # Data extraction runs as a plain CPython subprocess of this process
+        # (see run_aedt_with_extraction). No IronPython shim is involved anymore.
+        self.extraction_script = str(MODULE_DIR / "simulation_data.py")
+        self.debug = bool(debug)
 
         self.report_data: Dict[str, Any] = {}
 
@@ -350,13 +357,14 @@ class ElectronicsDesktopTester:
         log_file = LOGFOLDER_PATH / f"framework_{project_name}.log"
         errors = None
         try:
-            execute_aedt(
-                self.version,
-                allocated_machines,
+            run_aedt_with_extraction(
+                version=self.version,
+                machines=allocated_machines,
                 distribution_config=project_config["distribution"],
-                script=self.script,
-                script_args=self.script_args.format(log_file, project_path),
                 project_path=project_path,
+                extraction_script=self.extraction_script,
+                log_file=str(log_file),
+                debug=self.debug,
             )
             logger.debug(f"Project {project_name} analyses finished. Prepare report.")
 
@@ -479,7 +487,7 @@ class ElectronicsDesktopTester:
 
         if not self.only_reference:
             if project_name not in self.reference_data:
-                project_exceptions.append(f"Project report for {project_name} does not exist in reference file")
+                project_exceptions.append(f"Project report for {project_name} is missing from reference file")
             else:
                 compare_keys(
                     self.reference_data[project_name]["designs"],
@@ -985,112 +993,232 @@ def find_free_port() -> int:
 
 def execute_aedt(
     version: str,
-    machines: Dict[str, Any],
-    distribution_config: Dict[str, Any],
-    script: Optional[str] = None,
-    script_args: Optional[str] = None,
-    project_path: Optional[str] = None,
-) -> None:
-    """Execute single instance of Electronics Desktop.
+    grpc_port: int,
+    project_log_path: Optional[str] = None,
+) -> "subprocess.Popen[bytes]":
+    """Start Electronics Desktop as a bare, non-blocking gRPC server.
+
+    This intentionally mirrors exactly how PyAEDT itself launches AEDT
+    (``ansys.aedt.core.desktop``, internal ``_start_aedt``): just
+    ``<exe> -grpcsrv <port> -ng``, nothing else. No ``-auto``/``-distributed``/
+    ``-machinelist`` and no ``-RunScriptAndExit`` are passed here.
+
+    Those distribution/batch-solve flags are meant for standalone
+    ``-batchsolve`` runs with no live scripting session attached. Mixing them
+    with a scripting/gRPC session is not a supported/tested combination and
+    was found to make the AEDT command dispatcher hang on calls like
+    ``SetActiveDesign``/``analyze_all`` even after ``OpenProject`` succeeded.
+
+    Multi-core distribution for the actual solve is configured instead from
+    ``simulation_data.py`` via PyAEDT's own supported ``analyze_setup(cores=,
+    tasks=, ...)`` API, which internally manages the HPC registry (ACF) the
+    same way AEDT's own HPC options dialog does.
 
     Parameters
     ----------
     version : str
         Version to run.
-    machines : dict
-        Machine specification for current job.
-    distribution_config : dict
-        Distribution configuration for the job.
-    script : str, optional
-        Path to the script.
-    script_args : str, optional
-        Arguments to the script.
-    project_path : str, optional
-        Path to the project.
+    grpc_port : int
+        Port on which AEDT should expose its gRPC server.
+    project_log_path : str, optional
+        Path to the AEDT log file for this project.
+
+    Returns
+    -------
+    process : subprocess.Popen
+        Running (non-blocking) AEDT process.
 
     """
     aedt_path = get_aedt_executable_path(version)
-    command = [aedt_path]
+    command = [aedt_path, "-ng", "-grpcsrv", str(grpc_port)]
 
     if int(version) >= 231:
         os.environ["ANSYSEM_GEOM_KERN_FORCE_OVERWRITE_ORIG_PROJECT"] = "1"
 
-    if distribution_config["auto"]:
-        # for auto number of tasks on host must be "-1"
-        aedt_format_machines = ",".join([f"{name}:-1:{conf['cores']}:90%" for name, conf in machines.items()])
-        command += ["-auto", f"NumDistributedVariations={distribution_config['parametric_tasks']}"]
-    else:
-        aedt_format_machines = ",".join(
-            [f"{name}:{conf['tasks']}:{conf['cores']}:90%" for name, conf in machines.items()]
-        )
-
-        command.append("-distributed")
-        dist_type_str = ",".join([dist_type for dist_type in distribution_config["distribution_types"]])
-        command.append(f"includetypes={dist_type_str}")
-
-        tasks = int(distribution_config["multilevel_distribution_tasks"])
-        if tasks > 0:
-            command.append("maxlevels=2")
-            command.append(f"numlevel1={tasks}")
-
-    command += ["-machinelist", "list=" + aedt_format_machines]
-
-    if script is not None:
-        grpc_port = find_free_port()
-        command += [
-            "-ng",
-            "-features=SF6694_NON_GRAPHICAL_COMMAND_EXECUTION",
-            "-grpcsrv",
-            str(grpc_port),
-            "-RunScriptAndExit",
-            script,
-        ]
-        if script_args is not None:
-            script_args_with_port = script_args + f" --port {grpc_port}"
-            command += [
-                "-ScriptArgs",
-                f'"{script_args_with_port}"',
-            ]
-
-    if project_path is not None:
-        log_path = f"{LOGFOLDER_PATH / Path(project_path).stem}.log"
-        command += [
-            "-LogFile",
-            log_path,
-            project_path,
-        ]
-
-    if platform.system() == "Linux":
-        logger.debug("Execute via Intel MPI")
-        mpi_path = get_intel_mpi_path(version)
-        command = [mpi_path, "-envall", "-n", "1", "-hosts", list(machines.keys())[0]] + command
+    if project_log_path is not None:
+        command += ["-LogFile", project_log_path]
 
     logger.debug(f"Execute {subprocess.list2cmdline(command)}")
-    output = subprocess.check_output(command)
-    logger.debug(output.decode())
+    stdout_log_path = f"{project_log_path}.stdout.log" if project_log_path else os.devnull
+    stdout_log = open(stdout_log_path, "wb")
+    try:
+        process = subprocess.Popen(command, stdout=stdout_log, stderr=subprocess.STDOUT)
+    finally:
+        stdout_log.close()
+
+    process.stdout_log_path = stdout_log_path  # type: ignore[attr-defined]
+    return process
 
 
-def get_intel_mpi_path(version: str) -> str:
-    """Get path to Intel MPI on Linux machines.
+def wait_for_grpc_server(
+    host: str,
+    port: int,
+    process: "subprocess.Popen[bytes]",
+    timeout: int = GRPC_STARTUP_TIMEOUT,
+) -> None:
+    """Wait until the AEDT gRPC server accepts connections.
+
+    Parameters
+    ----------
+    host : str
+        Host on which AEDT was started.
+    port : int
+        gRPC port.
+    process : subprocess.Popen
+        Running AEDT process, monitored so that we fail fast if it dies.
+    timeout : int
+        Maximum time to wait in seconds.
+
+    Raises
+    ------
+    OSError
+        If AEDT terminated prematurely or did not open the port in time.
+
+    """
+    deadline = monotonic() + timeout
+    connect_host = "127.0.0.1" if host == "localhost" else host
+    while monotonic() < deadline:
+        if process.poll() is not None:
+            output = ""
+            stdout_log_path = getattr(process, "stdout_log_path", None)
+            if stdout_log_path and os.path.exists(stdout_log_path):
+                with open(stdout_log_path, "rb") as f:
+                    output = (f.read() or b"").decode(errors="replace")
+            raise OSError(
+                f"Electronics Desktop terminated before the gRPC server was available "
+                f"(exit code {process.returncode}). Output: {output}"
+            )
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            probe.settimeout(2)
+            if probe.connect_ex((connect_host, port)) == 0:
+                logger.debug(f"AEDT gRPC server is available on {host}:{port}")
+                return
+
+        sleep(2)
+
+    process.kill()
+    raise OSError(f"AEDT gRPC server did not start on {host}:{port} within {timeout}s")
+
+
+def run_aedt_with_extraction(
+    version: str,
+    machines: Dict[str, Any],
+    distribution_config: Dict[str, Any],
+    project_path: str,
+    extraction_script: str,
+    log_file: str,
+    debug: bool = False,
+) -> None:
+    """Start AEDT as a bare gRPC server, run the data extraction and shut everything down.
+
+    Replaces the former IronPython ``launcher.py`` shim: the extraction script
+    is executed by the very same CPython interpreter that runs this framework,
+    and drives the whole analysis (open project, solve via
+    ``analyze_setup(cores=, tasks=, ...)``, extract results) via PyAEDT's own
+    gRPC API - no AEDT-side script is involved at all.
 
     Parameters
     ----------
     version : str
-        Version of Electronics Desktop.
+        Version of Electronics Desktop, e.g. ``"251"``.
+    machines : dict
+        Allocated machines for the job. Only single-node distribution
+        (multiple cores/tasks on the local machine) is currently supported by
+        this mechanism; the head AEDT process itself always runs locally.
+    distribution_config : dict
+        Distribution configuration for the job (``cores``, ``parametric_tasks``,
+        ``auto``, ``distribution_types``).
+    project_path : str
+        Path to the project to analyze.
+    extraction_script : str
+        Path to ``simulation_data.py``.
+    log_file : str
+        Path to the framework log file of this project.
+    debug : bool
+        Enable DEBUG logging in the extraction script.
+
+    """
+    if len(machines) > 1:
+        raise NotImplementedError(
+            "Multi-node gRPC execution not implemented. "
+            f"Project {project_path} was allocated across {len(machines)} nodes: {list(machines.keys())}. "
+            "Only single-node execution is currently supported."
+        )
+
+    grpc_port = find_free_port()
+    host = "localhost"
+    log_path = f"{LOGFOLDER_PATH / Path(project_path).stem}.log"
+
+    process = execute_aedt(version=version, grpc_port=grpc_port, project_log_path=log_path)
+
+    try:
+        wait_for_grpc_server(host, grpc_port, process)
+
+        total_cores = sum(conf["cores"] for conf in machines.values()) or distribution_config.get("cores")
+        total_tasks = sum(conf.get("tasks", 1) for conf in machines.values())
+
+        command = [
+            sys.executable,
+            extraction_script,
+            "--logfile-path",
+            log_file,
+            "--project-path",
+            project_path,
+            "--port",
+            str(grpc_port),
+            "--machine",
+            host,
+            "--aedt-version",
+            aedt_version_to_pyaedt(version),
+            "--cores",
+            str(total_cores),
+            "--tasks",
+            str(total_tasks),
+            "--num-variations",
+            str(distribution_config.get("parametric_tasks", 1)),
+            "--distribution-types",
+            ",".join(distribution_config.get("distribution_types", ["Variations"])),
+        ]
+        if distribution_config.get("auto", True):
+            command.append("--use-auto-settings")
+        if debug:
+            command.append("--debug")
+
+        logger.debug(f"Execute {subprocess.list2cmdline(command)}")
+        try:
+            subprocess.run(command, timeout=EXTRACTION_TIMEOUT, check=True)
+        except subprocess.TimeoutExpired as exc:
+            raise OSError(
+                f"Data extraction did not finish within {EXTRACTION_TIMEOUT}s "
+                f"(project: {project_path}). The AEDT gRPC session will be killed."
+            ) from exc
+    finally:
+        # simulation_data.py calls release_desktop(), so AEDT should exit on its own.
+        # If the extraction hung/timed out above, AEDT is very likely stuck too,
+        # so don't wait the full AEDT_SHUTDOWN_TIMEOUT again in that case.
+        try:
+            process.wait(timeout=AEDT_SHUTDOWN_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            logger.warning("Electronics Desktop did not exit in time, terminating process")
+            process.kill()
+            process.wait()
+
+
+def aedt_version_to_pyaedt(version: str) -> str:
+    """Convert the CLI version to the PyAEDT notation.
+
+    Parameters
+    ----------
+    version : str
+        Version as passed via ``--aedt-version``, e.g. ``"251"``.
 
     Returns
     -------
-    path : str
-        Path to Electronics Desktop Intel MPI `mpiexec`.
+    str
+        Version in PyAEDT notation, e.g. ``"2025.1"``.
 
     """
-    aedt_path = get_aedt_install_path(version)
-    mpi_path = aedt_path / "common" / "fluent_mpi" / "multiport" / "mpi" / "lnamd64" / "intel" / "bin" / "mpiexec"
-
-    if not mpi_path.exists():
-        raise OSError(f"Intel MPI doesn't exist under {mpi_path}")
-
-    return str(mpi_path)
+    return f"20{version[:2]}.{version[2:]}"
 
 
 def get_aedt_executable_path(version: str) -> str:
@@ -1177,7 +1305,7 @@ def compare_keys(
 
     for key, val in dict_1.items():
         if key not in dict_2:
-            exceptions_list.append(f"Key '{dict_path}{key}' does not exist in {results_type} results")
+            exceptions_list.append(f"Key '{dict_path}{key}' is missing from {results_type} results")
             continue
         if isinstance(val, dict):
             compare_keys(val, dict_2[key], exceptions_list, dict_path=f"{dict_path}{key}", results_type=results_type)
