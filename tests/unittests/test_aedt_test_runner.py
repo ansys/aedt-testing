@@ -198,7 +198,7 @@ def test_get_aedt_executable_path():
         assert "Environment variable ANSYSEM_ROOT212" in str(exc.value)
 
 
-@mock.patch("aedttest.aedt_test_runner.subprocess.Popen", wraps=lambda *a, **kw: "process")
+@mock.patch("aedttest.aedt_test_runner.subprocess.Popen", wraps=lambda *a, **kw: mock.MagicMock())
 @mock.patch("aedttest.aedt_test_runner.get_aedt_executable_path", return_value="aedt/install/path")
 def test_execute_aedt(mock_aedt_path, mock_popen):
     """AEDT is started bare and non-blocking as a gRPC server.
@@ -214,7 +214,7 @@ def test_execute_aedt(mock_aedt_path, mock_popen):
         project_log_path=str(LOGFOLDER_PATH / "pr.log"),
     )
 
-    assert process == "process"
+    assert process.stdout_log_path == str(LOGFOLDER_PATH / "pr.log") + ".stdout.log"
     assert mock_aedt_path.call_args[0][0] == "212"
     assert mock_popen.call_args[0][0] == [
         "aedt/install/path",
@@ -235,11 +235,14 @@ def test_aedt_version_to_pyaedt():
     assert aedt_test_runner.aedt_version_to_pyaedt("2611") == "2026.11"
 
 
-def test_wait_for_grpc_server_process_died():
+def test_wait_for_grpc_server_process_died(tmp_path):
+    stdout_log_path = tmp_path / "aedt.log.stdout.log"
+    stdout_log_path.write_bytes(b"crash details")
+
     process = mock.MagicMock()
     process.poll.return_value = 1
     process.returncode = 1
-    process.stdout.read.return_value = b"crash details"
+    process.stdout_log_path = str(stdout_log_path)
 
     with pytest.raises(OSError) as exc:
         aedt_test_runner.wait_for_grpc_server("localhost", 50051, process)
@@ -272,6 +275,22 @@ def test_wait_for_grpc_server_success():
         process.poll.return_value = None
 
         aedt_test_runner.wait_for_grpc_server("localhost", port, process)
+
+
+def test_wait_for_grpc_server_uds_success(tmp_path):
+    """On Linux, AEDT may expose the gRPC server via a Unix Domain Socket file
+    instead of a TCP port; wait_for_grpc_server must detect that too."""
+    port = 39589
+    uds_socket = tmp_path / f"AnsysEMUDS-{port}.sock"
+    uds_socket.write_text("")  # simulate the socket file being created by AEDT
+
+    process = mock.MagicMock()
+    process.poll.return_value = None
+
+    with mock.patch("aedttest.aedt_test_runner.os.name", "posix"), mock.patch(
+        "aedttest.aedt_test_runner.os.path.expanduser", return_value=str(uds_socket)
+    ):
+        aedt_test_runner.wait_for_grpc_server("localhost", port, process, timeout=5)
 
 
 @mock.patch("aedttest.aedt_test_runner.subprocess.run")
@@ -569,9 +588,9 @@ def test_compare_keys():
     report = []
     aedt_test_runner.compare_keys(dict_ref, dict_now, report, results_type="current")
     assert report == [
-        "Key '2' does not exist in current results",
-        "Key '3->4nest' does not exist in current results",
-        "Key '3->5nest->6nn' does not exist in current results",
+        "Key '2' is missing from current results",
+        "Key '3->4nest' is missing from current results",
+        "Key '3->5nest->6nn' is missing from current results",
     ]
 
 

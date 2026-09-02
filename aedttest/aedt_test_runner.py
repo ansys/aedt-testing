@@ -1088,6 +1088,15 @@ def wait_for_grpc_server(
                 f"Electronics Desktop terminated before the gRPC server was available "
                 f"(exit code {process.returncode}). Output: {output}"
             )
+        # Linux 2026R1: AEDT uses a Unix Domain Socket instead of a TCP port
+        if os.name == "posix":
+            uds_socket = os.path.expanduser(f"~/.conn/AnsysEMUDS-{port}.sock")
+
+            if os.path.exists(uds_socket):
+                logger.debug(f"AEDT gRPC server is available via UDS: {uds_socket}")
+                return
+
+        # Windows / traditional TCP check
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
             probe.settimeout(2)
             if probe.connect_ex((connect_host, port)) == 0:
