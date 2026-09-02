@@ -20,7 +20,7 @@ same code path works identically on Windows and Linux, locally or on a cluster.
 
 - [Features](#features)
 - [Installation](#installation)
-- [Architecture / How it works](#architecture--how-it-works)
+- [Architecture / How It Works](#architecture--how-it-works)
 - [Usage](#usage)
   * [Configuration file](#configuration-file)
   * [CLI Commands](#cli-commands)
@@ -67,24 +67,52 @@ Make sure the AEDT installation you want to test is available on the machine(s) 
 and that `ANSYSEM_ROOT<version>` (e.g. `ANSYSEM_ROOT251` for 2025 R1) is set to its installation
 directory before launching `aedt_test_runner`.
 
-## Architecture / How it works
-For every project in the configuration folder, the framework:
-1. Allocates cores/machines for the project (`allocator()`), respecting `--max-cores` /
-   `--max-projects` and the per-project `distribution` settings.
-2. Copies the project (and its dependencies) into a working directory.
-3. Starts AEDT as a bare gRPC server: `<ansysedt> -ng -grpcsrv <port>` (plus `-LogFile` on the
-   framework side). No `-auto`, `-distributed`, `-machinelist` or `-batchsolve` flags are used,
-   since mixing those with a live scripting/gRPC session is not supported by AEDT and can hang
-   API calls such as `SetActiveDesign`/`analyze_all`.
-4. Waits for the gRPC server to become reachable:
-   * On Windows / older Linux: a TCP connect check on the allocated port.
-   * On Linux with AEDT 2026 R1+: AEDT switched the gRPC transport to a Unix Domain Socket
-     (`~/.conn/AnsysEMUDS-<port>.sock`), so the framework checks for that socket file instead.
-5. Runs `simulation_data.py` as a plain CPython subprocess (same interpreter as the framework),
-   which connects to the AEDT gRPC session via PyAEDT, opens the project, triggers
-   `analyze_setup(cores=, tasks=, ...)` for the requested distribution, and extracts results
-   into a project-specific JSON file.
-6. Releases/kills the AEDT process and renders the HTML report for that project.
+## Architecture / How It Works
+
+For every project found in the configuration folder, the framework:
+
+1. Allocates the required cores and machines using `allocator()`. The allocation respects
+   `--max-cores`, `--max-projects`, and the per-project `distribution` settings.
+
+2. Copies the AEDT project and its dependencies into a project-specific working directory.
+
+3. Starts AEDT in non-graphical gRPC server mode:
+
+   `<ansysedt> -ng -grpcsrv <port>`
+
+   The framework configures its own AEDT log file as required.
+
+   Batch-solve flags such as `-auto`, `-distributed`, `-machinelist`, and `-batchsolve`
+   are intentionally not used. Resource distribution and solve execution are controlled
+   later through the live PyAEDT session. Combining batch startup modes with a persistent
+   gRPC-controlled session has caused unstable or blocking API behavior in testing,
+   including calls such as `SetActiveDesign()` and `analyze_all()`.
+
+4. Waits until the AEDT gRPC endpoint is available:
+
+   - For TCP-based connections, the framework attempts to connect to the allocated port.
+   - For secure local Linux connections using Unix Domain Sockets, the framework waits
+     for the corresponding AEDT socket file, for example:
+
+     `~/.conn/AnsysEMUDS-<port>.sock`
+
+5. Starts `simulation_data.py` as a standard CPython subprocess using the same Python
+   interpreter as the framework.
+
+   The subprocess connects to the existing AEDT session through PyAEDT, opens the copied
+   project, selects the requested design and setup, and executes the solve using
+   `analyze_setup()` with the allocated resource settings, such as `cores`, `tasks`,
+   and the required distribution options.
+
+   After the solve completes, the subprocess extracts the requested simulation data and
+   writes it to a project-specific JSON result file.
+
+6. Closes the PyAEDT connection and requests a graceful shutdown of AEDT. If AEDT does
+   not terminate within the configured timeout, the framework forcefully terminates the
+   process.
+
+7. Releases the allocated resources and generates the project-specific HTML report from
+   the collected JSON result data.
 
 This design removes the previous IronPython `launcher.py` shim entirely - everything after
 step 3 is standard CPython + PyAEDT.
@@ -102,16 +130,15 @@ file, or use [config_without_comments.toml][2] as a minimal template.
 
 ```toml
 [project]
-name = "just_winding"
-path = "input/just_winding.aedt"
+name = "5G_waveguide_4cores"
+path = "tests/integration/projects/5G_waveguide_4cores.aedt"
 
 [project.distribution]
 cores = 4
-distribution_types = ["default"]
 parametric_tasks = 1
-multilevel_distribution_tasks = 0
-single_node = false
-auto = true
+single_node = true
+auto = false
+distribution_types = ["Variations", "Frequencies"]
 ```
 
 [1]: examples/configs/config_with_comments.toml
@@ -258,19 +285,19 @@ SSH tunnel/port-forward if the results live on a remote or cluster node, e.g.
 ## Supported AEDT versions
 * Version string format: last two digits of the year + release, e.g. `251` = 2025 R1,
   `261` = 2026 R1, `271` = 2027 R1.
-* Automatic reference result generation is supported for AEDT **2019 R1** and newer.
+* Automatic reference result generation is supported for AEDT **2024 R1** and newer.
 * On **Linux with AEDT 2026 R1+**, AEDT exposes its gRPC server over a Unix Domain Socket
   instead of a TCP port; this is handled transparently by the framework.
 
 ## Limitations
 Currently, the project does not support or only partially supports the following features:
-* Automatic results creation is possible only for versions 2019R1+.
+* Automatic results creation is possible only for versions 2024 R1+.
 * LS-DYNA is not supported.
 * Python < 3.10 is not supported.
-* Multi-node distribution for a single project is not yet implemented for the gRPC execution
-  path (`run_aedt_with_extraction` raises `NotImplementedError` if a project is allocated across
-  more than one node) - use `single_node = true` in the project configuration to force
-  single-node allocation.
+* A single AEDT project cannot currently span multiple nodes. Multiple independent projects can
+  still run concurrently on different allocated nodes. (`run_aedt_with_extraction` raises
+  `NotImplementedError` if a single project is allocated across more than one node) - use
+  `single_node = true` in the project configuration to force single-node allocation.
 
 ## Troubleshooting
 * **`AEDT gRPC server did not start on <host>:<port> within <timeout>s`** - increase
