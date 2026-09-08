@@ -60,6 +60,9 @@ Home = "https://github.com/ansys/aedt-testing"
 # CLI script command
 [project.scripts]
 aedt_test_runner = "aedttest.aedt_test_runner:main"
+aedt_test_submit = "aedttest.submit_runner:main"
+aedt_test_collect = "aedttest.collect_runner:main"
+aedt_test_report = "aedttest.report_runner:main"
 
 [tool.isort]
 profile = "black"

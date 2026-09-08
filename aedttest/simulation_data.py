@@ -636,11 +636,17 @@ def generate_unique_file_path(project_dir, extension):
 
 
 def main():
-    """Attach to the running AEDT gRPC session, open the project, extract data.
+    """Open the project and extract data.
+
+    If ``--port`` is given, attach to an already-running AEDT gRPC session
+    (in-line mode, used right after a solve started by ``aedt_test_runner.py``).
+    Otherwise, launch a fresh standalone AEDT instance (``new_desktop=True``),
+    used by the decoupled "collect" step that loops over already-solved
+    projects on disk, one at a time, with no live session to attach to.
 
     Straight-line flow, no fallbacks:
-    Attach -> open project (if needed) -> activate project -> read design
-    names from AEDT itself -> extract/analyze -> dump JSON -> release.
+    Attach/launch -> open project (if needed) -> activate project -> read
+    design names from AEDT itself -> extract/analyze -> dump JSON -> release.
     """
     if not project_path_arg:
         raise RuntimeError("--project-path argument is required but was not provided")
@@ -649,17 +655,28 @@ def main():
     project_name = os.path.splitext(os.path.basename(project_path))[0]
     project_dir = os.path.dirname(project_path)
 
-    desktop_kwargs = {
-        "version": specified_version,
-        "port": grpc_port,
-        "non_graphical": True,
-        "new_desktop": False,
-        "close_on_exit": False,
-    }
-    if grpc_machine not in ("", "localhost", "127.0.0.1"):
-        desktop_kwargs["machine"] = grpc_machine
+    if grpc_port:
+        desktop_kwargs = {
+            "version": specified_version,
+            "port": grpc_port,
+            "non_graphical": True,
+            "new_desktop": False,
+            "close_on_exit": False,
+        }
+        if grpc_machine not in ("", "localhost", "127.0.0.1"):
+            desktop_kwargs["machine"] = grpc_machine
+        logger.info(
+            "CONNECTING to AEDT gRPC session (port={}, machine={})".format(grpc_port, grpc_machine or "localhost")
+        )
+    else:
+        desktop_kwargs = {
+            "version": specified_version,
+            "non_graphical": True,
+            "new_desktop": True,
+            "close_on_exit": True,
+        }
+        logger.info("LAUNCHING standalone AEDT instance (no --port given)")
 
-    logger.info("CONNECTING to AEDT gRPC session (port={}, machine={})".format(grpc_port, grpc_machine or "localhost"))
     desktop = Desktop(**desktop_kwargs)
     logger.info("CONNECTED")
 
@@ -695,8 +712,8 @@ def main():
         logger.debug("JSON dumped to {}".format(results_json))
 
     finally:
-        # Shut the session down so that aedt_test_runner.py can reap the process
-        # and free the allocated cores.
+        # Shut the session down so that the caller (aedt_test_runner.py or the
+        # collect step) can reap the process and free the allocated cores.
         logger.info("RELEASING desktop")
         try:
             desktop.release_desktop(close_projects=True, close_on_exit=True)

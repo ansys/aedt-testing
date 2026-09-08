@@ -377,6 +377,36 @@ class ElectronicsDesktopTester:
             for machine in allocated_machines:
                 self.machines_dict[machine] += allocated_machines[machine]["cores"]
 
+        self.finalize_project_report(project_name, project_path, errors=errors)
+        self.active_tasks -= 1
+
+    def finalize_project_report(self, project_name: str, project_path: str, errors: Optional[str] = None) -> None:
+        """Build and render the comparison report for one already-solved-and-extracted project.
+
+        This is the shared "reporting" tail end of the pipeline: read the
+        ``{project_name}.json`` results file written by
+        ``aedttest/simulation_data.py``, compare against reference data,
+        render ``{project_name}.html``, and update the summary entry on
+        ``main.html``.
+
+        Used both by ``task_runner()`` (in-process solve, see ``run()``) and
+        by the standalone "report" step that processes results collected
+        from a separately-submitted SLURM job (see ``aedttest.report_runner``)
+        - in both cases the ``{project_name}.json`` file and this method are
+        identical, only how the solve/extraction itself was launched differs.
+
+        Parameters
+        ----------
+        project_name : str
+            Name of the project.
+        project_path : str
+            Path to the (solved) project file - used to locate
+            ``{project_name}.json`` next to it.
+        errors : str, optional
+            Any error message to prepend to the report (e.g. SLURM job
+            failed, or the solve/extraction subprocess errored out).
+
+        """
         project_report = self.prepare_project_report(project_name, project_path)
         if errors:
             project_report["error_exception"].insert(0, errors)  # type: ignore[union-attr]
@@ -395,7 +425,6 @@ class ElectronicsDesktopTester:
         )
 
         self.render_main_html()
-        self.active_tasks -= 1
 
     def prepare_project_report(self, project_name: str, project_path: str) -> Dict[str, Union[List[Any], int]]:
         """Prepare project report dictionary that is required by ``render_project_html()``.
