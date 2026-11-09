@@ -165,10 +165,14 @@ Omit `--test-version` to only create or refresh a baseline.
 `out_dir`, `reference_folder`, `poll_interval`, `poll_timeout`, `max_parallel_jobs` and
 `[site.slurm]` defaults. Per-project TOML files take precedence over `site.toml`.
 
-Each version's `env` must set `ANSYSEM_ROOT<version>` and `LD_LIBRARY_PATH` (both pointing at
-the AEDT root). Without `LD_LIBRARY_PATH`, PyAEDT may fail to load newer AEDT builds during
-collection. Start from a shell without other AEDT versions' variables exported. See
-`examples/site.example.toml`.
+For each version the pipeline clears stale `ANSYSEM_ROOT*` and `ANSYS_DESKTOP*` variables from
+the shell, then sets `ANSYSEM_ROOT<version>` (and, on Linux, `LD_LIBRARY_PATH`, which newer AEDT
+builds need for PyAEDT collection) to the version's `root`. The optional `env` table overrides
+these defaults or adds more variables. A warning is logged if `env` sets another version's
+`ANSYSEM_ROOT`. See `examples/site.example.toml`.
+
+Job submission and polling go through a scheduler adapter selected by `[site.scheduler] type`
+(currently only `slurm`). The rest of the pipeline is scheduler independent.
 
 The pipeline always expands test matrices (list-valued `cores`, `nodes`, etc.) and runs each
 project in an isolated copy. The individual steps are also available separately:

@@ -20,12 +20,12 @@ mail_user = "you@example.com"
 mail_type = "BEGIN,END,FAIL"
 
 # One table per AEDT version, the name must match --reference-version / --test-version.
-# env must contain ANSYSEM_ROOT<version> (the suffix must match the table name) and
-# LD_LIBRARY_PATH pointing at the AEDT root; newer builds fail to load in PyAEDT without it.
+# ANSYSEM_ROOT<version> and (on Linux) LD_LIBRARY_PATH default to root automatically, and stale
+# ANSYSEM_ROOT*/ANSYS_DESKTOP* variables are cleared. env is optional and only needed to
+# override these or to set extra variables.
 [site.aedt_versions.261]
 root = "/path/to/ansys/v261/AnsysEM"
-env = { ANSYSEM_ROOT261 = "/path/to/ansys/v261/AnsysEM", LD_LIBRARY_PATH = "/path/to/ansys/v261/AnsysEM" }
 
 [site.aedt_versions.242]
 root = "/path/to/ansys/v242/Linux64"
-env = { ANSYSEM_ROOT242 = "/path/to/ansys/v242/Linux64", LD_LIBRARY_PATH = "/path/to/ansys/v242/Linux64" }
+# env = { SOME_EXTRA_VARIABLE = "value" }
