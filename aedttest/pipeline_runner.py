@@ -64,6 +64,18 @@ def parse_arguments() -> argparse.Namespace:
     return args
 
 
+def check_submissions(job_map: dict, version: str) -> None:
+    """Log failed submissions and stop if none of the jobs could be submitted."""
+    failed_submit = [name for name, info in job_map.items() if info.get("job_id") is None]
+    if failed_submit:
+        logger.error(f"[{version}] Failed to submit: {', '.join(failed_submit)}")
+    if job_map and len(failed_submit) == len(job_map):
+        raise RuntimeError(
+            f"[{version}] All {len(job_map)} job submission(s) failed, nothing to poll or collect. "
+            "See the 'Failed to submit' errors above (scheduler available? partition/aedt root correct?)."
+        )
+
+
 def run_version(
     version: str,
     site_config: dict,
@@ -121,9 +133,7 @@ def run_version(
         scheduler=scheduler,
     )
 
-    failed_submit = [name for name, info in job_map.items() if info.get("job_id") is None]
-    if failed_submit:
-        logger.error(f"[{version}] Failed to submit: {', '.join(failed_submit)}")
+    check_submissions(job_map, version)
 
     job_map = poll_until_done(
         job_map, poll_interval=site_config["poll_interval"], timeout=site_config["poll_timeout"], scheduler=scheduler
