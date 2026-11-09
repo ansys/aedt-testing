@@ -106,3 +106,50 @@ def test_slurm_scheduler_delegates_to_existing_functions(monkeypatch):
     assert submitted["slurm_config"] == {"partition": "x", "auto_hpc": False}
     assert submitted["cores"] == 8
     assert scheduler.get_states(["1"]) == {"1": "RUNNING"}
+
+
+class FakeBatchScheduler(Scheduler):
+    """A non-SLURM scheduler with its own state names."""
+
+    def __init__(self):
+        self.submitted = []
+
+    def submit(self, spec):
+        self.submitted.append(spec)
+        return str(len(self.submitted))
+
+    def get_states(self, job_ids):
+        return {job_id: "DONE" if job_id == "1" else "ABORTED" for job_id in job_ids}
+
+    def normalize(self, raw_state):
+        return {"DONE": JobState.SUCCEEDED, "ABORTED": JobState.FAILED}.get(raw_state, JobState.UNKNOWN)
+
+
+def test_pipeline_functions_work_with_a_non_slurm_scheduler(tmp_path, monkeypatch):
+    from aedttest.clusters import slurm_submit
+
+    monkeypatch.setattr(slurm_submit, "sleep", lambda seconds: None)
+    monkeypatch.setattr(slurm_collect, "sleep", lambda seconds: None)
+    collected = []
+    monkeypatch.setattr(
+        slurm_collect, "collect_project", lambda project_path, version, **kwargs: collected.append(project_path)
+    )
+    scheduler = FakeBatchScheduler()
+    configs = {name: {"path": f"/p/{name}.aedt", "distribution": {"cores": 4}} for name in ("a", "b")}
+
+    job_map = slurm_submit.submit_all_throttled(
+        configs,
+        aedt_root=PurePosixPath("/ansys"),
+        working_dir="/work",
+        job_map_path=tmp_path / "job_map.json",
+        max_parallel=1,
+        poll_interval=1,
+        scheduler=scheduler,
+    )
+    job_map = slurm_collect.poll_until_done(job_map, poll_interval=1, scheduler=scheduler)
+    job_map = slurm_collect.collect_all(job_map, version="2026.1", scheduler=scheduler)
+
+    assert [spec.name for spec in scheduler.submitted] == ["a", "b"]
+    assert {name: info["state"] for name, info in job_map.items()} == {"a": "DONE", "b": "ABORTED"}
+    assert collected == ["/p/a.aedt"]
+    assert job_map["b"]["collect_error"] == "Skipped, job state was ABORTED"

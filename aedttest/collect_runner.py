@@ -1,7 +1,7 @@
 """CLI entry point for the "collect" half of the split submit/collect workflow.
 
-Reads a ``job_map.json`` written by ``aedt_test_submit``, polls SLURM
-(``sacct``) until every job finishes, then loops through every
+Reads a ``job_map.json`` written by ``aedt_test_submit``, polls the scheduler
+until every job finishes, then loops through every
 successfully-solved project and runs data extraction (fresh AEDT instance
 per project, NG mode - see ``aedttest.simulation_data``).
 
@@ -16,6 +16,7 @@ from pathlib import Path
 from aedttest.aedt_test_runner import LOGFILE_PATH
 from aedttest.aedt_test_runner import LOGFOLDER_PATH
 from aedttest.aedt_test_runner import aedt_version_to_pyaedt
+from aedttest.clusters.scheduler import get_scheduler
 from aedttest.clusters.slurm_collect import collect_all
 from aedttest.clusters.slurm_collect import load_job_map
 from aedttest.clusters.slurm_collect import poll_until_done
@@ -52,21 +53,22 @@ def main() -> None:
 
     log_dir = Path(args.log_dir) if args.log_dir else LOGFOLDER_PATH
 
+    scheduler = get_scheduler()
     job_map = load_job_map(args.job_map)
     logger.info(f"Loaded job map with {len(job_map)} project(s) from {args.job_map}")
 
-    job_map = poll_until_done(job_map, poll_interval=args.poll_interval, timeout=args.poll_timeout)
+    job_map = poll_until_done(job_map, poll_interval=args.poll_interval, timeout=args.poll_timeout, scheduler=scheduler)
     save_job_map(job_map, args.job_map)
 
-    solved = sum(1 for info in job_map.values() if info.get("state") == "COMPLETED")
-    logger.info(f"SLURM polling done: {solved}/{len(job_map)} job(s) completed successfully")
+    solved = sum(1 for info in job_map.values() if scheduler.is_success(info.get("state")))
+    logger.info(f"Job polling done: {solved}/{len(job_map)} job(s) completed successfully")
 
     pyaedt_version = aedt_version_to_pyaedt(args.aedt_version)
-    job_map = collect_all(job_map, version=pyaedt_version, log_dir=log_dir, debug=args.debug)
+    job_map = collect_all(job_map, version=pyaedt_version, log_dir=log_dir, debug=args.debug, scheduler=scheduler)
     save_job_map(job_map, args.job_map)
 
     collected_ok = sum(
-        1 for info in job_map.values() if info.get("state") == "COMPLETED" and not info.get("collect_error")
+        1 for info in job_map.values() if scheduler.is_success(info.get("state")) and not info.get("collect_error")
     )
     logger.info(f"Data collection done: {collected_ok}/{solved} solved project(s) extracted successfully")
 

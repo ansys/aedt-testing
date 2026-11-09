@@ -16,6 +16,7 @@ from pathlib import Path
 from aedttest.aedt_test_runner import LOGFILE_PATH
 from aedttest.aedt_test_runner import LOGFOLDER_PATH
 from aedttest.aedt_test_runner import ElectronicsDesktopTester
+from aedttest.clusters.scheduler import get_scheduler
 from aedttest.logger import logger
 from aedttest.logger import set_logger
 
@@ -74,12 +75,13 @@ def main() -> None:
     )
     tester.initialize_results()
 
+    scheduler = get_scheduler()
     for project_name, info in sorted(job_map.items()):
         project_path = info["project_path"]
         state = info.get("state")
         errors = None
-        if state and state != "COMPLETED":
-            errors = f"SLURM job did not complete successfully (state={state})"
+        if state and not scheduler.is_success(state):
+            errors = f"Job did not complete successfully (state={state})"
         elif info.get("collect_error"):
             errors = info["collect_error"]
 

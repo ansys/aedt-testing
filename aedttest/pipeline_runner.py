@@ -22,6 +22,7 @@ from aedttest.aedt_test_runner import aedt_version_to_pyaedt
 from aedttest.aedt_test_runner import read_configs
 from aedttest.aedt_test_runner import time_now
 from aedttest.clusters.matrix import expand_matrix
+from aedttest.clusters.scheduler import get_scheduler
 from aedttest.clusters.slurm_collect import collect_all
 from aedttest.clusters.slurm_collect import poll_until_done
 from aedttest.clusters.slurm_collect import save_job_map
@@ -84,6 +85,7 @@ def run_version(
             f"Available: {sorted(site_config['aedt_versions'])}"
         )
     apply_version_env(site_config, version)
+    scheduler = get_scheduler(site_config)
 
     out_dir = Path(site_config["out_dir"]) if site_config["out_dir"] else Path(site_config["working_dir"])
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -116,17 +118,20 @@ def run_version(
         global_slurm_config=site_config["slurm"],
         max_parallel=site_config["max_parallel_jobs"],
         poll_interval=site_config["poll_interval"],
+        scheduler=scheduler,
     )
 
     failed_submit = [name for name, info in job_map.items() if info.get("job_id") is None]
     if failed_submit:
         logger.error(f"[{version}] Failed to submit: {', '.join(failed_submit)}")
 
-    job_map = poll_until_done(job_map, poll_interval=site_config["poll_interval"], timeout=site_config["poll_timeout"])
+    job_map = poll_until_done(
+        job_map, poll_interval=site_config["poll_interval"], timeout=site_config["poll_timeout"], scheduler=scheduler
+    )
     save_job_map(job_map, job_map_path)
 
     pyaedt_version = aedt_version_to_pyaedt(version)
-    job_map = collect_all(job_map, version=pyaedt_version, log_dir=LOGFOLDER_PATH, debug=debug)
+    job_map = collect_all(job_map, version=pyaedt_version, log_dir=LOGFOLDER_PATH, debug=debug, scheduler=scheduler)
     save_job_map(job_map, job_map_path)
 
     tester = ElectronicsDesktopTester(
@@ -146,8 +151,8 @@ def run_version(
     for project_name, info in sorted(job_map.items()):
         state = info.get("state")
         errors = None
-        if state and state != "COMPLETED":
-            errors = f"SLURM job did not complete successfully (state={state})"
+        if state and not scheduler.is_success(state):
+            errors = f"Job did not complete successfully (state={state})"
         elif info.get("collect_error"):
             errors = info["collect_error"]
         tester.finalize_project_report(project_name, info["project_path"], errors=errors)

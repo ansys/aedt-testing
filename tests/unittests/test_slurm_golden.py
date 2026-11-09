@@ -13,6 +13,7 @@ from types import SimpleNamespace
 import pytest
 
 from aedttest.clusters import slurm_collect
+from aedttest.clusters import slurm_scheduler
 from aedttest.clusters import slurm_submit
 
 AEDT_ROOT = PurePosixPath("/ansys/AnsysEM")
@@ -328,7 +329,7 @@ def test_sacct_missing_executable_raises(monkeypatch):
 
 def test_poll_until_done_sets_states(monkeypatch):
     responses = iter([{"10": "RUNNING", "11": "PENDING"}, {"10": "COMPLETED", "11": "TIMEOUT"}])
-    monkeypatch.setattr(slurm_collect, "get_job_states", lambda ids: next(responses))
+    monkeypatch.setattr(slurm_scheduler, "get_job_states", lambda ids: next(responses))
     monkeypatch.setattr(slurm_collect, "sleep", lambda seconds: None)
     job_map = {
         "ok": {"job_id": "10", "project_path": "/p/ok.aedt"},
@@ -360,7 +361,7 @@ def test_collect_all_skips_unsuccessful_jobs(monkeypatch):
 
     assert collected == [("/p/ok.aedt", "2026.1")]
     assert result["ok"]["collect_error"] is None
-    assert result["slow"]["collect_error"] == "Skipped, SLURM job state was TIMEOUT"
+    assert result["slow"]["collect_error"] == "Skipped, job state was TIMEOUT"
 
 
 def test_job_map_roundtrip(tmp_path):
@@ -386,7 +387,7 @@ def test_throttled_submission_never_exceeds_max_parallel(tmp_path, monkeypatch):
         return {job_id: "COMPLETED" for job_id in job_ids}
 
     monkeypatch.setattr(slurm_submit.subprocess, "run", fake_run)
-    monkeypatch.setattr(slurm_submit, "get_job_states", fake_states)
+    monkeypatch.setattr(slurm_scheduler, "get_job_states", fake_states)
     monkeypatch.setattr(slurm_submit, "sleep", lambda seconds: None)
     configs = {name: {"path": f"/p/{name}.aedt", "distribution": {"cores": 4}} for name in ("a", "b", "c")}
 

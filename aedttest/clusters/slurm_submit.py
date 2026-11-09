@@ -18,20 +18,23 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 
+from aedttest.clusters.scheduler import JobSpec
+from aedttest.clusters.scheduler import Scheduler
+from aedttest.clusters.scheduler import get_scheduler
 from aedttest.clusters.slurm_scheduler import COMMON_PREFIX_RELATIVE_PATH  # noqa: F401
 from aedttest.clusters.slurm_scheduler import DEFAULT_SRUN_ARGS  # noqa: F401
 from aedttest.clusters.slurm_scheduler import LAUNCHER_RELATIVE_PATH  # noqa: F401
 from aedttest.clusters.slurm_scheduler import SBATCH_SUBMIT_TIMEOUT  # noqa: F401
 from aedttest.clusters.slurm_scheduler import SRUN_WRAPPER_RELATIVE_PATH  # noqa: F401
-from aedttest.clusters.slurm_scheduler import TERMINAL_STATES
+from aedttest.clusters.slurm_scheduler import TERMINAL_STATES  # noqa: F401
 from aedttest.clusters.slurm_scheduler import build_ansysedt_argv  # noqa: F401
 from aedttest.clusters.slurm_scheduler import build_batchoptions_string  # noqa: F401
 from aedttest.clusters.slurm_scheduler import build_launcher_argv  # noqa: F401
 from aedttest.clusters.slurm_scheduler import build_sbatch_argv  # noqa: F401
 from aedttest.clusters.slurm_scheduler import default_slurm_settings
-from aedttest.clusters.slurm_scheduler import get_job_states
+from aedttest.clusters.slurm_scheduler import get_job_states  # noqa: F401
 from aedttest.clusters.slurm_scheduler import submit_job  # noqa: F401
-from aedttest.clusters.slurm_scheduler import submit_project
+from aedttest.clusters.slurm_scheduler import submit_project  # noqa: F401
 from aedttest.logger import logger
 
 
@@ -41,8 +44,39 @@ def submit_all(
     working_dir: str,
     job_map_path: Path,
     global_slurm_config: Optional[Dict[str, Any]] = None,
+    scheduler: Optional[Scheduler] = None,
 ) -> Dict[str, Dict[str, Any]]:
-    """Submit one SLURM job per project and persist the job mapping.
+    """Submit one job per project and persist the job mapping (no throttling).
+
+    See ``submit_all_throttled`` for the parameters; this is the same loop with
+    ``max_parallel=None``.
+    """
+    return submit_all_throttled(
+        project_tests_config,
+        aedt_root,
+        working_dir,
+        job_map_path,
+        global_slurm_config,
+        max_parallel=None,
+        scheduler=scheduler,
+    )
+
+
+def submit_all_throttled(
+    project_tests_config: Dict[str, Any],
+    aedt_root: Path,
+    working_dir: str,
+    job_map_path: Path,
+    global_slurm_config: Optional[Dict[str, Any]] = None,
+    max_parallel: Optional[int] = None,
+    poll_interval: int = 30,
+    scheduler: Optional[Scheduler] = None,
+) -> Dict[str, Dict[str, Any]]:
+    """Submit one job per project and persist the job mapping.
+
+    Never has more than ``max_parallel`` jobs concurrently pending/running
+    (protects shared license pools / queue politeness on large test-matrix
+    sweeps). ``max_parallel=None``/``0`` submits everything immediately.
 
     Parameters
     ----------
@@ -55,12 +89,18 @@ def submit_all(
     aedt_root : Path
         Path to the AEDT installation root.
     working_dir : str
-        Working directory for all SLURM jobs (``--chdir``).
+        Working directory for all jobs (``--chdir``).
     job_map_path : Path
         Where to write the ``project_name -> {job_id, project_path}`` JSON map.
     global_slurm_config : dict, optional
-        Fallback SLURM/AEDT-batch settings applied when a project doesn't
+        Fallback scheduler settings applied when a project doesn't
         define its own ``[project.slurm]`` table.
+    max_parallel : int, optional
+        Cap on concurrently pending/running jobs.
+    poll_interval : int
+        Seconds between state checks while throttling.
+    scheduler : Scheduler, optional
+        Scheduler to submit to; defaults to ``get_scheduler()`` (SLURM).
 
     Returns
     -------
@@ -68,54 +108,7 @@ def submit_all(
         The job map that was written to ``job_map_path``.
 
     """
-    base_slurm_config = dict(default_slurm_settings(), **(global_slurm_config or {}))
-    job_map_path.parent.mkdir(parents=True, exist_ok=True)
-
-    job_map: Dict[str, Dict[str, Any]] = {}
-    for project_name, project_config in project_tests_config.items():
-        slurm_config = dict(base_slurm_config, **project_config.get("slurm", {}))
-        cores = project_config["distribution"]["cores"]
-        project_path = project_config["path"]
-
-        try:
-            job_id = submit_project(
-                project_name=project_name,
-                project_path=project_path,
-                cores=cores,
-                aedt_root=aedt_root,
-                working_dir=working_dir,
-                slurm_config=slurm_config,
-                auto=slurm_config.get("auto_hpc", True),
-            )
-        except OSError as exc:
-            logger.error(f"Failed to submit {project_name}: {exc}")
-            job_map[project_name] = {"job_id": None, "project_path": project_path, "error": str(exc)}
-            continue
-
-        job_map[project_name] = {"job_id": job_id, "project_path": project_path}
-
-    job_map_path.write_text(json.dumps(job_map, indent=2))
-    logger.info(f"Job map written to {job_map_path}")
-    return job_map
-
-
-def submit_all_throttled(
-    project_tests_config: Dict[str, Any],
-    aedt_root: Path,
-    working_dir: str,
-    job_map_path: Path,
-    global_slurm_config: Optional[Dict[str, Any]] = None,
-    max_parallel: Optional[int] = None,
-    poll_interval: int = 30,
-) -> Dict[str, Dict[str, Any]]:
-    """Like ``submit_all``, but never has more than ``max_parallel`` jobs
-    concurrently pending/running (protects shared license pools / queue
-    politeness on large test-matrix sweeps). ``max_parallel=None``/``0``
-    falls back to submitting everything immediately.
-    """
-    if not max_parallel:
-        return submit_all(project_tests_config, aedt_root, working_dir, job_map_path, global_slurm_config)
-
+    scheduler = scheduler or get_scheduler()
     base_slurm_config = dict(default_slurm_settings(), **(global_slurm_config or {}))
     job_map_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -123,30 +116,33 @@ def submit_all_throttled(
     pending_projects = list(project_tests_config.items())
     active_ids: set = set()
 
-    logger.info(f"Throttled submission: {len(pending_projects)} job(s), max {max_parallel} concurrent")
+    if max_parallel:
+        logger.info(f"Throttled submission: {len(pending_projects)} job(s), max {max_parallel} concurrent")
 
     while pending_projects or active_ids:
-        while pending_projects and len(active_ids) < max_parallel:
+        while pending_projects and (not max_parallel or len(active_ids) < max_parallel):
             project_name, project_config = pending_projects.pop(0)
             slurm_config = dict(base_slurm_config, **project_config.get("slurm", {}))
-            cores = project_config["distribution"]["cores"]
             project_path = project_config["path"]
+            spec = JobSpec(
+                name=project_name,
+                project_path=project_path,
+                working_dir=working_dir,
+                cores=project_config["distribution"]["cores"],
+                aedt_root=aedt_root,
+                options=slurm_config,
+            )
 
             try:
-                job_id = submit_project(
-                    project_name=project_name,
-                    project_path=project_path,
-                    cores=cores,
-                    aedt_root=aedt_root,
-                    working_dir=working_dir,
-                    slurm_config=slurm_config,
-                    auto=slurm_config.get("auto_hpc", True),
-                )
-                job_map[project_name] = {"job_id": job_id, "project_path": project_path}
-                active_ids.add(job_id)
+                job_id = scheduler.submit(spec)
             except OSError as exc:
                 logger.error(f"Failed to submit {project_name}: {exc}")
                 job_map[project_name] = {"job_id": None, "project_path": project_path, "error": str(exc)}
+                continue
+
+            job_map[project_name] = {"job_id": job_id, "project_path": project_path}
+            if max_parallel:
+                active_ids.add(job_id)
 
         job_map_path.write_text(json.dumps(job_map, indent=2))
 
@@ -155,13 +151,13 @@ def submit_all_throttled(
 
         sleep(poll_interval)
         try:
-            states = get_job_states(list(active_ids))
+            states = scheduler.get_states(list(active_ids))
         except OSError as exc:
-            logger.error(f"Failed to query sacct while throttling submissions: {exc}")
+            logger.error(f"Failed to query job states while throttling submissions: {exc}")
             continue
 
         for job_id in list(active_ids):
-            if states.get(job_id) in TERMINAL_STATES:
+            if scheduler.is_terminal(states.get(job_id)):
                 active_ids.discard(job_id)
 
     job_map_path.write_text(json.dumps(job_map, indent=2))

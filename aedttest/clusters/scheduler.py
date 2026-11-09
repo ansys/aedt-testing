@@ -33,6 +33,9 @@ class JobState(Enum):
 
 TERMINAL_JOB_STATES = {JobState.SUCCEEDED, JobState.FAILED, JobState.CANCELLED}
 
+# Written to ``job_map.json`` for projects whose submission failed; it is not a scheduler state.
+SUBMIT_FAILED = "SUBMIT_FAILED"
+
 
 @dataclass
 class JobSpec:

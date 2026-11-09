@@ -22,6 +22,7 @@ from aedttest.aedt_test_runner import LOGFOLDER_PATH
 from aedttest.aedt_test_runner import read_configs
 from aedttest.aedt_test_runner import time_now
 from aedttest.clusters.matrix import expand_matrix
+from aedttest.clusters.scheduler import get_scheduler
 from aedttest.clusters.slurm_submit import discover_projects_from_folder
 from aedttest.clusters.slurm_submit import submit_all_throttled
 from aedttest.logger import logger
@@ -171,6 +172,7 @@ def main() -> None:
         },
         max_parallel=args.max_parallel,
         poll_interval=30,
+        scheduler=get_scheduler(),
     )
 
     latest_path.write_text(job_map_path.read_text())
