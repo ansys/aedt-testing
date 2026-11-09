@@ -287,3 +287,17 @@ fabric.properties
 # profiling data
 
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,python,django
+
+# Site-specific setup and run output (keep local, never commit)
+/site.toml
+/local/
+job_map_*.json
+slurm-*.out
+/runs/
+/logs/
+/data/
+_tail.txt
+_status.txt
+*.zip
+tests/integration/projects/
+tests/integration/*.aedtresults/
