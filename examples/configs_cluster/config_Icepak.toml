@@ -1,0 +1,12 @@
+[project]
+name = "Graphics_Card"
+path = "../../data/Graphics_Card.aedt"
+
+[project.distribution]
+cores = 16
+parametric_tasks = 1
+
+[project.slurm]
+design_name = "IcepakDesign1"
+# Icepak does not support AEDT automatic HPC settings
+auto_hpc = false

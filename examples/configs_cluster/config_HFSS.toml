@@ -1,0 +1,11 @@
+[project]
+name = "package"
+path = "../../data/package.aedt"
+
+[project.distribution]
+cores = 16
+parametric_tasks = 1
+auto = false
+
+[project.slurm]
+design_name = "HFSSDesign1"

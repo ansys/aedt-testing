@@ -1,0 +1,11 @@
+[project]
+name = "Interposer_SI"
+path = "../../data/Interposer_SI.aedt"
+
+[project.distribution]
+cores = 16
+parametric_tasks = 1
+auto = false
+
+[project.slurm]
+design_name = "HFSS-IC"

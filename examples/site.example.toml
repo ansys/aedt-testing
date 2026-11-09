@@ -1,0 +1,31 @@
+# Copy this file, adjust the values for your cluster, and keep the copy outside the repository.
+#   aedt_test_pipeline --site site.toml --reference-version 242 --test-version 261 \
+#       --config-folder ./examples/configs_cluster
+
+[site]
+working_dir = "/path/to/work"                      # required, used as SLURM --chdir
+reference_folder = "/path/to/work/results/reference_folder"
+out_dir = "/path/to/work/results"
+poll_interval = 30                                 # seconds between sacct polls
+max_parallel_jobs = 2                              # omit or 0 for no limit
+
+# Scheduler backend; only "slurm" is supported (and the default if omitted).
+[site.scheduler]
+type = "slurm"
+
+# Fallback SLURM settings; per-project [project.slurm] tables take precedence.
+[site.slurm]
+partition = "your-partition"
+mail_user = "you@example.com"
+mail_type = "BEGIN,END,FAIL"
+
+# One table per AEDT version, the name must match --reference-version / --test-version.
+# env must contain ANSYSEM_ROOT<version> (the suffix must match the table name) and
+# LD_LIBRARY_PATH pointing at the AEDT root; newer builds fail to load in PyAEDT without it.
+[site.aedt_versions.261]
+root = "/path/to/ansys/v261/AnsysEM"
+env = { ANSYSEM_ROOT261 = "/path/to/ansys/v261/AnsysEM", LD_LIBRARY_PATH = "/path/to/ansys/v261/AnsysEM" }
+
+[site.aedt_versions.242]
+root = "/path/to/ansys/v242/Linux64"
+env = { ANSYSEM_ROOT242 = "/path/to/ansys/v242/Linux64", LD_LIBRARY_PATH = "/path/to/ansys/v242/Linux64" }

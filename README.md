@@ -12,7 +12,7 @@ The framework drives AEDT exclusively through **PyAEDT's gRPC API** - it starts 
 the results. No AEDT-side scripts (`.py`/IronPython) or `-batchsolve` flags are used, so the
 same code path works identically on Windows and Linux, locally or on a cluster.
 
-> **Requires Python 3.10+ and pyaedt >= 1.2.0**
+> **Requires Python 3.10+ and pyaedt >= 1.0.0**
 
 ## Table of Contents
 
@@ -23,6 +23,7 @@ same code path works identically on Windows and Linux, locally or on a cluster.
 - [Architecture / How It Works](#architecture--how-it-works)
 - [Usage](#usage)
   * [Configuration file](#configuration-file)
+  * [Quick start: one-command pipeline (Linux / Slurm)](#quick-start-one-command-pipeline-linux--slurm)
   * [CLI Commands](#cli-commands)
   * [Environment variables](#environment-variables)
   * [Examples](#examples)
@@ -59,7 +60,7 @@ To install the package use:
 pip install aedttest
 ```
 
-> **Note:** `pyaedt >= 1.2.0` uses the `ansys.aedt.core` package namespace.
+> **Note:** `pyaedt >= 1.0.0` uses the `ansys.aedt.core` package namespace.
 > On Python 3.10, `tomli` is installed automatically as a backport for TOML parsing.
 > On Python 3.11+, the built-in `tomllib` module is used instead.
 
@@ -143,6 +144,36 @@ distribution_types = ["Variations", "Frequencies"]
 
 [1]: examples/configs/config_with_comments.toml
 [2]: examples/configs/config_without_comments.toml
+
+### Quick start: one-command pipeline (Linux / Slurm)
+A single command runs the full cycle: submit, poll, collect, report.
+
+```bash
+aedt_test_pipeline --site site.toml \
+  --reference-version 242 --test-version 261 \
+  --config-folder ./examples/configs
+```
+
+1. Runs `--reference-version` and creates a fresh reference baseline.
+2. Runs `--test-version` and compares it against that baseline.
+3. Writes the HTML report (`main.html`) under the output directory.
+
+Omit `--test-version` to only create or refresh a baseline.
+
+`site.toml` holds the cluster defaults: `working_dir` (required), one
+`[site.aedt_versions.<version>]` table per version (`root` and `env`), and optionally
+`out_dir`, `reference_folder`, `poll_interval`, `poll_timeout`, `max_parallel_jobs` and
+`[site.slurm]` defaults. Per-project TOML files take precedence over `site.toml`.
+
+Each version's `env` must set `ANSYSEM_ROOT<version>` and `LD_LIBRARY_PATH` (both pointing at
+the AEDT root). Without `LD_LIBRARY_PATH`, PyAEDT may fail to load newer AEDT builds during
+collection. Start from a shell without other AEDT versions' variables exported. See
+`examples/site.example.toml`.
+
+The pipeline always expands test matrices (list-valued `cores`, `nodes`, etc.) and runs each
+project in an isolated copy. The individual steps are also available separately:
+`aedt_test_submit` (supports `--enable-matrix`, `--max-parallel`, `--in-place`),
+`aedt_test_collect` and `aedt_test_report`.
 
 ### CLI Commands
 To see all available options:
@@ -229,8 +260,8 @@ aedt_test_runner \
 ```bash
 sbatch \
   --job-name aedttest \
-  --partition ottc01 \
-  --export "ALL,ANSYSEM_ROOT251=/apps/software/ANSYS_EM_2025R1/AnsysEM,ANS_NODEPCHECK=1" \
+  --partition your-partition \
+  --export "ALL,ANSYSEM_ROOT251=/path/to/ansys/v251/AnsysEM,ANS_NODEPCHECK=1" \
   --nodes 2-2 --ntasks 56 \
   --wrap "aedt_test_runner --config-folder=examples/configs --aedt-version=251 --only-reference --out-dir=/shared/out"
 ```
@@ -239,8 +270,8 @@ sbatch \
 ```bash
 sbatch \
   --job-name aedttest \
-  --partition ottc01 \
-  --export "ALL,ANSYSEM_ROOT271=/apps/software/ANSYS_EM_2027R1/AnsysEM,ANS_NODEPCHECK=1" \
+  --partition your-partition \
+  --export "ALL,ANSYSEM_ROOT271=/path/to/ansys/v271/AnsysEM,ANS_NODEPCHECK=1" \
   --nodes 2-2 --ntasks 56 \
   --wrap "aedt_test_runner --config-folder=examples/configs --aedt-version=271 --reference-folder=/shared/out/results_.../reference_folder --out-dir=/shared/out"
 ```

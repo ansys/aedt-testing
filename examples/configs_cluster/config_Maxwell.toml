@@ -1,0 +1,11 @@
+[project]
+name = "PlanarTransformer"
+path = "../../data/PlanarTransformer.aedt"
+
+[project.distribution]
+cores = 16
+parametric_tasks = 1
+auto = false
+
+[project.slurm]
+design_name = "Maxwell3D"
