@@ -8,7 +8,7 @@ build-backend = "flit_core.buildapi"
 # description of current module
 [project]
 name = "aedttest"
-version = "1.0.0"
+version = "1.1.0"
 
 description = """
 Ansys Electronics Desktop Testing Framework.
@@ -20,6 +20,7 @@ authors = [
     {name = "Maksim Beliaev", email = "maksim.beliaev@ansys.com"},
     {name = "Bo Yang", email = "bo.yang@ansys.com"},
     {name = "Samuel Lopez", email = "samuel.lopez@ansys.com"},
+    {name = "Dominik Simon", email = "dominik.simon@synopsys.com"},
 ]
 readme = "README.md"
 requires-python = ">=3.10"
@@ -34,7 +35,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "pyaedt>=1.2.0",
+    "pyaedt>=1.0.0",
     "Django>=4.2",
     "tomli>=2.0.0; python_version < '3.11'",
 ]
@@ -63,6 +64,7 @@ aedt_test_runner = "aedttest.aedt_test_runner:main"
 aedt_test_submit = "aedttest.submit_runner:main"
 aedt_test_collect = "aedttest.collect_runner:main"
 aedt_test_report = "aedttest.report_runner:main"
+aedt_test_pipeline = "aedttest.pipeline_runner:main"
 
 [tool.isort]
 profile = "black"

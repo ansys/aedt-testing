@@ -281,31 +281,46 @@ def extract_data(desktop, project_dir, project_name, design_names):
                     setup_dict[setups] = sweep
                     break
 
-        logger.info("START ANALYZE: {}".format(design_name))
-        try:
-            # Use PyAEDT's own supported HPC configuration mechanism instead of
-            # AEDT-side CLI batch-solve flags (-auto/-distributed/-machinelist).
-            # analyze_setup() internally writes/applies an ACF registry file via
-            # oDesktop.SetRegistryFromFile() - the same mechanism used by AEDT's
-            # own HPC options dialog - which is the officially supported way to
-            # configure distribution while driving a live scripting/gRPC session.
-            analyze_success = app.analyze_setup(
-                name=None,  # analyze all setups of this design
-                cores=cores_arg,
-                tasks=tasks_arg,
-                use_auto_settings=use_auto_settings_arg,
-                num_variations_to_distribute=num_variations_arg,
-                allowed_distribution_types=distribution_types_arg,
-                blocking=True,
+        if grpc_port:
+            # In-line mode (original monolithic tool): this live gRPC session IS
+            # the solve - analyze_setup() here triggers the actual simulation.
+            logger.info("START ANALYZE: {}".format(design_name))
+            try:
+                # Use PyAEDT's own supported HPC configuration mechanism instead of
+                # AEDT-side CLI batch-solve flags (-auto/-distributed/-machinelist).
+                # analyze_setup() internally writes/applies an ACF registry file via
+                # oDesktop.SetRegistryFromFile() - the same mechanism used by AEDT's
+                # own HPC options dialog - which is the officially supported way to
+                # configure distribution while driving a live scripting/gRPC session.
+                analyze_success = app.analyze_setup(
+                    name=None,  # analyze all setups of this design
+                    cores=cores_arg,
+                    tasks=tasks_arg,
+                    use_auto_settings=use_auto_settings_arg,
+                    num_variations_to_distribute=num_variations_arg,
+                    allowed_distribution_types=distribution_types_arg,
+                    blocking=True,
+                )
+            except Exception as exc:
+                # analyze_setup is wrapped by pyaedt_function_handler which may re-raise
+                # instead of returning False. Treat any exception as a failed analysis
+                # so we still capture messages and write partial results instead of
+                # crashing the whole script.
+                logger.error("design {} 'analyze_setup' raised exception: {}".format(design_name, exc))
+                analyze_success = False
+            logger.info("END ANALYZE: {}".format(design_name))
+        else:
+            # Standalone/collect mode: project was already solved via SLURM
+            # -batchsolve. Do NOT re-analyze - just read existing results
+            # directly below. If results genuinely don't exist, export_profile/
+            # export_mesh_stats will fail naturally and get caught by their own
+            # existing error handling further down.
+            logger.info(
+                "Skipping analyze_setup for {} - already solved via SLURM batch, reading existing results".format(
+                    design_name
+                )
             )
-        except Exception as exc:
-            # analyze_setup is wrapped by pyaedt_function_handler which may re-raise
-            # instead of returning False. Treat any exception as a failed analysis
-            # so we still capture messages and write partial results instead of
-            # crashing the whole script.
-            logger.error("design {} 'analyze_setup' raised exception: {}".format(design_name, exc))
-            analyze_success = False
-        logger.info("END ANALYZE: {}".format(design_name))
+            analyze_success = True
 
         if not analyze_success:
             logger.error("design {} 'analyze_setup' failed".format(design_name))
