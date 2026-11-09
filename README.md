@@ -47,8 +47,9 @@ The current framework provides the following features:
 * Parallel distribution of test projects, with automatic core allocation across available machines.
 * Pure gRPC/PyAEDT execution - no AEDT-side scripting, no IronPython shim.
 * Cross-platform: identical behavior on Windows and Linux.
-* Compatible with running on a local workstation or on a cluster with a scheduler:
-  Slurm, LSF, SGE (UGE), PBS, Windows HPC.
+* Compatible with running on a local workstation or on a cluster. Job submission and polling
+  are implemented for Slurm through a scheduler adapter (LSF and PBS are planned). Host
+  detection inside a job also works for LSF, SGE (UGE), PBS and Windows HPC.
 * Control of required resources (cores, parametric tasks, single/multi node) per project,
   with optimized distribution/queuing of tasks when resources are limited.
 * Automatic generation of reference results (AEDT versions 2024R1+).
@@ -66,7 +67,7 @@ pip install aedttest
 
 Make sure the AEDT installation you want to test is available on the machine(s) the job runs on,
 and that `ANSYSEM_ROOT<version>` (e.g. `ANSYSEM_ROOT251` for 2025 R1) is set to its installation
-directory before launching `aedt_test_runner`.
+directory before launching `aedt_test_runner`. (`aedt_test_pipeline` sets it from `site.toml`.)
 
 ## Architecture / How It Works
 
@@ -148,6 +149,11 @@ distribution_types = ["Variations", "Frequencies"]
 ### Quick start: one-command pipeline (Linux / Slurm)
 A single command runs the full cycle: submit, poll, collect, report.
 
+- **Submit and poll:** each project is submitted as a batch job that solves it on the cluster.
+  This goes through the scheduler adapter.
+- **Collect:** once a job has finished successfully, `simulation_data.py` (CPython + PyAEDT)
+  opens the solved project, extracts the results and builds the report. It does not solve again.
+
 ```bash
 aedt_test_pipeline --site site.toml \
   --reference-version 242 --test-version 261 \
@@ -161,9 +167,9 @@ aedt_test_pipeline --site site.toml \
 Omit `--test-version` to only create or refresh a baseline.
 
 `site.toml` holds the cluster defaults: `working_dir` (required), one
-`[site.aedt_versions.<version>]` table per version (`root` and `env`), and optionally
-`out_dir`, `reference_folder`, `poll_interval`, `poll_timeout`, `max_parallel_jobs` and
-`[site.slurm]` defaults. Per-project TOML files take precedence over `site.toml`.
+`[site.aedt_versions.<version>]` table per version (`root`, and an optional `env`), and
+optionally `out_dir`, `reference_folder`, `poll_interval`, `poll_timeout`, `max_parallel_jobs`,
+`[site.scheduler]` and `[site.slurm]` defaults. Per-project TOML files take precedence over `site.toml`.
 
 For each version the pipeline clears stale `ANSYSEM_ROOT*` and `ANSYS_DESKTOP*` variables from
 the shell, then sets `ANSYSEM_ROOT<version>` (and, on Linux, `LD_LIBRARY_PATH`, which newer AEDT
@@ -285,7 +291,8 @@ automatically by `aedttest.clusters.job_hosts` to discover the allocated hosts a
 no extra flags are required on top of what `sbatch` already provides.
 
 #### Other schedulers (LSF, SGE/UGE, PBS, Windows HPC)
-No extra CLI flags are needed either - the framework detects the scheduler automatically from
+This covers host detection for `aedt_test_runner` only; `aedt_test_pipeline` currently submits
+to Slurm. No extra CLI flags are needed - the framework detects the scheduler automatically from
 the environment variables it sets:
 
 | Scheduler | Detected via |
