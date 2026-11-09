@@ -22,82 +22,13 @@ from time import monotonic
 from time import sleep
 from typing import Any
 from typing import Dict
-from typing import List
 from typing import Optional
 
+from aedttest.clusters.slurm_scheduler import SACCT_TIMEOUT  # noqa: F401
+from aedttest.clusters.slurm_scheduler import SUCCESS_STATES
+from aedttest.clusters.slurm_scheduler import TERMINAL_STATES
+from aedttest.clusters.slurm_scheduler import get_job_states
 from aedttest.logger import logger
-
-SACCT_TIMEOUT = 30
-
-# SLURM job states considered "finished, one way or another".
-TERMINAL_STATES = {
-    "COMPLETED",
-    "FAILED",
-    "CANCELLED",
-    "TIMEOUT",
-    "NODE_FAIL",
-    "OUT_OF_MEMORY",
-    "BOOT_FAIL",
-    "DEADLINE",
-    "PREEMPTED",
-    "REVOKED",
-    "SPECIAL_EXIT",
-}
-SUCCESS_STATES = {"COMPLETED"}
-
-
-def get_job_states(job_ids: List[str]) -> Dict[str, str]:
-    """Query ``sacct`` once for the current state of a batch of job IDs.
-
-    Parameters
-    ----------
-    job_ids : list of str
-        SLURM job IDs to query.
-
-    Returns
-    -------
-    dict
-        ``job_id -> state`` (e.g. ``"RUNNING"``, ``"COMPLETED"``). Job IDs
-        not found in ``sacct`` output are omitted (not yet visible to the
-        accounting DB, or the id was invalid).
-
-    """
-    if not job_ids:
-        return {}
-
-    command = [
-        "sacct",
-        "-j",
-        ",".join(job_ids),
-        "--format=JobID,State",
-        "--noheader",
-        "--parsable2",
-        "-X",  # exclude job steps, only the main allocation line
-    ]
-    try:
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            timeout=SACCT_TIMEOUT,
-            check=True,
-        )
-    except FileNotFoundError as exc:
-        raise OSError("sacct executable not found - is SLURM available on this node?") from exc
-    except subprocess.TimeoutExpired as exc:
-        raise OSError(f"sacct did not respond within {SACCT_TIMEOUT}s") from exc
-    except subprocess.CalledProcessError as exc:
-        raise OSError(f"sacct query failed (exit {exc.returncode}): {exc.stderr}") from exc
-
-    states: Dict[str, str] = {}
-    for line in result.stdout.splitlines():
-        if not line.strip() or "|" not in line:
-            continue
-        job_id, state = line.split("|", 1)
-        # state can look like "CANCELLED by 1234" - keep only the first word
-        states[job_id.strip()] = state.strip().split()[0]
-
-    return states
 
 
 def poll_until_done(
