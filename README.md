@@ -7,10 +7,9 @@ Users can set up a suite of projects to validate stability/regression of simulat
 (XY plots, mesh statistics, simulation time) between different versions of AEDT, or simply
 generate a reference baseline for a given version.
 
-The framework drives AEDT exclusively through **PyAEDT's gRPC API** - it starts a bare
-`ansysedt -ng -grpcsrv <port>` process, connects to it, opens/solves the project and extracts
-the results. No AEDT-side scripts (`.py`/IronPython) or `-batchsolve` flags are used, so the
-same code path works identically on Windows and Linux, locally or on a cluster.
+The framework submits each project as a batch job on a cluster scheduler (currently Slurm),
+waits for the solve to finish, and then extracts the results with **PyAEDT** (CPython, gRPC).
+No AEDT-side scripts (`.py`/IronPython) are used.
 
 > **Requires Python 3.10+ and pyaedt >= 1.0.0**
 
@@ -26,11 +25,6 @@ same code path works identically on Windows and Linux, locally or on a cluster.
   * [Quick start: one-command pipeline (Linux / Slurm)](#quick-start-one-command-pipeline-linux--slurm)
   * [CLI Commands](#cli-commands)
   * [Environment variables](#environment-variables)
-  * [Examples](#examples)
-    + [Windows - local machine](#windows---local-machine)
-    + [Linux - local machine](#linux---local-machine)
-    + [Linux - Slurm cluster](#linux---slurm-cluster)
-    + [Other schedulers (LSF, SGE/UGE, PBS, Windows HPC)](#other-schedulers-lsf-sgeuge-pbs-windows-hpc)
   * [Viewing the HTML report](#viewing-the-html-report)
 - [Supported AEDT versions](#supported-aedt-versions)
 - [Limitations](#limitations)
@@ -44,16 +38,10 @@ The current framework provides the following features:
 * Compare results of XY plots, mesh statistics and simulation time between two AEDT versions.
 * Web page (HTML) output format for visual, interactive comparison.
 * JSON file output format to support automated workflows and use of test results downstream.
-* Parallel distribution of test projects, with automatic core allocation across available machines.
-* Pure gRPC/PyAEDT execution - no AEDT-side scripting, no IronPython shim.
-* Cross-platform: identical behavior on Windows and Linux.
-* Compatible with running on a local workstation or on a cluster. Job submission and polling
-  are implemented for Slurm through a scheduler adapter (LSF and PBS are planned). Host
-  detection inside a job also works for LSF, SGE (UGE), PBS and Windows HPC.
-* Control of required resources (cores, parametric tasks, single/multi node) per project,
-  with optimized distribution/queuing of tasks when resources are limited.
-* Automatic generation of reference results (AEDT versions 2024R1+).
-* Configurable timeouts (gRPC startup, extraction/solve, shutdown) via environment variables.
+* Parallel, throttled submission of test projects as cluster jobs, with per-project core and
+  node settings and optional test matrices.
+* Pure PyAEDT/CPython extraction - no AEDT-side scripting, no IronPython shim.
+* Scheduler adapter: Slurm is implemented (LSF and PBS are planned).
 
 ## Installation
 To install the package use:
@@ -65,65 +53,30 @@ pip install aedttest
 > On Python 3.10, `tomli` is installed automatically as a backport for TOML parsing.
 > On Python 3.11+, the built-in `tomllib` module is used instead.
 
-Make sure the AEDT installation you want to test is available on the machine(s) the job runs on,
-and that `ANSYSEM_ROOT<version>` (e.g. `ANSYSEM_ROOT251` for 2025 R1) is set to its installation
-directory before launching `aedt_test_runner`. (`aedt_test_pipeline` sets it from `site.toml`.)
+Make sure the AEDT installation you want to test is available on the cluster nodes and that
+`root` in `site.toml` points to it (see [Quick start](#quick-start-one-command-pipeline-linux--slurm)).
 
 ## Architecture / How It Works
 
-For every project found in the configuration folder, the framework:
+For every AEDT version under test, `aedt_test_pipeline`:
 
-1. Allocates the required cores and machines using `allocator()`. The allocation respects
-   `--max-cores`, `--max-projects`, and the per-project `distribution` settings.
+1. Reads the site settings (`site.toml`), sets up the AEDT environment for that version and
+   expands the project configurations (including test matrices).
+2. Copies each project into an isolated run folder.
+3. **Submit:** submits one batch job per project through the scheduler adapter. The job starts
+   AEDT in batch mode and solves the project. Submission is throttled by `max_parallel_jobs`.
+4. **Poll:** polls the scheduler until every job reaches a terminal state.
+5. **Collect:** for each successfully finished job, starts `simulation_data.py` as a CPython
+   process. It connects to AEDT through PyAEDT (gRPC), opens the solved project and extracts
+   the results to JSON. It does not solve again.
+6. **Report:** compares the results with the reference baseline and writes the HTML report.
 
-2. Copies the AEDT project and its dependencies into a project-specific working directory.
-
-3. Starts AEDT in non-graphical gRPC server mode:
-
-   `<ansysedt> -ng -grpcsrv <port>`
-
-   The framework configures its own AEDT log file as required.
-
-   Batch-solve flags such as `-auto`, `-distributed`, `-machinelist`, and `-batchsolve`
-   are intentionally not used. Resource distribution and solve execution are controlled
-   later through the live PyAEDT session. Combining batch startup modes with a persistent
-   gRPC-controlled session has caused unstable or blocking API behavior in testing,
-   including calls such as `SetActiveDesign()` and `analyze_all()`.
-
-4. Waits until the AEDT gRPC endpoint is available:
-
-   - For TCP-based connections, the framework attempts to connect to the allocated port.
-   - For secure local Linux connections using Unix Domain Sockets, the framework waits
-     for the corresponding AEDT socket file, for example:
-
-     `~/.conn/AnsysEMUDS-<port>.sock`
-
-5. Starts `simulation_data.py` as a standard CPython subprocess using the same Python
-   interpreter as the framework.
-
-   The subprocess connects to the existing AEDT session through PyAEDT, opens the copied
-   project, selects the requested design and setup, and executes the solve using
-   `analyze_setup()` with the allocated resource settings, such as `cores`, `tasks`,
-   and the required distribution options.
-
-   After the solve completes, the subprocess extracts the requested simulation data and
-   writes it to a project-specific JSON result file.
-
-6. Closes the PyAEDT connection and requests a graceful shutdown of AEDT. If AEDT does
-   not terminate within the configured timeout, the framework forcefully terminates the
-   process.
-
-7. Releases the allocated resources and generates the project-specific HTML report from
-   the collected JSON result data.
-
-This design removes the previous IronPython `launcher.py` shim entirely - everything after
-step 3 is standard CPython + PyAEDT.
+Only submit and poll are scheduler specific (`aedttest/clusters/scheduler.py`; the Slurm
+implementation is in `slurm_scheduler.py`). Everything else is scheduler independent. All
+framework code is plain CPython with PyAEDT; no IronPython scripts run inside AEDT.
 
 ## Usage
-Electronics Desktop testing framework automatically identifies the environment where it was
-launched (local machine vs. cluster scheduler) via `aedttest.clusters.job_hosts`. In this chapter
-we show basic examples of starting tests on a local machine (Windows/Linux) or on clusters with a
-scheduler. In all scenarios the Command Line Interface (CLI) is used.
+In this chapter we show how to run the pipeline with the Command Line Interface (CLI).
 
 ### Configuration file
 Framework requires a configuration folder as input; every `*.toml` file inside it (recursively)
@@ -188,22 +141,17 @@ project in an isolated copy. The individual steps are also available separately:
 ### CLI Commands
 To see all available options:
 ```bash
-aedt_test_runner -h
+aedt_test_pipeline -h
 ```
 
 | Argument | Required | Description |
 |---|---|---|
-| `--aedt-version` | yes | AEDT version to test, e.g. `251` for 2025 R1, `261` for 2026 R1 |
+| `--site` | yes | Path to `site.toml` |
+| `--reference-version` | yes | AEDT version used to create the reference baseline, e.g. `242` |
+| `--test-version` | no | AEDT version to run and compare against the baseline, e.g. `271` |
 | `--config-folder` | yes | Path to the folder containing the project `.toml` configuration files |
-| `--reference-folder` | only if not `--only-reference` | Path to a previously generated reference results folder (`ref_*.json` files) |
-| `--only-reference` | no | Only generate reference results, no comparison is performed |
-| `--only-validate` | no | Only validate `--config-folder` (and `--reference-folder` if given), then exit |
-| `--suppress-validation` | no | Skip configuration/reference validation (**dangerous**, use only if you know what you are doing) |
-| `--out-dir`, `-o` | no | Output directory for the report and (if `--save-sim-data`) project files. Defaults to current working directory |
-| `--save-sim-data`, `-s` | no | Keep the simulation working directory instead of using a temp folder (requires `--out-dir`) |
-| `--max-cores`, `-c` | no | Total core limit across all projects (default: unlimited) |
-| `--max-projects`, `-mp` | no | Maximum number of projects run in parallel (default: unlimited) |
-| `--debug` | no | Enable DEBUG level logging for the framework and the extraction subprocess |
+| `--save-sim-data`, `-s` | no | Keep the simulation data under the output directory |
+| `--debug` | no | Enable DEBUG level logging |
 
 ### Environment variables
 The following environment variables let you tune internal timeouts without touching the code:
@@ -211,7 +159,7 @@ The following environment variables let you tune internal timeouts without touch
 | Variable | Default | Purpose |
 |---|---|---|
 | `AEDTTEST_GRPC_TIMEOUT` | `600` (s) | Max time to wait for the AEDT gRPC server (TCP port / UDS socket) to become available |
-| `AEDTTEST_EXTRACTION_TIMEOUT` | `21600` (s, 6h) | Max time for the extraction subprocess (open project + solve + extract) to finish |
+| `AEDTTEST_EXTRACTION_TIMEOUT` | `21600` (s, 6h) | Max time for the extraction subprocess (open project + extract) to finish |
 | `AEDTTEST_SHUTDOWN_TIMEOUT` | `300` (s) | Max time to wait for AEDT to exit after `release_desktop()` before it's killed |
 
 Example (Linux):
@@ -223,92 +171,9 @@ Example (Windows PowerShell):
 $env:AEDTTEST_GRPC_TIMEOUT = "900"
 ```
 
-### Examples
-
-#### Windows - local machine
-Make sure `ANSYSEM_ROOT251` (or the corresponding variable for the version you test) points to
-the AEDT installation directory, then from the repository root run:
-
-**Generate only reference results (e.g. AEDT 2025 R1):**
-```powershell
-aedt_test_runner --config-folder=examples/configs --aedt-version=251 --only-reference --out-dir=out
-```
-
-**Run comparison against a previously generated reference (e.g. AEDT 2027 R1 vs 2025 R1 reference):**
-```powershell
-aedt_test_runner `
-    --config-folder=examples/configs `
-    --aedt-version=271 `
-    --reference-folder="out\results_2026_08_31_10_15_00\reference_folder" `
-    --out-dir=out `
-    --debug
-```
-
-#### Linux - local machine
-```bash
-source /path/to/setenv_251.sh   # sets ANSYSEM_ROOT251 etc.
-
-aedt_test_runner \
-    --config-folder=tests/integration/config \
-    --aedt-version=251 \
-    --only-reference \
-    --out-dir=out \
-    --debug
-```
-
-```bash
-aedt_test_runner \
-    --config-folder=tests/integration/config \
-    --aedt-version=271 \
-    --reference-folder=out/results_2026_08_31_10_15_00/reference_folder \
-    --out-dir=out \
-    --debug
-```
-
-#### Linux - Slurm cluster
-**Generate only reference results:**
-```bash
-sbatch \
-  --job-name aedttest \
-  --partition your-partition \
-  --export "ALL,ANSYSEM_ROOT251=/path/to/ansys/v251/AnsysEM,ANS_NODEPCHECK=1" \
-  --nodes 2-2 --ntasks 56 \
-  --wrap "aedt_test_runner --config-folder=examples/configs --aedt-version=251 --only-reference --out-dir=/shared/out"
-```
-
-**Run comparison between versions:**
-```bash
-sbatch \
-  --job-name aedttest \
-  --partition your-partition \
-  --export "ALL,ANSYSEM_ROOT271=/path/to/ansys/v271/AnsysEM,ANS_NODEPCHECK=1" \
-  --nodes 2-2 --ntasks 56 \
-  --wrap "aedt_test_runner --config-folder=examples/configs --aedt-version=271 --reference-folder=/shared/out/results_.../reference_folder --out-dir=/shared/out"
-```
-
-Under Slurm, `SLURM_JOB_NODELIST` / `SLURM_TASKS_PER_NODE` (or `SLURM_NTASKS_PER_NODE`) are read
-automatically by `aedttest.clusters.job_hosts` to discover the allocated hosts and core counts -
-no extra flags are required on top of what `sbatch` already provides.
-
-#### Other schedulers (LSF, SGE/UGE, PBS, Windows HPC)
-This covers host detection for `aedt_test_runner` only; `aedt_test_pipeline` currently submits
-to Slurm. No extra CLI flags are needed - the framework detects the scheduler automatically from
-the environment variables it sets:
-
-| Scheduler | Detected via |
-|---|---|
-| SGE / UGE | `PE_HOSTFILE` |
-| LSF | `LSB_MCPU_HOSTS` |
-| PBS | `PBS_NODEFILE` |
-| Slurm | `SLURM_JOB_NODELIST` |
-| Windows HPC / Azure Batch | `CCP_NODES` |
-
-If none of these variables are present (plain local run), the framework falls back to the local
-hostname and `os.cpu_count()`.
-
 ### Viewing the HTML report
-Every run creates a timestamped folder `results_YYYY_MM_DD_HH_MM_SS` under `--out-dir` (current
-directory by default), containing `main.html`, one `<project>.html` per project, and the
+Every run creates a timestamped folder `results_YYYY_MM_DD_HH_MM_SS` under the output directory
+(`out_dir` in `site.toml`), containing `main.html`, one `<project>.html` per project, and the
 `reference_folder` with the generated `ref_*.json` reference data.
 
 Because the report uses relative CSS/JS assets, opening `main.html` **directly from the
@@ -336,21 +201,20 @@ Currently, the project does not support or only partially supports the following
 * Automatic results creation is possible only for versions 2024 R1+.
 * LS-DYNA is not supported.
 * Python < 3.10 is not supported.
-* A single AEDT project cannot currently span multiple nodes. Multiple independent projects can
-  still run concurrently on different allocated nodes. (`run_aedt_with_extraction` raises
-  `NotImplementedError` if a single project is allocated across more than one node) - use
-  `single_node = true` in the project configuration to force single-node allocation.
+* Only the Slurm scheduler is implemented for `aedt_test_pipeline`.
+* A single AEDT project cannot currently span multiple nodes in the extraction step; use
+  `single_node = true` in the project configuration.
 
 ## Troubleshooting
 * **`AEDT gRPC server did not start on <host>:<port> within <timeout>s`** - increase
   `AEDTTEST_GRPC_TIMEOUT`, check the AEDT stdout log (`logs/<project>.log.stdout.log`) for
-  license or startup errors, and confirm `ANSYSEM_ROOT<version>` is set correctly.
+  license or startup errors, and confirm `root` in `site.toml` is correct.
 * **`Failed to execute gRPC AEDT command: SetActiveDesign` / access errors on Linux** - usually
   indicates an AEDT/gRPC plugin or shared-library mismatch on the target machine (e.g. a
   `libstdc++`/`GLIBCXX` version too old for the AEDT release) rather than a framework issue;
   verify the AEDT installation and its runtime dependencies on that specific host.
-* **`Environment variable ANSYSEM_ROOT<version> is not set`** - export/set that variable to the
-  AEDT installation directory before running `aedt_test_runner`.
+* **`Environment variable ANSYSEM_ROOT<version> is not set`** - add a
+  `[site.aedt_versions.<version>]` table with `root` to `site.toml`.
 
 ## Contributors
 If you would like to contribute to this project, please see [CONTRIBUTE](docs/CONTRIBUTE.md).
